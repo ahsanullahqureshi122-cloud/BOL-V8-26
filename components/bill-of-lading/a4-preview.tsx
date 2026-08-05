@@ -805,7 +805,7 @@ export function A4Preview({
       className="mx-auto flex min-h-[297mm] w-[210mm] max-w-[210mm] flex-col overflow-hidden text-slate-950 shadow-2xl shadow-blue-200/50 ring-1 ring-blue-100 print:m-0 print:h-[297mm] print:min-h-0 print:w-[210mm] print:max-w-none print:shadow-none"
       style={pdfMode ? { ...a4ShellStyle, width: "210mm", minHeight: "297mm", height: "297mm", overflow: "hidden" } : a4ShellStyle}
     >
-      <div data-bol-page="true" className="relative flex h-full flex-col p-[3mm] print:p-[2mm] gap-[2mm] print:gap-[1.5mm]">
+      <div data-bol-page="true" className="relative flex h-full flex-col p-[3mm] print:p-[1.5mm] gap-[2mm] print:gap-[1mm] print:overflow-visible">
         <header
           data-bol-header="true"
           className={`overflow-hidden rounded-2xl border shrink-0 ${

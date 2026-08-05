@@ -1,14 +1,9 @@
 {
-  "customCompanies": [
-    "OMAR SHAHI LTD",
-    "NAJIB ASAD LTD",
-    "PAHLAWAN NOORI LTD",
-    "WASELA LTD"
-  ],
+  "customCompanies": [],
   "ledgerRecords": {
     "asadullah niamatullah habibi ltd": [
       {
-        "id": "d5ac7f60-0e02-46b6-9459-42702e1972f0",
+        "id": "ac7db679-4cd9-45b0-9b3f-135ce631bfd5",
         "date": "2026-06-01",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "006",
@@ -25,7 +20,7 @@
         "pdfFile": ""
       },
       {
-        "id": "6819f869-1b51-4229-89b5-370b44cc9c8f",
+        "id": "6d0aed98-089a-43c4-a8b4-9429e09f03f0",
         "date": "2025-09-04",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "005",
@@ -42,7 +37,7 @@
         "pdfFile": ""
       },
       {
-        "id": "2dbcc72a-c1b9-4d3a-b1f4-ca43e5f310d1",
+        "id": "787849de-a8ba-4394-bc67-00c1fd67628b",
         "date": "2026-06-02",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "007",
@@ -61,7 +56,7 @@
     ],
     "pahlawan noori ltd": [
       {
-        "id": "faa0f897-7fe0-435e-bf67-fb620c5af96c",
+        "id": "b714af78-d7ef-40d8-b559-e3047c47faf9",
         "date": "2026-05-25",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "009",
@@ -78,7 +73,7 @@
         "pdfFile": ""
       },
       {
-        "id": "525ddebe-c747-4bda-963b-a54293fc8398",
+        "id": "2015d825-3783-4b9e-8f2c-566395452be5",
         "date": "2026-05-19",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "008",
@@ -95,7 +90,7 @@
         "pdfFile": ""
       },
       {
-        "id": "48a7fed5-70ff-4d0e-a0f4-0c9432b83905",
+        "id": "00c0ccaf-2fa2-471a-9170-a9f211c9b489",
         "date": "2026-06-04",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "010",
@@ -112,7 +107,7 @@
         "pdfFile": ""
       },
       {
-        "id": "2b3bd668-0465-4719-abae-de4be72e4750",
+        "id": "46fff413-a844-4f2e-b163-53e1045bce48",
         "date": "2026-02-17",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "006",
@@ -129,7 +124,7 @@
         "pdfFile": ""
       },
       {
-        "id": "2182f4af-5178-4171-aaff-3ca007f43203",
+        "id": "e436af57-f03b-40b0-b117-b3bd22a042f8",
         "date": "2026-06-07",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "005",
@@ -146,7 +141,7 @@
         "pdfFile": ""
       },
       {
-        "id": "881a11dc-6441-401b-b413-cd71ad7ba60a",
+        "id": "8b2c39c2-657d-41c5-a194-eccd4704ca9d",
         "date": "2026-02-23",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "007",
@@ -165,7 +160,7 @@
     ],
     "rahmat nazar ltd": [
       {
-        "id": "11fc7d6c-b8b9-4b7c-974e-da3788d7c799",
+        "id": "b051f503-d24e-4aa9-bbb6-31f1312e0735",
         "date": "2025-12-07",
         "description": "RAHMAT NAZAR LTD",
         "invoiceNo": "149",
@@ -182,7 +177,7 @@
         "pdfFile": ""
       },
       {
-        "id": "afbda5a7-5528-4c39-9806-ab572b0d665b",
+        "id": "54550515-5144-4ac8-a6da-5e3c32a15dfa",
         "date": "2025-09-20",
         "description": "RAHMAT NAZAR LTD",
         "invoiceNo": "067",
@@ -201,7 +196,7 @@
     ],
     "omar shahi ltd": [
       {
-        "id": "7741d67d-628c-43ef-9fbe-507e903dc76b",
+        "id": "d73e204d-2b1e-4776-9bd6-f6e4fe6c7b64",
         "date": "2025-12-31",
         "description": "OMAR SHAHI LTD",
         "invoiceNo": "114",
@@ -218,7 +213,7 @@
         "pdfFile": ""
       },
       {
-        "id": "fac35689-c022-410a-9e5c-597cde8e2675",
+        "id": "a4a1e0c2-c8df-4c4d-be19-aa38163e408b",
         "date": "2025-09-13",
         "description": "OMAR SHAHI LTD",
         "invoiceNo": "045",
@@ -237,7 +232,7 @@
     ],
     "najib asad ltd": [
       {
-        "id": "46c23807-0216-4b5d-884a-6c9347b19018",
+        "id": "6632b198-dd0a-4dc4-adc0-f3c214bff796",
         "date": "2026-05-23",
         "description": "NAJIB ASAD LTD",
         "invoiceNo": "012",
@@ -256,7 +251,7 @@
     ],
     "wasela ltd": [
       {
-        "id": "206c8178-bc06-4f1c-9f0b-368a9e41ed79",
+        "id": "65ba04c0-772f-4c82-b100-d69e3aa7b742",
         "date": "2026-06-07",
         "description": "WASELA LTD",
         "invoiceNo": "015",
@@ -274,5 +269,5 @@
       }
     ]
   },
-  "updated_at": "2026-06-08T20:56:48.655Z"
+  "updated_at": "2026-08-05T05:23:38.919Z"
 }

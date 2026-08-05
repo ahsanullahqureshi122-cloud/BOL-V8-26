@@ -4,14 +4,33 @@
 
 .mac-desktop-shell {
   background:
-    radial-gradient(circle at 16% 14%, rgba(37, 99, 235, 0.22), transparent 28%),
-    radial-gradient(circle at 84% 20%, rgba(212, 175, 55, 0.2), transparent 30%),
+    radial-gradient(
+      circle at 16% 14%,
+      rgba(37, 99, 235, 0.22),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 84% 20%,
+      rgba(212, 175, 55, 0.2),
+      transparent 30%
+    ),
     linear-gradient(135deg, #eaf4ff 0%, #ffffff 45%, #fff7df 100%);
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 34px;
   box-shadow: 0 34px 100px rgba(37, 99, 235, 0.18);
   color: #0f172a;
-  font-family: Inter, "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, Arial, sans-serif;
+  font-family:
+    Inter,
+    "SF Pro Display",
+    "SF Pro Text",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Naskh Arabic",
+    "Noto Sans Arabic",
+    Tahoma,
+    Arial,
+    sans-serif;
   min-height: calc(100vh - 6.5rem);
   overflow: hidden;
   position: relative;
@@ -23,7 +42,9 @@
 .ledger-table[dir="rtl"] {
   direction: rtl;
   unicode-bidi: bidi-override;
-  font-family: "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, "Arial Unicode MS", Arial, sans-serif !important;
+  font-family:
+    "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, "Arial Unicode MS", Arial,
+    sans-serif !important;
   text-align: right;
 }
 
@@ -52,9 +73,23 @@
 
 .mac-desktop-shell::before {
   background:
-    linear-gradient(115deg, transparent 0 46%, rgba(255, 255, 255, 0.48) 47%, transparent 49%),
-    linear-gradient(152deg, transparent 0 62%, rgba(212, 175, 55, 0.28) 63%, transparent 64%),
-    repeating-linear-gradient(110deg, rgba(37, 99, 235, 0.05) 0 1px, transparent 1px 28px);
+    linear-gradient(
+      115deg,
+      transparent 0 46%,
+      rgba(255, 255, 255, 0.48) 47%,
+      transparent 49%
+    ),
+    linear-gradient(
+      152deg,
+      transparent 0 62%,
+      rgba(212, 175, 55, 0.28) 63%,
+      transparent 64%
+    ),
+    repeating-linear-gradient(
+      110deg,
+      rgba(37, 99, 235, 0.05) 0 1px,
+      transparent 1px 28px
+    );
   content: "";
   inset: 0;
   opacity: 0.9;
@@ -134,7 +169,10 @@
   height: 30px;
   line-height: 1;
   padding: 0 10px;
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
   white-space: nowrap;
 }
 
@@ -183,7 +221,9 @@
   min-height: 34px;
   padding: 7px 9px;
   text-align: left;
-  transition: background 150ms ease, color 150ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
   width: 100%;
 }
 
@@ -230,7 +270,9 @@
   padding: 10px;
   text-align: center;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.76);
-  transition: background 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
   width: 92px;
 }
 
@@ -305,7 +347,11 @@
 
 .mac-finder-window {
   backdrop-filter: blur(30px);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.52));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.78),
+    rgba(255, 255, 255, 0.52)
+  );
   border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 28px;
   box-shadow: 0 30px 90px rgba(15, 23, 42, 0.18);
@@ -395,7 +441,9 @@
   height: 38px;
   justify-content: center;
   padding: 0 12px;
-  transition: transform 160ms ease, background 160ms ease;
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
 }
 
 .mac-titlebar-button:hover {
@@ -441,7 +489,9 @@
   justify-content: center;
   min-width: 54px;
   position: relative;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
   width: 54px;
 }
 
@@ -476,7 +526,9 @@
   pointer-events: none;
   position: absolute;
   transform: translateX(-50%) translateY(4px);
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
   white-space: nowrap;
 }
 
@@ -559,7 +611,9 @@
   min-height: 120px;
   padding: 14px;
   text-align: center;
-  transition: transform 170ms ease, background 170ms ease;
+  transition:
+    transform 170ms ease,
+    background 170ms ease;
 }
 
 .mac-launchpad-app:hover {
@@ -728,7 +782,8 @@
 }
 
 .ledger-table {
-  --ledger-grid-template: 72px 180px minmax(300px, 2.2fr) 170px 180px 170px 130px 170px;
+  --ledger-grid-template: 72px 180px minmax(300px, 2.2fr) 170px 180px 170px
+    130px 170px;
   border-collapse: separate;
   direction: rtl;
   font-family: Inter, Arial, "Noto Naskh Arabic", Tahoma, sans-serif;
@@ -805,7 +860,10 @@
   margin-bottom: 1rem;
   min-height: 86px;
   overflow: visible;
-  transition: background 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+  transition:
+    background 220ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease;
 }
 
 .ledger-table .ledger-data-row:hover {
@@ -998,15 +1056,8 @@
 }
 
 .ledger-table {
-  --ledger-grid-template:
-    72px
-    180px
-    minmax(300px, 2.2fr)
-    170px
-    180px
-    170px
-    130px
-    170px;
+  --ledger-grid-template: 72px 180px minmax(300px, 2.2fr) 170px 180px 170px
+    130px 170px;
   background: rgba(255, 255, 255, 0.92);
   border-radius: 28px;
   box-shadow: 0 26px 60px rgba(15, 23, 42, 0.08);
@@ -1015,18 +1066,42 @@
   backdrop-filter: blur(16px);
 }
 
-.ledger-table col.ledger-col-sno { width: 72px; }
-.ledger-table col.ledger-col-date { width: 180px; }
-.ledger-table col.ledger-col-description { width: 320px; }
-.ledger-table col.ledger-col-bol { width: 170px; }
-.ledger-table col.ledger-col-container-type { width: 150px; }
-.ledger-table col.ledger-col-container-details { width: 150px; }
-.ledger-table col.ledger-col-container-no { width: 150px; }
-.ledger-table col.ledger-col-consignee { width: 150px; }
-.ledger-table col.ledger-col-quantity { width: 120px; }
-.ledger-table col.ledger-col-money { width: 170px; }
-.ledger-table col.ledger-col-balance { width: 130px; }
-.ledger-table col.ledger-col-media { width: 170px; }
+.ledger-table col.ledger-col-sno {
+  width: 72px;
+}
+.ledger-table col.ledger-col-date {
+  width: 180px;
+}
+.ledger-table col.ledger-col-description {
+  width: 320px;
+}
+.ledger-table col.ledger-col-bol {
+  width: 170px;
+}
+.ledger-table col.ledger-col-container-type {
+  width: 150px;
+}
+.ledger-table col.ledger-col-container-details {
+  width: 150px;
+}
+.ledger-table col.ledger-col-container-no {
+  width: 150px;
+}
+.ledger-table col.ledger-col-consignee {
+  width: 150px;
+}
+.ledger-table col.ledger-col-quantity {
+  width: 120px;
+}
+.ledger-table col.ledger-col-money {
+  width: 170px;
+}
+.ledger-table col.ledger-col-balance {
+  width: 130px;
+}
+.ledger-table col.ledger-col-media {
+  width: 170px;
+}
 
 .ledger-table thead tr,
 .ledger-table tbody tr {
@@ -1052,7 +1127,9 @@
 
 .ledger-table tbody tr {
   background: rgba(255, 255, 255, 0.9);
-  transition: transform 160ms ease, background 160ms ease;
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
 }
 
 .ledger-table tbody tr:nth-child(even) {
@@ -1082,9 +1159,6 @@
   width: 100%;
 }
 
-
-
-
 .ledger-action-pill {
   align-items: center;
   backdrop-filter: blur(14px);
@@ -1098,7 +1172,10 @@
   height: 30px;
   justify-content: center;
   padding: 0 10px;
-  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
   white-space: nowrap;
 }
 
@@ -1225,7 +1302,11 @@
   padding: 12px 16px;
   user-select: none;
   cursor: grab;
-  background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(245,248,255,0.72));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.88),
+    rgba(245, 248, 255, 0.72)
+  );
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
@@ -1252,11 +1333,17 @@
   height: 14px;
   width: 14px;
   display: inline-block;
-  border: 1px solid rgba(0,0,0,0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
-.traffic.red { background: #ff5f57; }
-.traffic.yellow { background: #ffbd2e; }
-.traffic.green { background: #28c840; }
+.traffic.red {
+  background: #ff5f57;
+}
+.traffic.yellow {
+  background: #ffbd2e;
+}
+.traffic.green {
+  background: #28c840;
+}
 
 .draggable-window__content {
   height: calc(100% - 56px);
@@ -1309,9 +1396,9 @@
   }
 
   .invoice-print-root {
-    width: 210mm !important;
-    max-width: 210mm !important;
-    min-height: 297mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
     margin: 0 auto !important;
     overflow: visible !important;
     page-break-inside: avoid !important;
@@ -1386,7 +1473,11 @@
   height: 44px;
   justify-content: center;
   padding: 0 16px;
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
   white-space: nowrap;
 }
 
@@ -1427,7 +1518,10 @@
   display: inline-flex;
   height: 36px;
   justify-content: center;
-  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
   width: 36px;
 }
 
@@ -1462,7 +1556,11 @@
 
 .sky-login-screen::before {
   background:
-    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.34), transparent 28%),
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(255, 255, 255, 0.34),
+      transparent 28%
+    ),
     linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.2));
   content: "";
   inset: 0;
@@ -1538,7 +1636,11 @@
 
 .sky-login-card {
   align-items: center;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.56));
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.86),
+    rgba(255, 255, 255, 0.56)
+  );
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 36px;
   box-shadow:
@@ -1557,7 +1659,12 @@
 }
 
 .sky-login-card::before {
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.82), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 175, 55, 0.82),
+    transparent
+  );
   content: "";
   height: 2px;
   left: 54px;
@@ -1568,7 +1675,11 @@
 
 .sky-login-icon {
   align-items: center;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(239, 246, 255, 0.7));
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.94),
+    rgba(239, 246, 255, 0.7)
+  );
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 23px;
   box-shadow:
@@ -1725,7 +1836,12 @@
 }
 
 .sky-login-submit {
-  background: linear-gradient(180deg, #243047 0%, #172033 48%, #090d16 100%) !important;
+  background: linear-gradient(
+    180deg,
+    #243047 0%,
+    #172033 48%,
+    #090d16 100%
+  ) !important;
   border: 1px solid rgba(0, 0, 0, 0.82) !important;
   border-radius: 16px !important;
   box-shadow:
@@ -1814,15 +1930,38 @@
 .sky-login-screen::before {
   background:
     radial-gradient(circle at 18% 25%, rgba(11, 31, 77, 0.08), transparent 30%),
-    radial-gradient(circle at 82% 72%, rgba(193, 18, 31, 0.075), transparent 24%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(248, 249, 252, 0.76), rgba(244, 239, 224, 0.68));
+    radial-gradient(
+      circle at 82% 72%,
+      rgba(193, 18, 31, 0.075),
+      transparent 24%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.86),
+      rgba(248, 249, 252, 0.76),
+      rgba(244, 239, 224, 0.68)
+    );
 }
 
 .sky-login-screen::after {
   background:
-    linear-gradient(110deg, transparent 0 22%, rgba(212, 175, 55, 0.2) 22.2%, transparent 22.6% 100%),
-    linear-gradient(150deg, transparent 0 60%, rgba(212, 175, 55, 0.14) 60.2%, transparent 60.55% 100%),
-    radial-gradient(ellipse at 10% 82%, rgba(11, 31, 77, 0.06), transparent 32%),
+    linear-gradient(
+      110deg,
+      transparent 0 22%,
+      rgba(212, 175, 55, 0.2) 22.2%,
+      transparent 22.6% 100%
+    ),
+    linear-gradient(
+      150deg,
+      transparent 0 60%,
+      rgba(212, 175, 55, 0.14) 60.2%,
+      transparent 60.55% 100%
+    ),
+    radial-gradient(
+      ellipse at 10% 82%,
+      rgba(11, 31, 77, 0.06),
+      transparent 32%
+    ),
     radial-gradient(ellipse at 88% 82%, rgba(15, 23, 42, 0.06), transparent 30%);
   content: "";
   inset: 0;
@@ -1884,7 +2023,11 @@
 
 .sky-login-card-logo {
   align-items: center;
-  background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(247,231,169,.28));
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.94),
+    rgba(247, 231, 169, 0.28)
+  );
   border: 1px solid rgba(212, 175, 55, 0.42);
   border-radius: 26px;
   box-shadow: 0 20px 46px rgba(11, 31, 77, 0.13);
@@ -1977,7 +2120,9 @@
 
 .sky-login-forgot button {
   color: #b58212 !important;
-  transition: color 180ms ease, transform 180ms ease;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
 }
 
 .sky-login-forgot button:hover {
@@ -2110,17 +2255,40 @@
 
 .sky-login-screen::before {
   background:
-    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.58), transparent 24%),
+    radial-gradient(
+      circle at 50% 38%,
+      rgba(255, 255, 255, 0.58),
+      transparent 24%
+    ),
     radial-gradient(circle at 18% 16%, rgba(11, 31, 77, 0.06), transparent 28%),
-    radial-gradient(circle at 82% 76%, rgba(193, 18, 31, 0.045), transparent 22%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 249, 252, 0.78), rgba(244, 239, 224, 0.7));
+    radial-gradient(
+      circle at 82% 76%,
+      rgba(193, 18, 31, 0.045),
+      transparent 22%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.92),
+      rgba(248, 249, 252, 0.78),
+      rgba(244, 239, 224, 0.7)
+    );
   z-index: 0;
 }
 
 .sky-login-screen::after {
   background:
-    linear-gradient(112deg, transparent 0 28%, rgba(212, 175, 55, 0.22) 28.14%, transparent 28.42% 100%),
-    linear-gradient(148deg, transparent 0 58%, rgba(212, 175, 55, 0.16) 58.12%, transparent 58.42% 100%),
+    linear-gradient(
+      112deg,
+      transparent 0 28%,
+      rgba(212, 175, 55, 0.22) 28.14%,
+      transparent 28.42% 100%
+    ),
+    linear-gradient(
+      148deg,
+      transparent 0 58%,
+      rgba(212, 175, 55, 0.16) 58.12%,
+      transparent 58.42% 100%
+    ),
     radial-gradient(ellipse at 12% 86%, rgba(11, 31, 77, 0.04), transparent 30%);
   opacity: 0.62;
 }
@@ -2189,7 +2357,13 @@
 }
 
 .sky-login-card::before {
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.86), rgba(193, 18, 31, 0.22), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 175, 55, 0.86),
+    rgba(193, 18, 31, 0.22),
+    transparent
+  );
   left: 42px;
   right: 42px;
 }
@@ -3484,7 +3658,11 @@
   border-radius: 999px;
   color: #b8860b;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(255, 247, 237, 0.84)),
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.94),
+      rgba(255, 247, 237, 0.84)
+    ),
     rgba(254, 243, 199, 0.62);
   border: 1px solid rgba(212, 165, 116, 0.36);
   box-shadow:
@@ -3500,7 +3678,12 @@
   top: 50%;
   height: 1px;
   transform: translateY(-50%);
-  background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.42), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(184, 134, 11, 0.42),
+    transparent
+  );
   z-index: -1;
 }
 
@@ -3555,7 +3738,11 @@
   border-radius: 1.35rem;
   border: 1px solid rgba(251, 191, 36, 0.24);
   background:
-    linear-gradient(145deg, rgba(255, 252, 242, 0.64), rgba(255, 247, 224, 0.38)),
+    linear-gradient(
+      145deg,
+      rgba(255, 252, 242, 0.64),
+      rgba(255, 247, 224, 0.38)
+    ),
     rgba(255, 255, 255, 0.58);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.88),
@@ -3564,8 +3751,16 @@
 
 .party-card-glass {
   background:
-    radial-gradient(circle at 18% 0%, rgba(254, 243, 199, 0.38), transparent 42%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(255, 251, 235, 0.42));
+    radial-gradient(
+      circle at 18% 0%,
+      rgba(254, 243, 199, 0.38),
+      transparent 42%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.62),
+      rgba(255, 251, 235, 0.42)
+    );
   backdrop-filter: blur(22px) saturate(1.18);
   -webkit-backdrop-filter: blur(22px) saturate(1.18);
   border-color: rgba(251, 191, 36, 0.26);
@@ -3677,8 +3872,16 @@
   min-height: 7.2mm !important;
   border-color: rgba(251, 191, 36, 0.3) !important;
   background:
-    radial-gradient(circle at 14% 0%, rgba(254, 243, 199, 0.42), transparent 44%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(255, 251, 235, 0.42)) !important;
+    radial-gradient(
+      circle at 14% 0%,
+      rgba(254, 243, 199, 0.42),
+      transparent 44%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.66),
+      rgba(255, 251, 235, 0.42)
+    ) !important;
   backdrop-filter: blur(22px) saturate(1.18);
   -webkit-backdrop-filter: blur(22px) saturate(1.18);
   box-shadow:
@@ -3703,8 +3906,16 @@
   min-height: 10.5mm !important;
   border-color: rgba(248, 113, 113, 0.42) !important;
   background:
-    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.76), transparent 42%),
-    linear-gradient(145deg, rgba(255, 251, 235, 0.72), rgba(254, 243, 199, 0.36)),
+    radial-gradient(
+      circle at 12% 0%,
+      rgba(255, 255, 255, 0.76),
+      transparent 42%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(255, 251, 235, 0.72),
+      rgba(254, 243, 199, 0.36)
+    ),
     rgba(255, 255, 255, 0.58) !important;
   backdrop-filter: blur(20px) saturate(1.16);
   -webkit-backdrop-filter: blur(20px) saturate(1.16);
@@ -3796,7 +4007,11 @@
   border-radius: 999px;
   color: var(--route-transport-color);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.94)),
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(239, 246, 255, 0.94)
+    ),
     radial-gradient(circle, rgba(37, 99, 235, 0.12), transparent 68%);
   border: 1.5px solid rgba(37, 99, 235, 0.28);
   box-shadow:
@@ -4047,7 +4262,6 @@
     padding: 2px 6px !important;
     border-top: 0.5pt solid rgba(59, 130, 246, 0.15) !important;
   }
-
 }
 
 .bol-title-card {
@@ -4056,7 +4270,7 @@
 
 .bol-company-name {
   display: block;
-  font-size: 16.6pt;
+  font-size: 14.2pt;
   line-height: 1.02;
   max-width: 100%;
   min-width: 0;
@@ -4077,13 +4291,13 @@
 }
 
 .bol-title-en {
-  font-size: 12.2pt;
+  font-size: 10.2pt;
   font-weight: 900;
   line-height: 1.08;
 }
 
 .bol-title-fa {
-  font-size: 12.2pt;
+  font-size: 10.2pt;
   font-weight: 800;
   line-height: 1.12;
   text-align: center;
@@ -4094,7 +4308,7 @@
 }
 
 .bol-number-text {
-  font-size: 9.6pt;
+  font-size: 8.2pt;
   font-weight: 900;
   line-height: 1.1;
   text-align: center;
@@ -4127,6 +4341,12 @@
 
 /* Print styles for Bill of Lading */
 @media print {
+  @page {
+    size: A4 portrait;
+    /* If you want to force no margins, set it here, but custom browser settings will override this */
+    margin: 0 !important;
+  }
+
   html,
   body {
     background: white !important;
@@ -4135,9 +4355,11 @@
     color-adjust: exact !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: auto !important;
-    height: auto !important;
-    overflow: visible !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
     font-size: 10px !important;
     line-height: 1.2 !important;
     letter-spacing: 0 !important;
@@ -4146,7 +4368,13 @@
     font-synthesis-weight: none !important;
   }
 
-  body > *:not([data-print-root="true"], .invoice-print-root, :has([data-print-root="true"]), :has(.invoice-print-root)) {
+  body
+    > *:not(
+      [data-print-root="true"],
+      .invoice-print-root,
+      :has([data-print-root="true"]),
+      :has(.invoice-print-root)
+    ) {
     display: none !important;
   }
 
@@ -4163,18 +4391,26 @@
 
   [data-print-root="true"] {
     display: block !important;
-    position: static !important;
+    position: relative !important;
     left: auto !important;
     top: auto !important;
-    width: auto !important;
-    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    min-height: 0 !important;
     margin: 0 auto !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     background: white !important;
     z-index: auto !important;
     transform: none !important;
     transform-origin: top left !important;
+    box-shadow: none !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .print-wrapper {
@@ -4182,26 +4418,35 @@
     position: relative !important;
     left: auto !important;
     top: auto !important;
-    width: auto !important;
-    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
     min-height: 0 !important;
-    max-height: none !important;
     margin: 0 auto !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     background: #ffffff !important;
+    box-sizing: border-box !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .print-page {
     display: block !important;
     position: relative !important;
-    width: 210mm !important;
-    height: auto !important;
-    min-height: 297mm !important;
-    max-height: none !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    min-height: 0 !important;
     margin: 0 auto !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     background: #ffffff !important;
     box-shadow: none !important;
     page-break-after: avoid !important;
@@ -4210,22 +4455,78 @@
     break-inside: avoid !important;
   }
 
-  [data-print-root="true"] {
-    transform: none !important;
-    transform-origin: top left !important;
-    width: auto !important;
+  [data-print-root="true"] [data-bol-a4="true"],
+  .print-page [data-bol-a4="true"],
+  [data-bol-a4="true"],
+  [data-print-root="true"] > div,
+  [data-pdf-export="true"],
+  [data-bol-page="true"] {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
-  @page {
-    size: A4 portrait;
-    margin: 12mm;
+  [data-bol-content="true"] {
+    display: flex !important;
+    flex: 1 1 0 !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    margin-top: 1mm !important;
+    gap: 1mm !important;
+    overflow: hidden !important;
+  }
+
+  [data-bol-footer="true"] {
+    flex: 0 0 auto !important;
+    position: relative !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    margin-top: auto !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+
+  [data-bol-a4="true"],
+  .print-page [data-bol-a4="true"],
+  [data-bol-page="true"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .invoice-print-root {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    width: 210mm !important;
-    max-width: 210mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
     padding: 0 !important;
   }
@@ -4589,6 +4890,22 @@
     page-break-inside: avoid !important;
   }
 
+  @media print {
+    [data-print-root="true"] > div,
+    [data-pdf-export="true"] {
+      width: 100% !important;
+      min-height: 0 !important;
+      max-height: 100vh !important;
+      height: 100% !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      overflow: hidden !important;
+      page-break-after: avoid !important;
+      page-break-before: avoid !important;
+      page-break-inside: avoid !important;
+    }
+  }
+
   /* Clean up borders for print */
   .border-dashed {
     border-style: dashed !important;
@@ -4663,12 +4980,12 @@
     display: flex !important;
     flex-direction: column !important;
     position: relative !important;
-    width: 210mm !important;
-    min-width: 210mm !important;
-    max-width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
-    max-height: 297mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    min-height: 0 !important;
     margin: 0 !important;
     overflow: hidden !important;
     background: #ffffff !important;
@@ -4684,9 +5001,9 @@
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    height: auto !important;
-    min-height: 297mm !important;
-    max-height: none !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    min-height: 0 !important;
   }
 
   [data-bol-page="true"] {
@@ -4694,9 +5011,9 @@
     flex-direction: column !important;
     position: relative !important;
     width: 100% !important;
-    height: auto !important;
-    min-height: 297mm !important;
-    max-height: none !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    min-height: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     background: #ffffff !important;
@@ -5048,68 +5365,165 @@
 }
 
 @media print {
-  [data-import-trucks-print-preview="true"] {
-    background: #ffffff !important;
-    display: block !important;
-    height: auto !important;
-    inset: auto !important;
+  @page {
+    /* Force exact A4 Portrait dimensions */
+    size: A4 portrait !important;
     margin: 0 !important;
-    overflow: visible !important;
+  }
+
+  html,
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    margin: 0 !important;
     padding: 0 !important;
-    page: import-trucks-list;
-    position: static !important;
-    width: auto !important;
+
+    /* Strict lock to A4 physical size */
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: 210mm !important;
+    max-height: 297mm !important;
+    min-width: 0 !important; /* CRITICAL: Overrides desktop min-widths */
+    overflow: hidden !important;
+
+    font-size: 10px !important;
+    line-height: 1.2 !important;
   }
 
-  [data-import-trucks-print-preview="true"] > div {
-    display: block !important;
-    height: auto !important;
-    margin: 0 auto !important;
-    max-height: none !important;
-    min-height: 190mm !important;
-    overflow: visible !important;
-    width: 285mm !important;
+  /* CRITICAL FIX: Strip hardcoded widths from forcing a scale-down */
+  [data-print-root="true"],
+  [data-bol-a4="true"],
+  .ledger-table,
+  table {
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
-  [data-import-trucks-print-hidden="true"] {
+  /* Hide the rest of the web app UI */
+  body > *:not(
+      [data-print-root="true"],
+      .invoice-print-root,
+      :has([data-print-root="true"]),
+      :has(.invoice-print-root)
+    ) {
     display: none !important;
   }
 
-  [data-import-trucks-print-sheet="true"] {
-    background: #ffffff !important;
-    border: 2px solid #d4af37 !important;
-    border-radius: 0 !important;
+  body * {
+    visibility: hidden !important;
+  }
+
+  [data-print-root="true"],
+  .invoice-print-root,
+  [data-print-root="true"] *,
+  .invoice-print-root * {
+    visibility: visible !important;
+  }
+
+  [data-print-root="true"],
+  .print-wrapper,
+  .print-page {
+    display: block !important;
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: white !important;
+    transform: none !important;
     box-shadow: none !important;
-    color: #0f172a !important;
-    min-height: 190mm !important;
-    padding: 7mm !important;
+  }
+
+  /* Core Document Wrapper */
+  [data-print-root="true"] [data-bol-a4="true"],
+  .print-page [data-bol-a4="true"],
+  [data-bol-a4="true"] {
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: 210mm !important;
+    height: 297mm !important;
+
+    /* Safe-zone padding for hardware printers */
+    padding: 6mm 8mm !important;
+
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+    border: none !important;
+  }
+
+  /* Header (Fixed height, won't shrink) */
+  [data-bol-header="true"] {
+    flex: 0 0 auto !important;
     width: 100% !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 
-  [data-import-trucks-print-sheet="true"] table {
-    border-collapse: collapse !important;
-    table-layout: fixed !important;
+  /* Middle Content (Stretches to fill the remaining vertical space) */
+  [data-bol-content="true"] {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
     width: 100% !important;
+    min-height: 0 !important; /* Allows content to flex properly */
+    margin: 2mm 0 !important;
+    overflow: visible !important;
   }
 
-  [data-import-trucks-print-sheet="true"] th,
-  [data-import-trucks-print-sheet="true"] td {
-    border: 1px solid #d4af37 !important;
-    overflow-wrap: anywhere !important;
-    padding: 5px 6px !important;
-    vertical-align: top !important;
+  /* Footer (Pushed to the very bottom) */
+  [data-bol-footer="true"] {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    margin-top: auto !important; /* Anchors strictly to the bottom */
+    page-break-before: avoid !important;
+    break-before: avoid !important;
   }
 
-  [data-import-trucks-print-sheet="true"] th {
-    background: #f8d678 !important;
-    color: #0f172a !important;
-    font-weight: 900 !important;
-  }
+  /* --- Keeping the rest of your specific overrides below --- */
 
-  [data-import-trucks-print-sheet="true"] header,
-  [data-import-trucks-print-sheet="true"] footer,
-  [data-import-trucks-print-sheet="true"] section {
-    break-inside: avoid !important;
+  [data-print-section],
+  [data-print-section] * {
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  [data-print-section] {
+    display: block !important;
+    overflow: hidden !important;
+    border: 0.2mm solid #bfdbfe !important;
+    border-radius: 2.5mm !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  [data-print-section] > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 7mm !important;
+    min-height: 7mm !important;
+    padding: 1mm 2mm !important;
+    overflow: hidden !important;
+    background: linear-gradient(
+      90deg,
+      #1d4ed8 0%,
+      #2563eb 58%,
+      #0891b2 100%
+    ) !important;
+    color: #ffffff !important;
+    border-radius: 2.3mm 2.3mm 0 0 !important;
+  }
+
+  [data-print-section] > div:last-child {
+    padding: 1.5mm !important;
   }
 }
