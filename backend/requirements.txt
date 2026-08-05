@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+alembic
+python-multipart
+openpyxl
+xlsxwriter
+pypdf
+pymupdf
+pillow
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]

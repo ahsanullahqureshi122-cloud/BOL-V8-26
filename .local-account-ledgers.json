@@ -1,0 +1,440 @@
+{
+  "accounts": [
+    {
+      "id": "79bd5d03-7fe7-481e-b5cf-21bed863082a",
+      "companyName": "NAJIB ASAD-LIMITED // PAHLAWAN NOORI LTD---Bismillah Noori",
+      "address": "Shorandam Industrial Park, Kandahar, Afghanistan\nLicence No: 27-1173",
+      "contact": "+93 707 070 975",
+      "type": "export",
+      "accountType": "export",
+      "email": "",
+      "licenceNo": "",
+      "openingBalance": 0,
+      "currency": "USD",
+      "notes": "",
+      "status": "active",
+      "createdAt": "2026-06-05T18:10:02.927Z",
+      "updatedAt": "2026-06-05T18:10:02.927Z"
+    }
+  ],
+  "ledgerEntries": {
+    "5a8ee275-1a24-481b-905a-39858b23af98": [],
+    "d45c97c9-e70e-493b-af93-7b2408272973": [
+      {
+        "id": "df4d914f-2a57-4d66-9167-cf5c73e6a435",
+        "date": "2026-06-03",
+        "description": "1X40J",
+        "invoiceNo": "",
+        "dateOfShip": "",
+        "billOfLanding": "43444",
+        "containerNo": "",
+        "consignee": "",
+        "quantity": "11244",
+        "debit": 13000,
+        "credit": 0,
+        "pdfName": "R.S INTERNATIONAL-INV-NO-012-NAJIB-ASAD-LIMITED-پلیت هرات 61144کارتن1371 (2).pdf",
+        "billOfLandingSurrendered": true,
+        "statusPdfName": "R.S INTERNATIONAL-INV-NO-012-NAJIB-ASAD-LIMITED-پلیت هرات 61144کارتن1371 (2).pdf",
+        "mediaName": "WhatsApp Video 2026-06-03 at 3.39.10 PM.mp4",
+        "mediaUrl": "/uploads/account-ledger-media/df4d914f-2a57-4d66-9167-cf5c73e6a435-video-1780517350731-WhatsApp-Video-2026-06-03-at-3.39.10-PM.mp4",
+        "mediaType": "video/mp4"
+      },
+      {
+        "id": "36550e38-e4b6-4cc0-987c-fb92986da628",
+        "date": "2026-06-03",
+        "description": "jjg",
+        "invoiceNo": "",
+        "dateOfShip": "",
+        "billOfLanding": "",
+        "containerNo": "",
+        "consignee": "",
+        "quantity": "",
+        "debit": 0,
+        "credit": 5000,
+        "billOfLandingSurrendered": true,
+        "pdfName": "BMLWGCOD01116-3.pdf",
+        "mediaName": "",
+        "mediaUrl": "",
+        "mediaType": "",
+        "mediaFiles": [
+          {
+            "id": "36550e38-e4b6-4cc0-987c-fb92986da628-legacy-media",
+            "name": "WhatsApp Image 2026-06-03 at 12.49.44 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.49.44 PM.jpeg",
+            "url": "/uploads/account-ledger-media/36550e38-e4b6-4cc0-987c-fb92986da628-image-1780520228757-WhatsApp-Image-2026-06-03-at-12.49.44-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "uploadedAt": "2026-06-03T21:36:09.196Z"
+          },
+          {
+            "id": "0e1ff3e3-a465-454f-b29f-4d146f505c90",
+            "name": "WhatsApp Image 2026-06-03 at 12.36.31 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.36.31 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-09_WhatsApp-Image-2026-06-03-at-12.36.31-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 85899,
+            "uploadedAt": "2026-06-03T21:36:09.893Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-09_WhatsApp-Image-2026-06-03-at-12.36.31-PM.jpeg"
+          },
+          {
+            "id": "d892dba5-82c4-4704-99b8-362db93d49b2",
+            "name": "WhatsApp Image 2026-06-03 at 12.37.44 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.37.44 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-10_WhatsApp-Image-2026-06-03-at-12.37.44-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 78403,
+            "uploadedAt": "2026-06-03T21:36:10.665Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-10_WhatsApp-Image-2026-06-03-at-12.37.44-PM.jpeg"
+          },
+          {
+            "id": "16b8a5a9-2d46-4e49-a80c-c20e5bcb51fa",
+            "name": "WhatsApp Video 2026-06-03 at 12.25.47 PM.mp4",
+            "originalName": "WhatsApp Video 2026-06-03 at 12.25.47 PM.mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_02-06-11_WhatsApp-Video-2026-06-03-at-12.25.47-PM.mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 4867345,
+            "uploadedAt": "2026-06-03T21:36:11.037Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_02-06-11_WhatsApp-Video-2026-06-03-at-12.25.47-PM.mp4"
+          },
+          {
+            "id": "2820b5c5-6bc5-4176-baed-ad417d101dbd",
+            "name": "WhatsApp Image 2026-06-03 at 12.49.44 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.49.44 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-11_WhatsApp-Image-2026-06-03-at-12.49.44-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 129399,
+            "uploadedAt": "2026-06-03T21:36:11.262Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-11_WhatsApp-Image-2026-06-03-at-12.49.44-PM.jpeg"
+          },
+          {
+            "id": "0960b4a8-f757-4543-bf6d-34708c4c1d7a",
+            "name": "WhatsApp Image 2026-06-03 at 12.49.35 PM (1).jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.49.35 PM (1).jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-11_WhatsApp-Image-2026-06-03-at-12.49.35-PM-(1).jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 104262,
+            "uploadedAt": "2026-06-03T21:36:11.475Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-11_WhatsApp-Image-2026-06-03-at-12.49.35-PM-(1).jpeg"
+          },
+          {
+            "id": "ce2cf7b3-eddf-4c2e-9a43-8252d9cec4d9",
+            "name": "WhatsApp Image 2026-06-03 at 12.49.35 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.49.35 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-11_WhatsApp-Image-2026-06-03-at-12.49.35-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 104262,
+            "uploadedAt": "2026-06-03T21:36:11.849Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-11_WhatsApp-Image-2026-06-03-at-12.49.35-PM.jpeg"
+          },
+          {
+            "id": "82c31d8a-8bb9-4f4a-8520-bea0b38dfa47",
+            "name": "WhatsApp Video 2026-06-03 at 3.39.10 PM (1).mp4",
+            "originalName": "WhatsApp Video 2026-06-03 at 3.39.10 PM (1).mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_02-06-12_WhatsApp-Video-2026-06-03-at-3.39.10-PM-(1).mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 6184109,
+            "uploadedAt": "2026-06-03T21:36:12.251Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_02-06-12_WhatsApp-Video-2026-06-03-at-3.39.10-PM-(1).mp4"
+          },
+          {
+            "id": "9896702a-0bec-41be-8335-323ddebc8caf",
+            "name": "WhatsApp Video 2026-06-03 at 3.38.18 PM (1).mp4",
+            "originalName": "WhatsApp Video 2026-06-03 at 3.38.18 PM (1).mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_02-06-12_WhatsApp-Video-2026-06-03-at-3.38.18-PM-(1).mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 5126587,
+            "uploadedAt": "2026-06-03T21:36:12.977Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_02-06-12_WhatsApp-Video-2026-06-03-at-3.38.18-PM-(1).mp4"
+          },
+          {
+            "id": "46a40836-b2f7-4842-9ef6-f2714042274f",
+            "name": "WhatsApp Video 2026-06-03 at 3.38.18 PM.mp4",
+            "originalName": "WhatsApp Video 2026-06-03 at 3.38.18 PM.mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_02-06-13_WhatsApp-Video-2026-06-03-at-3.38.18-PM.mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 5126587,
+            "uploadedAt": "2026-06-03T21:36:13.317Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_02-06-13_WhatsApp-Video-2026-06-03-at-3.38.18-PM.mp4"
+          },
+          {
+            "id": "63964b2b-b05b-42d2-88f1-64e7d9d00c61",
+            "name": "WhatsApp Video 2026-06-03 at 3.38.17 PM.mp4",
+            "originalName": "WhatsApp Video 2026-06-03 at 3.38.17 PM.mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_02-06-13_WhatsApp-Video-2026-06-03-at-3.38.17-PM.mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 4209425,
+            "uploadedAt": "2026-06-03T21:36:13.779Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_02-06-13_WhatsApp-Video-2026-06-03-at-3.38.17-PM.mp4"
+          },
+          {
+            "id": "f222a5f8-8d0e-4c1c-aff8-ac9fb9cdc560",
+            "name": "WhatsApp Video 2026-06-03 at 3.37.58 PM.mp4",
+            "originalName": "WhatsApp Video 2026-06-03 at 3.37.58 PM.mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_02-06-14_WhatsApp-Video-2026-06-03-at-3.37.58-PM.mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 3983337,
+            "uploadedAt": "2026-06-03T21:36:14.182Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_02-06-14_WhatsApp-Video-2026-06-03-at-3.37.58-PM.mp4"
+          },
+          {
+            "id": "31806512-7754-4737-a329-8f1d126b7fa5",
+            "name": "WhatsApp Video 2026-06-03 at 3.37.05 PM.mp4",
+            "originalName": "WhatsApp Video 2026-06-03 at 3.37.05 PM.mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_02-06-15_WhatsApp-Video-2026-06-03-at-3.37.05-PM.mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 3691434,
+            "uploadedAt": "2026-06-03T21:36:15.216Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_02-06-15_WhatsApp-Video-2026-06-03-at-3.37.05-PM.mp4"
+          },
+          {
+            "id": "5d26e506-940f-4901-8d1c-b8f187b89b85",
+            "name": "WhatsApp Image 2026-06-03 at 12.50.18 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.50.18 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-15_WhatsApp-Image-2026-06-03-at-12.50.18-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 52501,
+            "uploadedAt": "2026-06-03T21:36:15.554Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-15_WhatsApp-Image-2026-06-03-at-12.50.18-PM.jpeg"
+          },
+          {
+            "id": "df6e7350-2f94-4338-a88e-9295ff05f2e3",
+            "name": "WhatsApp Image 2026-06-03 at 12.50.13 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.50.13 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-15_WhatsApp-Image-2026-06-03-at-12.50.13-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 64284,
+            "uploadedAt": "2026-06-03T21:36:16.143Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-15_WhatsApp-Image-2026-06-03-at-12.50.13-PM.jpeg"
+          },
+          {
+            "id": "eea5fd9a-0c48-47de-ab2e-e14d87427134",
+            "name": "WhatsApp Image 2026-06-03 at 12.50.08 PM (1).jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.50.08 PM (1).jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-16_WhatsApp-Image-2026-06-03-at-12.50.08-PM-(1).jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 84587,
+            "uploadedAt": "2026-06-03T21:36:16.386Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-16_WhatsApp-Image-2026-06-03-at-12.50.08-PM-(1).jpeg"
+          },
+          {
+            "id": "72afc3be-686c-4b50-98da-273840b90a48",
+            "name": "WhatsApp Image 2026-06-03 at 12.50.08 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-03 at 12.50.08 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_02-06-16_WhatsApp-Image-2026-06-03-at-12.50.08-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 84587,
+            "uploadedAt": "2026-06-03T21:36:16.700Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_02-06-16_WhatsApp-Image-2026-06-03-at-12.50.08-PM.jpeg"
+          }
+        ]
+      }
+    ],
+    "da5ba436-da21-412b-9394-d14c5ec0aae5": [],
+    "6ed83185-22b2-426a-b865-20d4e79fcdf4": [
+      {
+        "id": "d5b3ae93-2ed7-457b-811e-7765c8b8af0e",
+        "date": "2026-06-04",
+        "description": "کندهار څخه نواشیوا  ټرنسپورټ او ګمرک",
+        "invoiceNo": "TC NO . 61503",
+        "dateOfShip": "",
+        "billOfLanding": "",
+        "containerType": "1X40RF",
+        "containerDetails": "",
+        "containerNo": "OTPU6465623",
+        "consignee": "S.P INTERNATIONAL",
+        "quantity": "2118 DRY FIGS",
+        "debit": 7200,
+        "credit": 0,
+        "billOfLandingSurrendered": true,
+        "pdfName": "NAVJEANSA2025064.pdf",
+        "pdfUrl": "/uploads/account-ledger-pdfs/d5b3ae93-2ed7-457b-811e-7765c8b8af0e-bl-pdf-1780573289794-NAVJEANSA2025064.pdf"
+      }
+    ],
+    "79bd5d03-7fe7-481e-b5cf-21bed863082a": [
+      {
+        "id": "30d87623-63bb-4262-908b-8eb299b7b2d7",
+        "date": "2026-06-04",
+        "description": "له کندهار څخه د مرسین بندر له لارې ناوا شیوا بندر ته. PHALAWAN NOORILTD|",
+        "invoiceNo": "010",
+        "dateOfShip": "",
+        "billOfLanding": "",
+        "containerType": "40FT Reefer / 40RF",
+        "containerDetails": "",
+        "containerNo": "",
+        "consignee": "KUKREJA FRUITS COMPANY",
+        "quantity": "1350 ",
+        "debit": 9350,
+        "credit": 0,
+        "billOfLandingSurrendered": false,
+        "mediaFiles": [
+          {
+            "id": "38155520-5c2e-453d-a888-644d6d89cba0",
+            "name": "pahlawan-noori-1350cnts black-riaisnis-.png",
+            "originalName": "pahlawan-noori-1350cnts black-riaisnis-.png",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_19-31-40_pahlawan-noori-1350cnts-black-riaisnis-.png",
+            "type": "image/png",
+            "kind": "image",
+            "size": 286942,
+            "uploadedAt": "2026-06-04T15:01:40.108Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_19-31-40_pahlawan-noori-1350cnts-black-riaisnis-.png",
+            "favorite": true
+          },
+          {
+            "id": "f936de36-cf0e-418f-9b99-251554e36fdd",
+            "name": "WhatsApp Image 2026-06-04 at 2.07.06 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-04 at 2.07.06 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_19-31-40_WhatsApp-Image-2026-06-04-at-2.07.06-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 56475,
+            "uploadedAt": "2026-06-04T15:01:40.210Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_19-31-40_WhatsApp-Image-2026-06-04-at-2.07.06-PM.jpeg",
+            "favorite": true
+          },
+          {
+            "id": "6b270c48-e3d8-4a06-8a2f-aa2023deeb76",
+            "name": "WhatsApp Video 2026-06-04 at 2.07.06 PM.mp4",
+            "originalName": "WhatsApp Video 2026-06-04 at 2.07.06 PM.mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_19-31-40_WhatsApp-Video-2026-06-04-at-2.07.06-PM.mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 1504679,
+            "uploadedAt": "2026-06-04T15:01:40.542Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_19-31-40_WhatsApp-Video-2026-06-04-at-2.07.06-PM.mp4",
+            "favorite": true
+          },
+          {
+            "id": "c36b85d9-888e-4399-b5c5-f375af8b7f50",
+            "name": "WhatsApp Image 2026-06-04 at 2.07.07 PM.jpeg",
+            "originalName": "WhatsApp Image 2026-06-04 at 2.07.07 PM.jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_19-31-40_WhatsApp-Image-2026-06-04-at-2.07.07-PM.jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 95260,
+            "uploadedAt": "2026-06-04T15:01:40.677Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_19-31-40_WhatsApp-Image-2026-06-04-at-2.07.07-PM.jpeg"
+          },
+          {
+            "id": "4162e2cd-077c-4f70-be01-03534636fde7",
+            "name": "WhatsApp Video 2026-06-04 at 2.07.22 PM.mp4",
+            "originalName": "WhatsApp Video 2026-06-04 at 2.07.22 PM.mp4",
+            "url": "/uploads/account-ledger-media/Videos/2026-06-04_19-31-41_WhatsApp-Video-2026-06-04-at-2.07.22-PM.mp4",
+            "type": "video/mp4",
+            "kind": "video",
+            "size": 5151896,
+            "uploadedAt": "2026-06-04T15:01:41.028Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Videos\\2026-06-04_19-31-41_WhatsApp-Video-2026-06-04-at-2.07.22-PM.mp4"
+          },
+          {
+            "id": "9c298bb4-2254-409a-a652-373d561e5b76",
+            "name": "WhatsApp Image 2026-06-04 at 1.19.47 PM (1).jpeg",
+            "originalName": "WhatsApp Image 2026-06-04 at 1.19.47 PM (1).jpeg",
+            "url": "/uploads/account-ledger-media/Images/2026-06-04_22-13-46_WhatsApp-Image-2026-06-04-at-1.19.47-PM-(1).jpeg",
+            "type": "image/jpeg",
+            "kind": "image",
+            "size": 39535,
+            "uploadedAt": "2026-06-04T17:43:46.783Z",
+            "storagePath": "E:\\My-Softwares-+\\skybalam-26-bol-V3.2\\public\\uploads\\account-ledger-media\\Images\\2026-06-04_22-13-46_WhatsApp-Image-2026-06-04-at-1.19.47-PM-(1).jpeg"
+          }
+        ],
+        "mediaName": "",
+        "mediaUrl": "",
+        "mediaType": "",
+        "statusPdfName": "Kukreja Fruit Company-1350-CNTS-BLACK RAISINS-INV0000-010-PAHLAWAN NOORI-.pdf",
+        "statusPdfUrl": "/uploads/account-ledger-pdfs/30d87623-63bb-4262-908b-8eb299b7b2d7-status-pdf-1780677191314-Kukreja-Fruit-Company-1350-CNTS-BLACK-RAISINS-INV0000-010-PAHLAWAN-NOORI-.pdf",
+        "packing": "CNT BLACK RAISINS "
+      },
+      {
+        "id": "f3075c9d-b68e-4ffc-b0ed-139a413d4760",
+        "date": "2026-06-05",
+        "description": "له کندهار څخه د مرسین بندر له لارې ناوا شیوا بندر ته.|PHALAWAN NOORILTD|",
+        "invoiceNo": "009",
+        "dateOfShip": "",
+        "billOfLanding": "",
+        "containerType": "40FT High Cube / 40HC",
+        "containerDetails": "",
+        "containerNo": "",
+        "consignee": "REHMAT OEVERSRSS",
+        "quantity": "1407 ",
+        "debit": 9350,
+        "credit": 0,
+        "billOfLandingSurrendered": false,
+        "packing": "CNTS BLACK RAISINS "
+      },
+      {
+        "id": "b17da817-657b-4e2a-89c5-284cde1cc194",
+        "date": "2026-06-07",
+        "description": "sarapi",
+        "invoiceNo": "",
+        "dateOfShip": "",
+        "billOfLanding": "",
+        "containerType": "",
+        "containerDetails": "",
+        "containerNo": "",
+        "consignee": "",
+        "quantity": "",
+        "packing": "",
+        "debit": 0,
+        "credit": 12000,
+        "billOfLandingSurrendered": false
+      },
+      {
+        "id": "a5675339-7867-41fa-a9a4-f4d2fa74e9c5",
+        "date": "2026-06-08",
+        "description": "2333",
+        "invoiceNo": "",
+        "dateOfShip": "",
+        "billOfLanding": "",
+        "containerType": "",
+        "containerDetails": "",
+        "containerNo": "",
+        "consignee": "",
+        "quantity": "",
+        "packing": "",
+        "debit": 0,
+        "credit": 1222,
+        "billOfLandingSurrendered": false
+      }
+    ]
+  },
+  "ledgerProfiles": {
+    "5a8ee275-1a24-481b-905a-39858b23af98": {
+      "shipperCustomerName": "A",
+      "officeAddress": "",
+      "footerInfo": "EMAIL: info@skyariana.com, transport@skyariana.com\nMOB: +93 700 939 365, +93711 4355 29"
+    },
+    "d45c97c9-e70e-493b-af93-7b2408272973": {
+      "shipperCustomerName": "NAJIB ASAD LIMITED",
+      "shipperCustomerAddress": "T.L NO: 88619\nShorandam Industrial Area, Kandahar, Afghanistan",
+      "shipperCustomerContact": "+93 707 070 975",
+      "shipperCustomerEmail": "",
+      "officeAddress": "2nd FLOOR, 16 NO. OFFICE,\nSHAHIDANO, CHOWK, ETIMAD RAHMI MARKET,\nKANDAHAR, AFGHANISTAN. || LICENCE NUMBER: 2401-2198\nPHONE:   +93 700 939 365 ,   +93 711 4355 29",
+      "footerInfo": "EMAIL: info@skyariana.com, transport@skyariana.com\nMOB: +93 700 939 365, +93711 4355 29"
+    },
+    "79bd5d03-7fe7-481e-b5cf-21bed863082a": {
+      "shipperCustomerName": "NAJIB ASAD-LIMITED // PAHLAWAN NOORI LTD---Bismillah Noori",
+      "shipperCustomerAddress": "Shorandam Industrial Park, Kandahar, Afghanistan\nLicence No: 27-1173\n",
+      "shipperCustomerContact": "+93 707 070 975",
+      "shipperCustomerEmail": "",
+      "officeAddress": "2nd FLOOR, 16 NO. OFFICE,\nSHAHIDANO, CHOWK, ETIMAD RAHMI MARKET,\nKANDAHAR, AFGHANISTAN. || LICENCE NUMBER: 2401-2198\nPHONE:   +93 700 939 365 ,   +93 711 4355 29",
+      "footerInfo": "EMAIL: info@skyariana.com, transport@skyariana.com\nMOB: +93 700 939 365, +93711 4355 29"
+    }
+  },
+  "updated_at": "2026-06-08T20:52:06.575Z"
+}
