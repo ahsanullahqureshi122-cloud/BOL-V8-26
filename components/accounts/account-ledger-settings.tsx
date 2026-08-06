@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Archive, Building2, Eye, FileJson, FileText, FolderOpen, HardDrive, ImageUp, RotateCcw, Save, Upload } from "lucide-react"
+import { Archive, Building2, Eye, FileJson, FileText, FolderOpen, HardDrive, ImageUp, RotateCcw, Save, Upload, Users, UserPlus, Shield, ShieldCheck, Key, Lock, CheckCircle2, XCircle, Trash2, Edit3, Plus, Search, Briefcase } from "lucide-react"
 
 export type AccountLedgerDefaults = {
   officeAddress: string
@@ -404,6 +404,11 @@ export function AccountLedgerSettings() {
           </div>
 
           <div className="rounded-[28px] border border-blue-100 bg-white/82 p-5 shadow-xl shadow-blue-100/50 backdrop-blur-xl">
+            {/* User Management Section */}
+            <UserManagementSection />
+          </div>
+
+          <div className="rounded-[28px] border border-blue-100 bg-white/82 p-5 shadow-xl shadow-blue-100/50 backdrop-blur-xl">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#D4AF37]">Media Storage</p>
@@ -606,6 +611,385 @@ function LedgerFooterPreviewCard({ settings, wide = false }: { settings: Account
             <p className="text-sm font-bold text-slate-500">{settings.authorizedSignaturePosition}</p>
           </div>
           <div className="h-px w-44 bg-slate-400" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export interface SystemUser {
+  id: string
+  name: string
+  email: string
+  role: "admin" | "accountant" | "viewer"
+  office: string
+  status: "active" | "disabled"
+  createdAt: string
+  lastLogin?: string
+}
+
+const DEFAULT_SYSTEM_USERS: SystemUser[] = [
+  {
+    id: "usr-1",
+    name: "Ahsanullah Qureshi",
+    email: "ahsanullahqureshi888@gmail.com",
+    role: "admin",
+    office: "Dubai HQ & Kandahar Main",
+    status: "active",
+    createdAt: "2026-01-01",
+    lastLogin: "Active Now",
+  },
+  {
+    id: "usr-2",
+    name: "Logistics Accountant",
+    email: "accounting@skyariana.com",
+    role: "accountant",
+    office: "Kabul Logistics Office",
+    status: "active",
+    createdAt: "2026-02-15",
+    lastLogin: "2 hours ago",
+  },
+  {
+    id: "usr-3",
+    name: "Customs Inspector",
+    email: "customs@skyariana.com",
+    role: "viewer",
+    office: "Islam Qala Border",
+    status: "active",
+    createdAt: "2026-03-10",
+    lastLogin: "Yesterday",
+  },
+]
+
+const SYSTEM_USERS_STORAGE_KEY = "sky_system_users_management"
+
+function UserManagementSection() {
+  const [users, setUsers] = useState<SystemUser[]>(DEFAULT_SYSTEM_USERS)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false)
+
+  // New user form state
+  const [newName, setNewName] = useState("")
+  const [newEmail, setNewEmail] = useState("")
+  const [newRole, setNewRole] = useState<"admin" | "accountant" | "viewer">("accountant")
+  const [newOffice, setNewOffice] = useState("Kandahar Main Office")
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem(SYSTEM_USERS_STORAGE_KEY)
+      if (saved) {
+        try {
+          setUsers(JSON.parse(saved))
+        } catch {
+          setUsers(DEFAULT_SYSTEM_USERS)
+        }
+      }
+    }
+  }, [])
+
+  const saveUsers = (nextUsers: SystemUser[]) => {
+    setUsers(nextUsers)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(SYSTEM_USERS_STORAGE_KEY, JSON.stringify(nextUsers))
+    }
+  }
+
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newName.trim() || !newEmail.trim()) return
+
+    const newUser: SystemUser = {
+      id: `usr-${Date.now()}`,
+      name: newName.trim(),
+      email: newEmail.trim(),
+      role: newRole,
+      office: newOffice.trim() || "Main Office",
+      status: "active",
+      createdAt: new Date().toISOString().split("T")[0],
+      lastLogin: "Never",
+    }
+
+    const next = [newUser, ...users]
+    saveUsers(next)
+    setNewName("")
+    setNewEmail("")
+    setIsAddUserOpen(false)
+  }
+
+  const handleChangeRole = (userId: string, role: "admin" | "accountant" | "viewer") => {
+    const next = users.map((u) => (u.id === userId ? { ...u, role } : u))
+    saveUsers(next)
+  }
+
+  const handleToggleStatus = (userId: string) => {
+    const next = users.map((u) =>
+      u.id === userId ? { ...u, status: (u.status === "active" ? "disabled" : "active") as "active" | "disabled" } : u
+    )
+    saveUsers(next)
+  }
+
+  const handleDeleteUser = (userId: string) => {
+    if (users.length <= 1) return
+    const next = users.filter((u) => u.id !== userId)
+    saveUsers(next)
+  }
+
+  const filteredUsers = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.office.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.role.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const getRoleBadge = (role: "admin" | "accountant" | "viewer") => {
+    switch (role) {
+      case "admin":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-black text-amber-900 shadow-2xs">
+            👑 Admin / ادمین
+          </span>
+        )
+      case "accountant":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-black text-blue-900 shadow-2xs">
+            💼 Accountant / حسابدار
+          </span>
+        )
+      case "viewer":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-black text-emerald-900 shadow-2xs">
+            👁️ Viewer / بیننده
+          </span>
+        )
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* User Management Card Header */}
+      <div className="flex flex-col gap-4 border-b border-blue-100/80 pb-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300 bg-amber-50 text-amber-800 shadow-lg shadow-amber-500/10">
+            <Users className="h-6 w-6" />
+          </span>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#D4AF37]">Security &amp; Roles</p>
+            <h3 className="text-xl font-black text-slate-950">User Management / مدیریت کاربران</h3>
+            <p className="text-xs font-bold text-slate-500 font-[vazirmatn]" dir="rtl">
+              تعیین دسترسی‌ها: ادمین (Admin)، حسابدار (Accountant) و بیننده (Viewer)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsAddUserOpen(!isAddUserOpen)}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-amber-500 via-yellow-400 to-amber-500 px-4 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition hover:scale-[1.02] cursor-pointer"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>+ Add System User / افزودن کاربر</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Add User Form Drawer */}
+      {isAddUserOpen && (
+        <form onSubmit={handleAddUser} className="rounded-2xl border border-amber-300 bg-amber-50/60 p-4 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
+            <h4 className="text-sm font-black text-slate-900">Add New System User / اضافه نمودن کاربر جدید</h4>
+            <button type="button" onClick={() => setIsAddUserOpen(false)} className="text-xs font-bold text-slate-500 hover:text-slate-900">
+              ✕ Close
+            </button>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="text-[11px] font-extrabold uppercase text-slate-700 block mb-1">Full Name / نام کامل</label>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="e.g. Ahmad Khan"
+                required
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-extrabold uppercase text-slate-700 block mb-1">Email / ایمیل یا نام کاربری</label>
+              <input
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="user@skyariana.com"
+                type="email"
+                required
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-extrabold uppercase text-slate-700 block mb-1">System Role / نقش کاربر</label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value as any)}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none focus:border-amber-400"
+              >
+                <option value="admin">👑 Admin / ادمین (Full Access)</option>
+                <option value="accountant">💼 Accountant / حسابدار (Invoices &amp; Ledger)</option>
+                <option value="viewer">👁️ Viewer / بیننده (Read Only View &amp; Print)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-extrabold uppercase text-slate-700 block mb-1">Office / نمایندگی</label>
+              <input
+                value={newOffice}
+                onChange={(e) => setNewOffice(e.target.value)}
+                placeholder="e.g. Kandahar Main"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none focus:border-amber-400"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-xs font-black text-amber-400 shadow-md hover:bg-slate-900 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              Save System User
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Users Search Bar */}
+      <div className="relative max-w-md">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search users by name, email, office, or role..."
+          className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-xs font-bold text-slate-900 outline-none focus:border-amber-400"
+        />
+      </div>
+
+      {/* Users List Table */}
+      <div className="overflow-x-auto rounded-2xl border border-slate-200/90 bg-white shadow-xs">
+        <table className="w-full text-left text-xs text-slate-700">
+          <thead className="bg-slate-50 font-extrabold uppercase tracking-wider text-slate-600 border-b border-slate-200">
+            <tr>
+              <th className="px-4 py-3">System User</th>
+              <th className="px-4 py-3">Role / نقش</th>
+              <th className="px-4 py-3">Office Location</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 font-semibold">
+            {filteredUsers.map((u) => (
+              <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-amber-400 to-yellow-600 font-black text-slate-950 shadow-xs text-xs">
+                      {u.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900">{u.name}</p>
+                      <p className="text-[11px] text-slate-500 font-mono">{u.email}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <select
+                    value={u.role}
+                    onChange={(e) => handleChangeRole(u.id, e.target.value as any)}
+                    className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-900 focus:border-amber-400"
+                  >
+                    <option value="admin">👑 Admin</option>
+                    <option value="accountant">💼 Accountant</option>
+                    <option value="viewer">👁️ Viewer</option>
+                  </select>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="font-bold text-slate-800">{u.office}</span>
+                </td>
+                <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStatus(u.id)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-black cursor-pointer ${
+                      u.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${u.status === "active" ? "bg-emerald-600 animate-pulse" : "bg-slate-400"}`} />
+                    {u.status === "active" ? "Active" : "Disabled"}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteUser(u.id)}
+                    disabled={users.length <= 1}
+                    className="rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 hover:bg-red-100 disabled:opacity-30 cursor-pointer"
+                    title="Remove user"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Permissions Matrix Overview */}
+      <div className="rounded-2xl border border-blue-100 bg-linear-to-br from-blue-50/70 via-white to-amber-50/40 p-4 shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-amber-700" />
+          <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">Role Permissions Matrix / جدول سطح دسترسی‌ها</h4>
+        </div>
+
+        <div className="grid gap-3 text-xs font-bold sm:grid-cols-3">
+          <div className="rounded-xl border border-amber-200 bg-white p-3 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between border-b border-amber-100 pb-1">
+              <span className="font-black text-amber-900">👑 Admin (ادمین)</span>
+              <span className="text-[10px] bg-amber-100 text-amber-900 font-black px-1.5 py-0.5 rounded">Full Access</span>
+            </div>
+            <ul className="space-y-1 text-slate-700 text-[11px]">
+              <li>✓ Create, edit &amp; delete Invoices &amp; BOLs</li>
+              <li>✓ Account Ledger management</li>
+              <li>✓ System Settings &amp; Company Logos</li>
+              <li>✓ User Management &amp; Permissions</li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-blue-200 bg-white p-3 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between border-b border-blue-100 pb-1">
+              <span className="font-black text-blue-900">💼 Accountant (حسابدار)</span>
+              <span className="text-[10px] bg-blue-100 text-blue-900 font-black px-1.5 py-0.5 rounded">Financials</span>
+            </div>
+            <ul className="space-y-1 text-slate-700 text-[11px]">
+              <li>✓ Create &amp; Edit Invoices</li>
+              <li>✓ Full Account Ledger Access</li>
+              <li>✓ View &amp; Print Bills of Lading</li>
+              <li>✗ System User &amp; Security Settings</li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-emerald-200 bg-white p-3 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between border-b border-emerald-100 pb-1">
+              <span className="font-black text-emerald-900">👁️ Viewer (بیننده)</span>
+              <span className="text-[10px] bg-emerald-100 text-emerald-900 font-black px-1.5 py-0.5 rounded">Read Only</span>
+            </div>
+            <ul className="space-y-1 text-slate-700 text-[11px]">
+              <li>✓ Read-Only View of Invoices &amp; BOLs</li>
+              <li>✓ Print &amp; Preview PDF Documents</li>
+              <li>✗ Cannot Edit or Delete Records</li>
+              <li>✗ Cannot Modify System Settings</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

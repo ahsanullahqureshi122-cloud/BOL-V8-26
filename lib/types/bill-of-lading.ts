@@ -11,6 +11,11 @@ export interface RouteStop {
   arrivalDate?: string
   departureDate?: string
   notes?: string
+  plateNumber?: string
+  chassisNumber?: string
+  trailerMan?: string
+  customsSealRequired?: boolean
+  customsSealNote?: string
 }
 
 export interface PredefinedRoute {

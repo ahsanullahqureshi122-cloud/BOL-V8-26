@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 /**
  * TypeScript type definitions for ledger redesign components
  * Ensures type safety across gallery, row, and cell components

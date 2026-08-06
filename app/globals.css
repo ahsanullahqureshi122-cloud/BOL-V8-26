@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import "../components/accounts/ExportAccountLedgerPrint.css";
 
+/* Screen UI Zoom Out for high-density, spacious dashboard experience */
+@media screen {
+  html,
+  body {
+    zoom: 0.90;
+  }
+}
+
 .mac-desktop-shell {
   background:
     radial-gradient(
@@ -3903,7 +3911,7 @@
 }
 
 .shipment-info-card {
-  min-height: 10.5mm !important;
+  min-height: 11.5mm !important;
   border-color: rgba(248, 113, 113, 0.42) !important;
   background:
     radial-gradient(
@@ -3926,18 +3934,15 @@
 }
 
 .shipment-info-card p:first-child {
-  margin-bottom: 1px;
-  font-size: 8.4pt !important;
-  line-height: 1.1 !important;
-  color: #b45309 !important;
+  margin-bottom: 2px;
+  font-size: 6.8pt !important;
+  line-height: 1.15 !important;
+  color: #c2410c !important;
+  font-weight: 800 !important;
 }
 
 .shipment-info-card span {
-  line-height: 1.08 !important;
-}
-
-.shipment-info-card > span {
-  font-size: 15pt !important;
+  line-height: 1.15 !important;
 }
 
 .shipment-info-card .persian-digits {
@@ -4150,7 +4155,7 @@
   }
 
   .shipment-info-card {
-    min-height: 9.5mm !important;
+    min-height: 11.5mm !important;
     border-color: #fca5a5 !important;
     background: #fffbeb !important;
     box-shadow: none !important;
@@ -4159,14 +4164,11 @@
   }
 
   .shipment-info-card p:first-child {
-    margin-bottom: 1px;
-    font-size: 8.4pt !important;
-    line-height: 1.1 !important;
-    color: #b45309 !important;
-  }
-
-  .shipment-info-card > span {
-    font-size: 15pt !important;
+    margin-bottom: 2px !important;
+    font-size: 6.8pt !important;
+    line-height: 1.15 !important;
+    color: #c2410c !important;
+    font-weight: 800 !important;
   }
 
   .party-card,
@@ -4201,16 +4203,16 @@
   }
 
   .party-card-title {
-    font-size: 8pt !important;
+    font-size: 7.2pt !important;
   }
 
   .party-card-name {
-    font-size: 9pt !important;
+    font-size: 8.2pt !important;
   }
 
   .party-card-info-text {
-    font-size: 7.4pt !important;
-    line-height: 1.25 !important;
+    font-size: 6.8pt !important;
+    line-height: 1.22 !important;
   }
 
   .route-timeline-badge {
@@ -4342,23 +4344,26 @@
 /* Print styles for Bill of Lading */
 @media print {
   @page {
-    size: A4 portrait;
-    /* If you want to force no margins, set it here, but custom browser settings will override this */
+    size: A4 portrait !important;
     margin: 0 !important;
   }
 
   html,
   body {
+    zoom: 1 !important;
     background: white !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    max-height: 100vh !important;
-    overflow: hidden !important;
+    width: 210mm !important;
+    min-width: 0 !important;
+    max-width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    overflow: visible !important;
     box-sizing: border-box !important;
     font-size: 10px !important;
     line-height: 1.2 !important;
@@ -4501,6 +4506,29 @@
     margin-top: auto !important;
     page-break-before: avoid !important;
     break-before: avoid !important;
+  }
+
+  /* Eco / Monochrome mode when color header option is unchecked */
+  [data-color-strip="false"] header [style*="darkHeaderStyle"],
+  [data-color-strip="false"] [style*="blueBarStyle"] {
+    background: #0f172a !important;
+    color: #ffffff !important;
+  }
+  [data-color-strip="false"] .bol-title-box {
+    background: #0f172a !important;
+    color: #ffffff !important;
+  }
+  [data-color-strip="false"] .text-blue-600,
+  [data-color-strip="false"] .text-blue-700,
+  [data-color-strip="false"] .text-blue-800,
+  [data-color-strip="false"] .text-blue-900,
+  [data-color-strip="false"] .text-blue-950 {
+    color: #0f172a !important;
+  }
+  [data-color-strip="false"] .border-blue-100,
+  [data-color-strip="false"] .border-blue-200,
+  [data-color-strip="false"] .border-blue-300 {
+    border-color: #cbd5e1 !important;
   }
 
   [data-bol-a4="true"],
@@ -4888,22 +4916,6 @@
     page-break-after: avoid !important;
     page-break-before: avoid !important;
     page-break-inside: avoid !important;
-  }
-
-  @media print {
-    [data-print-root="true"] > div,
-    [data-pdf-export="true"] {
-      width: 100% !important;
-      min-height: 0 !important;
-      max-height: 100vh !important;
-      height: 100% !important;
-      margin: 0 !important;
-      box-shadow: none !important;
-      overflow: hidden !important;
-      page-break-after: avoid !important;
-      page-break-before: avoid !important;
-      page-break-inside: avoid !important;
-    }
   }
 
   /* Clean up borders for print */
@@ -5364,166 +5376,3 @@
   }
 }
 
-@media print {
-  @page {
-    /* Force exact A4 Portrait dimensions */
-    size: A4 portrait !important;
-    margin: 0 !important;
-  }
-
-  html,
-  body {
-    background: white !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-    margin: 0 !important;
-    padding: 0 !important;
-
-    /* Strict lock to A4 physical size */
-    width: 210mm !important;
-    height: 297mm !important;
-    max-width: 210mm !important;
-    max-height: 297mm !important;
-    min-width: 0 !important; /* CRITICAL: Overrides desktop min-widths */
-    overflow: hidden !important;
-
-    font-size: 10px !important;
-    line-height: 1.2 !important;
-  }
-
-  /* CRITICAL FIX: Strip hardcoded widths from forcing a scale-down */
-  [data-print-root="true"],
-  [data-bol-a4="true"],
-  .ledger-table,
-  table {
-    min-width: 0 !important;
-    max-width: 100% !important;
-  }
-
-  /* Hide the rest of the web app UI */
-  body > *:not(
-      [data-print-root="true"],
-      .invoice-print-root,
-      :has([data-print-root="true"]),
-      :has(.invoice-print-root)
-    ) {
-    display: none !important;
-  }
-
-  body * {
-    visibility: hidden !important;
-  }
-
-  [data-print-root="true"],
-  .invoice-print-root,
-  [data-print-root="true"] *,
-  .invoice-print-root * {
-    visibility: visible !important;
-  }
-
-  [data-print-root="true"],
-  .print-wrapper,
-  .print-page {
-    display: block !important;
-    position: relative !important;
-    left: 0 !important;
-    top: 0 !important;
-
-    width: 210mm !important;
-    height: 297mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    background: white !important;
-    transform: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Core Document Wrapper */
-  [data-print-root="true"] [data-bol-a4="true"],
-  .print-page [data-bol-a4="true"],
-  [data-bol-a4="true"] {
-    display: flex !important;
-    flex-direction: column !important;
-
-    width: 210mm !important;
-    height: 297mm !important;
-
-    /* Safe-zone padding for hardware printers */
-    padding: 6mm 8mm !important;
-
-    margin: 0 auto !important;
-    box-sizing: border-box !important;
-    background: #ffffff !important;
-    overflow: hidden !important;
-    border: none !important;
-  }
-
-  /* Header (Fixed height, won't shrink) */
-  [data-bol-header="true"] {
-    flex: 0 0 auto !important;
-    width: 100% !important;
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
-
-  /* Middle Content (Stretches to fill the remaining vertical space) */
-  [data-bol-content="true"] {
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    min-height: 0 !important; /* Allows content to flex properly */
-    margin: 2mm 0 !important;
-    overflow: visible !important;
-  }
-
-  /* Footer (Pushed to the very bottom) */
-  [data-bol-footer="true"] {
-    flex: 0 0 auto !important;
-    width: 100% !important;
-    margin-top: auto !important; /* Anchors strictly to the bottom */
-    page-break-before: avoid !important;
-    break-before: avoid !important;
-  }
-
-  /* --- Keeping the rest of your specific overrides below --- */
-
-  [data-print-section],
-  [data-print-section] * {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  [data-print-section] {
-    display: block !important;
-    overflow: hidden !important;
-    border: 0.2mm solid #bfdbfe !important;
-    border-radius: 2.5mm !important;
-    background: #ffffff !important;
-    box-shadow: none !important;
-  }
-
-  [data-print-section] > div:first-child {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    height: 7mm !important;
-    min-height: 7mm !important;
-    padding: 1mm 2mm !important;
-    overflow: hidden !important;
-    background: linear-gradient(
-      90deg,
-      #1d4ed8 0%,
-      #2563eb 58%,
-      #0891b2 100%
-    ) !important;
-    color: #ffffff !important;
-    border-radius: 2.3mm 2.3mm 0 0 !important;
-  }
-
-  [data-print-section] > div:last-child {
-    padding: 1.5mm !important;
-  }
-}

@@ -1,9 +1,11 @@
 {
-  "customCompanies": [],
+  "customCompanies": [
+    "NAJEB AMIN LTD"
+  ],
   "ledgerRecords": {
     "asadullah niamatullah habibi ltd": [
       {
-        "id": "ac7db679-4cd9-45b0-9b3f-135ce631bfd5",
+        "id": "69bcced8-45df-4a52-bd95-54b5e977a71b",
         "date": "2026-06-01",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "006",
@@ -20,7 +22,7 @@
         "pdfFile": ""
       },
       {
-        "id": "6d0aed98-089a-43c4-a8b4-9429e09f03f0",
+        "id": "d9fa3cf4-3844-40d8-a494-78f641e712ad",
         "date": "2025-09-04",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "005",
@@ -37,7 +39,7 @@
         "pdfFile": ""
       },
       {
-        "id": "787849de-a8ba-4394-bc67-00c1fd67628b",
+        "id": "732d3482-829b-40cf-a986-0375e5396b11",
         "date": "2026-06-02",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "007",
@@ -56,7 +58,7 @@
     ],
     "pahlawan noori ltd": [
       {
-        "id": "b714af78-d7ef-40d8-b559-e3047c47faf9",
+        "id": "cb010967-3b61-4040-83b1-bcd8e6994be4",
         "date": "2026-05-25",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "009",
@@ -73,7 +75,7 @@
         "pdfFile": ""
       },
       {
-        "id": "2015d825-3783-4b9e-8f2c-566395452be5",
+        "id": "d4ff7cc1-2e91-48f9-9dbd-b72e49fedc2d",
         "date": "2026-05-19",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "008",
@@ -90,7 +92,7 @@
         "pdfFile": ""
       },
       {
-        "id": "00c0ccaf-2fa2-471a-9170-a9f211c9b489",
+        "id": "e121cae5-4499-41da-85a8-c15c82ef60ce",
         "date": "2026-06-04",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "010",
@@ -107,7 +109,7 @@
         "pdfFile": ""
       },
       {
-        "id": "46fff413-a844-4f2e-b163-53e1045bce48",
+        "id": "994351da-4f72-449b-9e4c-0e3c15360717",
         "date": "2026-02-17",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "006",
@@ -124,7 +126,7 @@
         "pdfFile": ""
       },
       {
-        "id": "e436af57-f03b-40b0-b117-b3bd22a042f8",
+        "id": "4645b56d-1716-476c-ab11-0a6361274fb9",
         "date": "2026-06-07",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "005",
@@ -141,7 +143,7 @@
         "pdfFile": ""
       },
       {
-        "id": "8b2c39c2-657d-41c5-a194-eccd4704ca9d",
+        "id": "dfe8645f-b7e3-4d66-bfcb-ab05d20819bf",
         "date": "2026-02-23",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "007",
@@ -160,7 +162,7 @@
     ],
     "rahmat nazar ltd": [
       {
-        "id": "b051f503-d24e-4aa9-bbb6-31f1312e0735",
+        "id": "0b5cf21a-fd41-4cc7-b021-dba1a5e41335",
         "date": "2025-12-07",
         "description": "RAHMAT NAZAR LTD",
         "invoiceNo": "149",
@@ -177,7 +179,7 @@
         "pdfFile": ""
       },
       {
-        "id": "54550515-5144-4ac8-a6da-5e3c32a15dfa",
+        "id": "71e81be2-0443-493c-a876-9be42fbd8232",
         "date": "2025-09-20",
         "description": "RAHMAT NAZAR LTD",
         "invoiceNo": "067",
@@ -196,7 +198,7 @@
     ],
     "omar shahi ltd": [
       {
-        "id": "d73e204d-2b1e-4776-9bd6-f6e4fe6c7b64",
+        "id": "e12b06e7-81f4-4a5d-b04e-d00bd4caaf3c",
         "date": "2025-12-31",
         "description": "OMAR SHAHI LTD",
         "invoiceNo": "114",
@@ -213,7 +215,7 @@
         "pdfFile": ""
       },
       {
-        "id": "a4a1e0c2-c8df-4c4d-be19-aa38163e408b",
+        "id": "bbcc3200-8707-4cfd-a8a7-5c3f20a14431",
         "date": "2025-09-13",
         "description": "OMAR SHAHI LTD",
         "invoiceNo": "045",
@@ -232,7 +234,7 @@
     ],
     "najib asad ltd": [
       {
-        "id": "6632b198-dd0a-4dc4-adc0-f3c214bff796",
+        "id": "429faf54-a66a-40e0-9190-72f42c25c467",
         "date": "2026-05-23",
         "description": "NAJIB ASAD LTD",
         "invoiceNo": "012",
@@ -251,7 +253,7 @@
     ],
     "wasela ltd": [
       {
-        "id": "65ba04c0-772f-4c82-b100-d69e3aa7b742",
+        "id": "3aa7dc5b-012d-48f6-a736-645d1fe23836",
         "date": "2026-06-07",
         "description": "WASELA LTD",
         "invoiceNo": "015",
@@ -267,7 +269,145 @@
         "credit": "",
         "pdfFile": ""
       }
+    ],
+    "najeb amin ltd": [
+      {
+        "id": "96d9a02a-6df8-424a-980d-b804c065e880",
+        "date": "2026-08-05",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "INV-080",
+        "shipDate": "2026-08-05",
+        "bolNo": "BOL-2026-NSA460",
+        "truckNo": "66924 هرات",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "MANIK TRADERS",
+        "quantity": "1380-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      },
+      {
+        "id": "85a3f6a9-47de-4d3a-a208-238d79072f47",
+        "date": "2026-08-05",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "INV-081",
+        "shipDate": "2026-08-05",
+        "bolNo": "BOL-2026-NSA461",
+        "truckNo": "37319 هرات",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "MANIK TRADERS",
+        "quantity": "1393-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      },
+      {
+        "id": "6a9ca969-c294-4397-8e3a-913a7da76645",
+        "date": "2026-08-05",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "INV-082",
+        "shipDate": "2026-08-05",
+        "bolNo": "BOL-2026-NSA462",
+        "truckNo": "28293 هرات",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "MANIK TRADERS",
+        "quantity": "1394-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      },
+      {
+        "id": "fad8434d-d14c-4bb4-bb4b-b5161907992f",
+        "date": "2026-08-05",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "INV-084",
+        "shipDate": "2026-08-05",
+        "bolNo": "BOL-2026-NSA464",
+        "truckNo": " 63658 هرات",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "MANIK TRADERS",
+        "quantity": "1385-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      },
+      {
+        "id": "3e9a31ef-a538-47b0-9a57-95f4e1e63a6f",
+        "date": "2026-08-06",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "086",
+        "shipDate": "2026-08-06",
+        "bolNo": "BOL-2026-NSA465",
+        "truckNo": "",
+        "containerNo": "د کندهار څخه تر ترکیې مرسین بندرپورې ساده  د مرسین څخه تر نواشیوا پوری یخچالی کانټینر",
+        "containerType": "",
+        "consignee": "RCA EXIM PRIVATE LIMITED",
+        "quantity": "1389-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      },
+      {
+        "id": "347542d9-0ebb-43a8-8318-cef8c334ac8d",
+        "date": "2026-08-06",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "INV-087",
+        "shipDate": "2026-08-06",
+        "bolNo": "BOL-2026-NSA466",
+        "truckNo": "",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "MANIK TRADERS",
+        "quantity": "1390-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      },
+      {
+        "id": "4ca28140-c3c8-4b2c-bcaa-f8b2942f913f",
+        "date": "2026-08-06",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "INV-088",
+        "shipDate": "2026-08-06",
+        "bolNo": "BOL-2026-NSA467",
+        "truckNo": "",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "RCA EXIM PRIVATE LIMITED",
+        "quantity": "1388-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      },
+      {
+        "id": "a1f2cc85-5f65-401c-9c74-35f25425d607",
+        "date": "2026-08-06",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "INV-090",
+        "shipDate": "2026-08-06",
+        "bolNo": "BOL-2026-NSA468",
+        "truckNo": "",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "SAFFRON HOME LLP",
+        "quantity": "1330-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      }
     ]
   },
-  "updated_at": "2026-08-05T05:23:38.919Z"
+  "updated_at": "2026-08-06T08:27:36.070Z"
 }

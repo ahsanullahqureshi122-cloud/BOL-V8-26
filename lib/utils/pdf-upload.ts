@@ -358,19 +358,20 @@ function drawDetailCard(
   width: number,
   height: number
 ) {
-  const compact = height <= 13
+  const compact = height <= 14
   roundedCard(doc, x, y, width, height, [255, 255, 255], BORDER_BLUE, 1.6)
-  drawText(doc, item.label.toUpperCase(), x + 2, y + 2, {
-    size: compact ? 5.2 : 5.8,
+  drawText(doc, item.label || "", x + 2, y + 1.6, {
+    size: compact ? 5.2 : 5.6,
     weight: "bold",
     color: BLUE,
     maxWidth: width - 4,
   })
-  drawText(doc, item.value || "", x + 2, y + height - 7, {
-    size: compact ? (item.important ? 7.2 : 6.4) : item.important ? 8.2 : 7.4,
+  drawText(doc, item.value || "", x + 2, y + (compact ? 5.5 : 6.2), {
+    size: compact ? (item.important ? 6.8 : 6.2) : item.important ? 7.6 : 6.8,
     weight: item.important ? "bold" : "normal",
     color: TEXT_DARK,
     maxWidth: width - 4,
+    lineHeight: 2.7,
   })
 }
 
@@ -389,43 +390,45 @@ function drawPartyCard(
 ) {
   roundedCard(doc, x, y, width, height, [255, 255, 255], BORDER_BLUE, 2)
   setColor(doc, SKY_BG, "fill")
-  doc.roundedRect(x, y, width, 9, 2, 2, "F")
-  drawText(doc, title, x + 3, y + 2.5, { size: 8, weight: "bold", color: TEXT_DARK })
-  drawText(doc, subtitle, x + width - 3, y + 2.1, { size: 6.4, weight: "bold", color: BLUE, align: "right" })
-  let cursorY = y + 12
-  cursorY += drawText(doc, truncateText(name || "", 64), x + 3, cursorY, {
-    size: 8.3,
-    weight: "bold",
-    color: TEXT_DARK,
-    maxWidth: width - 6,
-    lineHeight: 3.3,
-  })
-  cursorY += 1
-  const remaining = Math.max(7, height - (cursorY - y) - 4)
-  const addressLines = cleanPDFText(address).split("\n").slice(0, Math.floor(remaining / 3.1)).join("\n")
-  cursorY += drawText(doc, addressLines, x + 3, cursorY, {
-    size: 6.4,
-    weight: "normal",
-    color: TEXT_DARK,
-    maxWidth: width - 6,
-    lineHeight: 2.9,
-  })
-  if (hasPDFValue(contact) && cursorY < y + height - 3) {
-    drawText(doc, contact || "", x + 3, cursorY + 1, {
-      size: 6.2,
+  doc.roundedRect(x, y, width, 7, 2, 2, "F")
+  drawText(doc, title, x + 3, y + 1.8, { size: 7.5, weight: "bold", color: TEXT_DARK })
+  drawText(doc, subtitle, x + width - 3, y + 1.8, { size: 6.2, weight: "bold", color: BLUE, align: "right" })
+  let cursorY = y + 8.5
+  if (hasPDFValue(name)) {
+    cursorY += drawText(doc, truncateText(name || "", 64), x + 3, cursorY, {
+      size: 7.6,
       weight: "bold",
       color: TEXT_DARK,
       maxWidth: width - 6,
-      lineHeight: 2.7,
-    })
+      lineHeight: 2.8,
+    }) + 0.5
   }
-  if (hasPDFValue(email) && cursorY < y + height - 6) {
-    drawText(doc, email || "", x + 3, cursorY + 4, {
-      size: 6.1,
+  if (hasPDFValue(address) && cursorY < y + height - 4) {
+    const addressLines = cleanPDFText(address).split("\n").slice(0, 2).join(" ")
+    cursorY += drawText(doc, addressLines, x + 3, cursorY, {
+      size: 6.0,
+      weight: "normal",
+      color: TEXT_DARK,
+      maxWidth: width - 6,
+      lineHeight: 2.6,
+    }) + 0.5
+  }
+  if (hasPDFValue(contact) && cursorY < y + height - 3) {
+    cursorY += drawText(doc, contact || "", x + 3, cursorY, {
+      size: 5.8,
+      weight: "bold",
+      color: TEXT_DARK,
+      maxWidth: width - 6,
+      lineHeight: 2.5,
+    }) + 0.5
+  }
+  if (hasPDFValue(email) && cursorY < y + height - 3) {
+    drawText(doc, email || "", x + 3, cursorY, {
+      size: 5.6,
       weight: "normal",
       color: TEXT_MUTED,
       maxWidth: width - 6,
-      lineHeight: 2.7,
+      lineHeight: 2.5,
     })
   }
 }
@@ -698,142 +701,126 @@ export async function generatePremiumBOLPDFBlob(options: ModernBOLPDFOptions): P
   const companyTitle = cleanPDFText(options.companyName) || "SKY ARIANA & BALAM BAR BARAN"
   const companyTagline = cleanPDFText(options.companySubtitle) || "Import & Export - International Transportation"
   const companyPersian = cleanPDFText(options.companyNamePersian) || "شرکت حمل و نقل بین المللی"
-  const pageBottomLimit = PAGE_HEIGHT - 22
   const contactCardWidth = (CONTENT_WIDTH - 3) / 2
   let y = PAGE_MARGIN
 
-  const ensureSpace = (height: number) => {
-    if (y + height > pageBottomLimit) {
-      doc.addPage()
-      y = PAGE_MARGIN
-    }
-  }
-
-  const estimateLines = (value: string, width: number, size = 6.8) => {
-    const text = cleanPDFText(value)
-    if (!text) return 0
-    setPDFTextStyle(doc, text, size, "normal")
-    return text
-      .split("\n")
-      .flatMap((line) => doc.splitTextToSize(preparePDFText(doc, line), width)).length
-  }
-
   options.onProgress?.(24, "Drawing premium header")
-  roundedCard(doc, PAGE_MARGIN, y, CONTENT_WIDTH, 32, [255, 255, 255], BORDER_BLUE, 4)
+  roundedCard(doc, PAGE_MARGIN, y, CONTENT_WIDTH, 28, [255, 255, 255], BORDER_BLUE, 3)
   if (logoDataUrl) {
-    doc.addImage(logoDataUrl, "PNG", PAGE_MARGIN + 4, y + 4.5, 24, 19, undefined, "FAST")
+    doc.addImage(logoDataUrl, "PNG", PAGE_MARGIN + 3, y + 3.5, 22, 17, undefined, "FAST")
   }
-  drawText(doc, companyTitle, PAGE_WIDTH / 2, y + 6.8, {
-    size: 15,
+  drawText(doc, companyTitle, PAGE_WIDTH / 2, y + 5.5, {
+    size: 13.5,
     weight: "bold",
     color: TEXT_DARK,
     align: "center",
-    maxWidth: 102,
-    lineHeight: 5.5,
+    maxWidth: 105,
+    lineHeight: 4.8,
   })
-  drawText(doc, companyTagline, PAGE_WIDTH / 2, y + 17.4, {
-    size: 7,
+  drawText(doc, companyTagline, PAGE_WIDTH / 2, y + 15.2, {
+    size: 6.5,
     weight: "bold",
     color: TEXT_MUTED,
     align: "center",
   })
-  drawText(doc, companyPersian, PAGE_WIDTH / 2, y + 22.6, {
-    size: 8.2,
+  drawText(doc, companyPersian, PAGE_WIDTH / 2, y + 20.0, {
+    size: 7.6,
     weight: "bold",
     color: BLUE_DARK,
     align: "center",
   })
-  roundedCard(doc, PAGE_WIDTH - PAGE_MARGIN - 36, y + 4, 32, 15, BLUE_DARK, BLUE_DARK, 2.5)
-  drawText(doc, "BILL OF\nLADING", PAGE_WIDTH - PAGE_MARGIN - 20, y + 5.8, {
-    size: 9.1,
+  roundedCard(doc, PAGE_WIDTH - PAGE_MARGIN - 34, y + 3.5, 31, 13, BLUE_DARK, BLUE_DARK, 2.2)
+  drawText(doc, "BILL OF\nLADING", PAGE_WIDTH - PAGE_MARGIN - 18.5, y + 5.0, {
+    size: 8.2,
     weight: "bold",
     color: [255, 255, 255],
     align: "center",
-    lineHeight: 4.1,
+    lineHeight: 3.6,
   })
-  roundedCard(doc, PAGE_WIDTH - PAGE_MARGIN - 36, y + 20.2, 32, 8.2, [255, 255, 255], BORDER_BLUE, 1.8)
-  drawText(doc, options.bolNumber, PAGE_WIDTH - PAGE_MARGIN - 20, y + 22.6, {
-    size: 7.4,
+  roundedCard(doc, PAGE_WIDTH - PAGE_MARGIN - 34, y + 17.5, 31, 7.5, [255, 255, 255], BORDER_BLUE, 1.6)
+  drawText(doc, options.bolNumber, PAGE_WIDTH - PAGE_MARGIN - 18.5, y + 19.4, {
+    size: 6.8,
     weight: "bold",
     color: BLUE_DARK,
     align: "center",
   })
-  y += 36
+  y += 31
 
   options.onProgress?.(36, "Rendering parties and contacts")
-  ensureSpace(66)
-  blueSectionHeader(doc, "EXPORTER CONTACTS", "تماس های صادرکننده", PAGE_MARGIN, y, CONTENT_WIDTH)
-  y += 10
-  drawDetailCard(doc, { label: form.notes_1_label || "Loading Contact", value: form.notes_1, important: true }, PAGE_MARGIN, y, contactCardWidth, 18)
-  drawDetailCard(doc, { label: form.notes_2_label || "Representative", value: form.notes_2, important: true }, PAGE_MARGIN + contactCardWidth + 3, y, contactCardWidth, 18)
-  y += 21
+  blueSectionHeader(doc, "EXPORTER CONTACTS", "تماس های صادرکننده", PAGE_MARGIN, y, CONTENT_WIDTH, 7)
+  y += 8.5
+  drawDetailCard(doc, { label: form.notes_1_label || "Loading Contact", value: form.notes_1, important: true }, PAGE_MARGIN, y, contactCardWidth, 14)
+  drawDetailCard(doc, { label: form.notes_2_label || "Representative", value: form.notes_2, important: true }, PAGE_MARGIN + contactCardWidth + 3, y, contactCardWidth, 14)
+  y += 16.5
 
-  const shipperHeight = 18 + estimateLines(`${form.shipper_name}\n${form.shipper_address}\n${form.shipper_contact}\n${form.shipper_email}`, contactCardWidth - 6, 6.2) * 2.8
-  const consigneeHeight = 18 + estimateLines(`${form.consignee_name}\n${form.consignee_address}\n${form.consignee_contact}\n${form.consignee_email}`, contactCardWidth - 6, 6.2) * 2.8
-  const partyHeight = Math.min(46, Math.max(28, Math.max(shipperHeight, consigneeHeight)))
+  const partyHeight = 24
   drawPartyCard(doc, "EXPORTER INFORMATION", "فرستنده", form.shipper_name, form.shipper_address, form.shipper_contact, form.shipper_email, PAGE_MARGIN, y, contactCardWidth, partyHeight)
   drawPartyCard(doc, "CONSIGNEE INFORMATION", "گیرنده", form.consignee_name, form.consignee_address, form.consignee_contact, form.consignee_email, PAGE_MARGIN + contactCardWidth + 3, y, contactCardWidth, partyHeight)
-  y += partyHeight + 3
+  y += partyHeight + 2.5
 
   options.onProgress?.(48, "Rendering route and shipment data")
   const routes = form.routes?.length ? form.routes : []
   const routeColumns = 4
   const routeRows = Math.max(1, Math.ceil(routes.length / routeColumns))
-  ensureSpace(12 + routeRows * 12 + 3)
-  blueSectionHeader(doc, "ROUTE / TRANSPORTATION PATH", "مسیر حمل و نقل", PAGE_MARGIN, y, CONTENT_WIDTH)
-  y += 10
+  blueSectionHeader(doc, "ROUTE / TRANSPORTATION PATH", "مسیر حمل و نقل", PAGE_MARGIN, y, CONTENT_WIDTH, 7)
+  y += 8.5
   const routeCardWidth = (CONTENT_WIDTH - (routeColumns - 1) * 3) / routeColumns
   routes.forEach((route, index) => {
     const row = Math.floor(index / routeColumns)
     const col = index % routeColumns
     const x = PAGE_MARGIN + col * (routeCardWidth + 3)
-    const ry = y + row * 12
-    roundedCard(doc, x, ry, routeCardWidth, 10, [255, 255, 255], BORDER_BLUE, 2)
+    const ry = y + row * 11
+    roundedCard(doc, x, ry, routeCardWidth, 9.5, [255, 255, 255], BORDER_BLUE, 1.8)
     setColor(doc, BLUE, "fill")
-    doc.circle(x + 5, ry + 5, 3.2, "F")
-    drawText(doc, String(index + 1), x + 5, ry + 3.1, { size: 6, weight: "bold", color: [255, 255, 255], align: "center" })
-    // draw transport icon and adjust text spacing
-    drawTransportIcon(doc, x + 12, ry + 1.6, route.transportMode, 7)
-    drawText(doc, truncateText(route.location || `Stop ${index + 1}`, 18), x + 18, ry + 2.2, {
-      size: 6.4,
+    doc.circle(x + 4, ry + 4.8, 2.8, "F")
+    drawText(doc, String(index + 1), x + 4, ry + 3.2, { size: 5.5, weight: "bold", color: [255, 255, 255], align: "center" })
+    drawTransportIcon(doc, x + 8.5, ry + 1.8, route.transportMode, 5.8)
+    drawText(doc, truncateText(route.location || `Stop ${index + 1}`, 22), x + 16, ry + 1.8, {
+      size: 6.0,
       weight: "bold",
       color: TEXT_DARK,
-      maxWidth: routeCardWidth - 30,
-      lineHeight: 2.8,
+      maxWidth: routeCardWidth - 17,
+      lineHeight: 2.6,
     })
     if (route.locationPersian) {
-      drawText(doc, truncateText(route.locationPersian, 20), x + routeCardWidth - 2, ry + 6, {
-        size: 5.2,
+      drawText(doc, truncateText(route.locationPersian, 22), x + 16, ry + 5.2, {
+        size: 5.0,
         color: BLUE,
-        align: "right",
-        maxWidth: routeCardWidth - 22,
+        maxWidth: routeCardWidth - 17,
+        lineHeight: 2.4,
       })
     }
   })
-  y += routeRows * 12 + 3
+  y += routeRows * 11 + 2.5
 
-  // draw legend for transport icons (premium layout)
-  ensureSpace(14)
-  y += drawRouteLegend(doc, PAGE_MARGIN, y, 7) + 4
+  // draw legend for transport icons
+  y += drawRouteLegend(doc, PAGE_MARGIN, y, 5.5) + 2.5
 
-  ensureSpace(26)
-  blueSectionHeader(doc, "SHIPMENT INFORMATION", "اطلاعات حمل", PAGE_MARGIN, y, CONTENT_WIDTH)
-  y += 10
+  blueSectionHeader(doc, "SHIPMENT INFORMATION", "اطلاعات حمل", PAGE_MARGIN, y, CONTENT_WIDTH, 7)
+  y += 8.5
+
+  const driverNameVal = form.driver_name ? form.driver_name.trim() : ""
+  const driverFatherNameVal = form.driver_father_name ? ` S/O ${form.driver_father_name.trim()}` : ""
+  const driverFullInfo = driverNameVal || driverFatherNameVal ? `${driverNameVal}${driverFatherNameVal}` : undefined
+  const combinedDateVal = [options.issueDate, options.persianDateNumeric].filter(Boolean).join("\n")
+
   const shipmentItems: PDFDetailItem[] = [
-    { label: "BOL Number", value: options.bolNumber, important: true },
-    { label: "Invoice Reference", value: form.bol_number || options.bolNumber, important: true },
-    { label: "Date", value: options.issueDate, important: true },
-    { label: "Persian Date", value: options.persianDateNumeric, important: true },
-  ]
-  const shipmentW = (CONTENT_WIDTH - 6) / 4
-  shipmentItems.forEach((item, index) => {
-    drawDetailCard(doc, item, PAGE_MARGIN + index * (shipmentW + 2), y, shipmentW, 16)
-  })
-  y += 20
+    { label: "Truck Number / شماره کامیون", value: form.truck_number, important: true },
+    { label: "Driver Name / نام راننده", value: driverFullInfo, important: true },
+    { label: "Driver Contact / تماس راننده", value: form.driver_contact, important: true },
+    { label: "Driver Rent / کرایه راننده", value: form.driver_rent, important: true },
+    { label: "Date / تاریخ / شمسی", value: combinedDateVal, important: true },
+  ].filter((item) => hasPDFValue(item.value))
 
-  ensureSpace(25)
-  blueSectionHeader(doc, "CARGO DESCRIPTION", "شرح کالا", PAGE_MARGIN, y, CONTENT_WIDTH)
-  y += 10
+  const shipmentCols = Math.max(1, shipmentItems.length)
+  const shipmentW = (CONTENT_WIDTH - (shipmentCols - 1) * 2) / shipmentCols
+  shipmentItems.forEach((item, index) => {
+    drawDetailCard(doc, item, PAGE_MARGIN + index * (shipmentW + 2), y, shipmentW, 14)
+  })
+  y += 16.5
+
+  blueSectionHeader(doc, "CARGO DESCRIPTION", "شرح کالا", PAGE_MARGIN, y, CONTENT_WIDTH, 7)
+  y += 8.5
   const cargoItems: PDFDetailItem[] = [
     { label: "Container No.", value: form.container_numbers, important: true },
     { label: "Seal No.", value: form.seal_numbers, important: true },
@@ -848,73 +835,44 @@ export async function generatePremiumBOLPDFBlob(options: ModernBOLPDFOptions): P
   ].filter((item) => hasPDFValue(item.value))
   const cargoColumns = 5
   const cargoW = (CONTENT_WIDTH - (cargoColumns - 1) * 2) / cargoColumns
+  const cargoRows = Math.ceil(cargoItems.length / cargoColumns)
   cargoItems.forEach((item, index) => {
     const row = Math.floor(index / cargoColumns)
     const col = index % cargoColumns
-    drawDetailCard(doc, item, PAGE_MARGIN + col * (cargoW + 2), y + row * 14.5, cargoW, 12.5)
+    drawDetailCard(doc, item, PAGE_MARGIN + col * (cargoW + 2), y + row * 12.5, cargoW, 11.5)
   })
-  y += Math.ceil(cargoItems.length / cargoColumns) * 14.5 + 2
+  y += cargoRows * 12.5 + 2
 
   const descriptionTitle = "Description of Goods / شرح کالا"
   const descriptionText = cleanPDFText(form.cargo_description)
-  const descriptionLines = descriptionText
-    ? doc.splitTextToSize(preparePDFText(doc, descriptionText), CONTENT_WIDTH - 8).map((line: unknown) => String(line))
-    : []
-  let remainingLines = [...descriptionLines]
-  let firstChunk = true
-  while (firstChunk || remainingLines.length > 0) {
-    firstChunk = false
-    ensureSpace(22)
-    const availableHeight = pageBottomLimit - y
-    const lineHeight = 2.9
-    const topPadding = 10
-    const maxLines = Math.max(2, Math.floor((availableHeight - topPadding - 4) / lineHeight))
-    const chunk = remainingLines.splice(0, maxLines)
-    const boxHeight = Math.max(22, 8 + chunk.length * lineHeight + 4)
-    roundedCard(doc, PAGE_MARGIN, y, CONTENT_WIDTH, boxHeight, [255, 255, 255], BORDER_BLUE, 2.2)
-    drawText(doc, descriptionTitle, PAGE_MARGIN + 3, y + 3.3, { size: 8, weight: "bold", color: TEXT_DARK })
-    if (chunk.length) {
-      setPDFTextStyle(doc, descriptionText, 6.8, "bold")
-      setColor(doc, TEXT_DARK, "text")
-      doc.text(chunk, PAGE_MARGIN + 3, y + 9.2, { baseline: "top" })
-    }
-    y += boxHeight + 3
-    if (remainingLines.length > 0) {
-      doc.addPage()
-      y = PAGE_MARGIN
-    }
+  const descriptionBoxHeight = 22
+  roundedCard(doc, PAGE_MARGIN, y, CONTENT_WIDTH, descriptionBoxHeight, [255, 255, 255], BORDER_BLUE, 2)
+  drawText(doc, descriptionTitle, PAGE_MARGIN + 3, y + 2.5, { size: 7.2, weight: "bold", color: TEXT_DARK })
+  if (descriptionText) {
+    drawText(doc, descriptionText, PAGE_MARGIN + 3, y + 7.5, {
+      size: 6.2,
+      weight: "bold",
+      color: TEXT_DARK,
+      maxWidth: CONTENT_WIDTH - 6,
+      lineHeight: 2.6,
+    })
   }
-
-  if (hasPDFValue(form.remarks)) {
-    ensureSpace(18)
-    blueSectionHeader(doc, "REMARKS", "توضیحات", PAGE_MARGIN, y, CONTENT_WIDTH)
-    y += 10
-    const remarks = cleanPDFText(form.remarks)
-    const remarkLines = remarks ? doc.splitTextToSize(preparePDFText(doc, remarks), CONTENT_WIDTH - 8).map((line: unknown) => String(line)) : []
-    const remarkHeight = Math.max(14, 8 + remarkLines.length * 2.9)
-    roundedCard(doc, PAGE_MARGIN, y, CONTENT_WIDTH, remarkHeight, [255, 255, 255], BORDER_BLUE, 2)
-    if (remarkLines.length) {
-      setPDFTextStyle(doc, remarks, 6.8, "normal")
-      setColor(doc, TEXT_DARK, "text")
-      doc.text(remarkLines, PAGE_MARGIN + 3, y + 4, { baseline: "top" })
-    }
-    y += remarkHeight + 3
-  }
+  y += descriptionBoxHeight + 2.5
 
   options.onProgress?.(82, "Adding signature section")
-  ensureSpace(30)
   const signatureWidth = (CONTENT_WIDTH - 3) / 2
   const sigX = PAGE_MARGIN + (CONTENT_WIDTH - signatureWidth) / 2
-  roundedCard(doc, sigX, y, signatureWidth, 24, [255, 255, 255], BORDER_BLUE, 2)
+  const sigHeight = 17
+  roundedCard(doc, sigX, y, signatureWidth, sigHeight, [255, 255, 255], BORDER_BLUE, 2)
   setColor(doc, SKY_BG, "fill")
-  doc.roundedRect(sigX + 3, y + 4, signatureWidth - 6, 9, 1.6, 1.6, "F")
-  drawText(doc, "Stamp / مهر", sigX + signatureWidth / 2, y + 6.4, {
-    size: 6,
+  doc.roundedRect(sigX + 3, y + 2.5, signatureWidth - 6, 6.5, 1.4, 1.4, "F")
+  drawText(doc, "Stamp / مهر", sigX + signatureWidth / 2, y + 4.2, {
+    size: 5.5,
     color: BLUE,
     align: "center",
   })
-  drawText(doc, "Company Stamp & Sign", sigX + signatureWidth / 2, y + 16, {
-    size: 7,
+  drawText(doc, "Company Stamp & Sign", sigX + signatureWidth / 2, y + 11.5, {
+    size: 6.5,
     weight: "bold",
     color: TEXT_DARK,
     align: "center",
@@ -943,24 +901,15 @@ export async function generateBOLPDFBlob({
   modern,
   onFallback,
 }: GenerateBOLPDFBlobOptions): Promise<Blob> {
-  if (previewElement) {
-    try {
-      return await generatePDFBlob(previewElement, fileName)
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : "Unknown preview PDF error"
-      onFallback?.(`Preview PDF mode failed: ${reason}`)
-    }
-  }
-
   try {
     return await generatePremiumBOLPDFBlob(modern)
   } catch (error) {
-    if (!previewElement) {
-      throw error
+    const reason = error instanceof Error ? error.message : "Unknown vector PDF error"
+    if (previewElement) {
+      onFallback?.(`Vector PDF failed, falling back to compatibility capture: ${reason}`)
+      return await generatePDFBlob(previewElement, fileName)
     }
-    const reason = error instanceof Error ? error.message : "Unknown modern PDF error"
-    onFallback?.(reason)
-    return generatePDFBlob(previewElement, fileName)
+    throw error
   }
 }
 
@@ -1310,6 +1259,13 @@ export async function generatePDFBlob(
       imageTimeout: 5000,
       windowWidth: clonedElement.scrollWidth,
       windowHeight: clonedElement.clientHeight,
+      ignoreElements: (el: Element) => {
+        const tag = el.tagName?.toUpperCase()
+        if (tag === "FILTER" || tag === "DEFS") return true
+        if (el instanceof HTMLCanvasElement && (el.width === 0 || el.height === 0)) return true
+        if (el instanceof HTMLImageElement && (el.naturalWidth === 0 || el.naturalHeight === 0)) return true
+        return false
+      },
       onclone: (clonedDocument: Document) => {
         const style = clonedDocument.createElement("style")
         style.textContent = `

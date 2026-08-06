@@ -77,11 +77,70 @@ function PrintPreviewPortal({ children }: { children: ReactNode }) {
 const SAVED_SHIPPERS_STORAGE_KEY = "sky-bol-saved-shippers"
 const SAVED_CONSIGNEES_STORAGE_KEY = "sky-bol-saved-consignees"
 const SAVED_NOTIFY_PARTIES_STORAGE_KEY = "sky-bol-saved-notify-parties"
+const SAVED_NOTES_1_STORAGE_KEY = "sky-bol-saved-notes-1"
+const SAVED_NOTES_2_STORAGE_KEY = "sky-bol-saved-notes-2"
 const ACCOUNT_CUSTOM_COMPANIES_STORAGE_KEY = "sky-bol-account-custom-companies"
 const ACCOUNT_LEDGER_STORAGE_KEY = "sky-bol-company-ledgers"
 const SHIPPER_SEED_LIST = shipperSeedData as SavedParty[]
 const CONSIGNEE_SEED_LIST = consigneeSeedData as SavedParty[]
 const NOTIFY_PARTY_SEED_LIST = notifyPartySeedData as SavedParty[]
+
+interface SavedNoteOption {
+  id: string
+  label: string
+  content: string
+  theme?: "red" | "blue" | "green" | "purple" | "orange" | "gray"
+  savedAt?: string
+}
+
+const NOTE_1_SEED_LIST: SavedNoteOption[] = [
+  {
+    id: "n1-yaramel",
+    label: "دکندهار بارگیری مسؤول",
+    content: "نظرمحمد (یارمل)\n(+93) 0 700 203 307",
+    theme: "red",
+  },
+  {
+    id: "n1-loading-contact",
+    label: "Loading Contact / مسئول بارگیری",
+    content: "نظرمحمد (یارمل)\n(+93) 0 700 203 307",
+    theme: "blue",
+  },
+  {
+    id: "n1-exporter-contact",
+    label: "Exporter Contact / تماس صادرکننده",
+    content: "+93 700 939 365\n+93 711 435 529",
+    theme: "green",
+  },
+]
+
+const NOTE_2_SEED_LIST: SavedNoteOption[] = [
+  {
+    id: "n2-representatives",
+    label: "نماینده نمبر",
+    content: "اسلام قلعه نمبرونه | نماینده دوغارون /شماره تماس\nحاجی معلم صاحب : 0799007371\nعصمت الله : 0729807676",
+    theme: "red",
+  },
+  {
+    id: "n2-border-rep",
+    label: "Border Representative / نماینده مرزی",
+    content: "اسلام قلعه نمبرونه | نماینده دوغارون /شماره تماس\nحاجی معلم صاحب : 0799007371\nعصمت الله : 0729807676",
+    theme: "purple",
+  },
+  {
+    id: "n2-clearance",
+    label: "Customs Clearance / امور گمرکی",
+    content: "نماینده دوغارون و اسلام قلعه\nشماره تماس: 0799007371",
+    theme: "orange",
+  },
+]
+
+function mergeSavedNoteOptions(seedOptions: SavedNoteOption[], storedOptions: SavedNoteOption[]) {
+  const byId = new Map<string, SavedNoteOption>()
+  seedOptions.forEach((item) => byId.set(item.id, item))
+  storedOptions.forEach((item) => byId.set(item.id, item))
+  return Array.from(byId.values())
+}
 
 interface AccountLedgerEntry {
   id: string
@@ -212,13 +271,25 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   const [isEditMode, setIsEditMode] = useState(false)
   const [editDocumentId, setEditDocumentId] = useState<string | null>(null)
   const [activeRouteIndex, setActiveRouteIndex] = useState<number | null>(null)
+  const [showLocationDropdown, setShowLocationDropdown] = useState<number | null>(null)
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState("ALL")
   const [savedShippers, setSavedShippers] = useState<SavedParty[]>([])
   const [selectedShipperId, setSelectedShipperId] = useState<string>("")
   const [savedConsignees, setSavedConsignees] = useState<SavedParty[]>([])
   const [selectedConsigneeId, setSelectedConsigneeId] = useState<string>("")
   const [savedNotifyParties, setSavedNotifyParties] = useState<SavedParty[]>([])
   const [selectedNotifyPartyId, setSelectedNotifyPartyId] = useState<string>("")
+  const [savedNotes1, setSavedNotes1] = useState<SavedNoteOption[]>([])
+  const [selectedNote1Id, setSelectedNote1Id] = useState<string>("")
+  const [savedNotes2, setSavedNotes2] = useState<SavedNoteOption[]>([])
+  const [selectedNote2Id, setSelectedNote2Id] = useState<string>("")
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false)
+  const [activePrintOptions, setActivePrintOptions] = useState<PrintOptions>({
+    copies: 1,
+    quality: "standard",
+    includeColorStrip: true,
+    fitToPage: true,
+  })
 
   // Fetch next BOL number on mount and set dates
   useEffect(() => {
@@ -237,16 +308,26 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       const storedShippers = JSON.parse(window.localStorage.getItem(SAVED_SHIPPERS_STORAGE_KEY) || "[]")
       const storedConsignees = JSON.parse(window.localStorage.getItem(SAVED_CONSIGNEES_STORAGE_KEY) || "[]")
       const storedNotifyParties = JSON.parse(window.localStorage.getItem(SAVED_NOTIFY_PARTIES_STORAGE_KEY) || "[]")
+      const storedNotes1 = JSON.parse(window.localStorage.getItem(SAVED_NOTES_1_STORAGE_KEY) || "[]")
+      const storedNotes2 = JSON.parse(window.localStorage.getItem(SAVED_NOTES_2_STORAGE_KEY) || "[]")
+
       const mergedShippers = mergeSavedParties(SHIPPER_SEED_LIST, storedShippers)
       const mergedConsignees = mergeSavedParties(CONSIGNEE_SEED_LIST, storedConsignees)
       const mergedNotifyParties = mergeSavedParties(NOTIFY_PARTY_SEED_LIST, storedNotifyParties)
+      const mergedNotes1 = mergeSavedNoteOptions(NOTE_1_SEED_LIST, storedNotes1)
+      const mergedNotes2 = mergeSavedNoteOptions(NOTE_2_SEED_LIST, storedNotes2)
 
       setSavedShippers(mergedShippers)
       setSavedConsignees(mergedConsignees)
       setSavedNotifyParties(mergedNotifyParties)
+      setSavedNotes1(mergedNotes1)
+      setSavedNotes2(mergedNotes2)
+
       window.localStorage.setItem(SAVED_SHIPPERS_STORAGE_KEY, JSON.stringify(mergedShippers))
       window.localStorage.setItem(SAVED_CONSIGNEES_STORAGE_KEY, JSON.stringify(mergedConsignees))
       window.localStorage.setItem(SAVED_NOTIFY_PARTIES_STORAGE_KEY, JSON.stringify(mergedNotifyParties))
+      window.localStorage.setItem(SAVED_NOTES_1_STORAGE_KEY, JSON.stringify(mergedNotes1))
+      window.localStorage.setItem(SAVED_NOTES_2_STORAGE_KEY, JSON.stringify(mergedNotes2))
     } catch (error) {
       console.error("[v0] Error loading saved parties:", error)
     }
@@ -424,6 +505,92 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   ) => {
     setParties(parties)
     window.localStorage.setItem(storageKey, JSON.stringify(parties))
+  }
+
+  const applySavedNote1 = (id: string) => {
+    const found = savedNotes1.find((n) => n.id === id)
+    if (!found) return
+    setSelectedNote1Id(id)
+    setFormData((prev) => ({
+      ...prev,
+      notes_1_label: found.label,
+      notes_1: found.content,
+      notes_1_theme: found.theme || prev.notes_1_theme || "red",
+    }))
+    toast.success("Applied saved option to Note 1")
+  }
+
+  const saveCurrentNote1 = () => {
+    const label = (formData.notes_1_label || "").trim() || "Note 1"
+    const content = (formData.notes_1 || "").trim()
+    if (!content) {
+      toast.error("Enter Note 1 content first")
+      return
+    }
+    const currentNote: SavedNoteOption = {
+      id: selectedNote1Id || `n1-${Date.now()}`,
+      label,
+      content,
+      theme: formData.notes_1_theme || "red",
+      savedAt: new Date().toISOString(),
+    }
+    const nextList = [currentNote, ...savedNotes1.filter((n) => n.id !== currentNote.id)]
+    setSavedNotes1(nextList)
+    setSelectedNote1Id(currentNote.id)
+    window.localStorage.setItem(SAVED_NOTES_1_STORAGE_KEY, JSON.stringify(nextList))
+    toast.success("Saved Note 1 option")
+  }
+
+  const deleteSavedNote1 = () => {
+    if (!selectedNote1Id) return
+    const nextList = savedNotes1.filter((n) => n.id !== selectedNote1Id)
+    setSavedNotes1(nextList)
+    setSelectedNote1Id("")
+    window.localStorage.setItem(SAVED_NOTES_1_STORAGE_KEY, JSON.stringify(nextList))
+    toast.success("Saved Note 1 option deleted")
+  }
+
+  const applySavedNote2 = (id: string) => {
+    const found = savedNotes2.find((n) => n.id === id)
+    if (!found) return
+    setSelectedNote2Id(id)
+    setFormData((prev) => ({
+      ...prev,
+      notes_2_label: found.label,
+      notes_2: found.content,
+      notes_2_theme: found.theme || prev.notes_2_theme || "red",
+    }))
+    toast.success("Applied saved option to Note 2")
+  }
+
+  const saveCurrentNote2 = () => {
+    const label = (formData.notes_2_label || "").trim() || "Note 2"
+    const content = (formData.notes_2 || "").trim()
+    if (!content) {
+      toast.error("Enter Note 2 content first")
+      return
+    }
+    const currentNote: SavedNoteOption = {
+      id: selectedNote2Id || `n2-${Date.now()}`,
+      label,
+      content,
+      theme: formData.notes_2_theme || "red",
+      savedAt: new Date().toISOString(),
+    }
+    const nextList = [currentNote, ...savedNotes2.filter((n) => n.id !== currentNote.id)]
+    setSavedNotes2(nextList)
+    setSelectedNote2Id(currentNote.id)
+    window.localStorage.setItem(SAVED_NOTES_2_STORAGE_KEY, JSON.stringify(nextList))
+    toast.success("Saved Note 2 option")
+  }
+
+  const deleteSavedNote2 = () => {
+    if (!selectedNote2Id) return
+    const nextList = savedNotes2.filter((n) => n.id !== selectedNote2Id)
+    setSavedNotes2(nextList)
+    setSelectedNote2Id("")
+    window.localStorage.setItem(SAVED_NOTES_2_STORAGE_KEY, JSON.stringify(nextList))
+    toast.success("Saved Note 2 option deleted")
   }
 
   const saveCurrentShipper = () => {
@@ -720,11 +887,46 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     }))
   }
 
-  const handleRouteChange = (index: number, field: keyof RouteStop, value: string) => {
+  const handleRouteChange = (index: number, field: keyof RouteStop, value: any) => {
     setFormData((prev) => {
       const newRoutes = [...prev.routes]
       newRoutes[index] = { ...newRoutes[index], [field]: value }
       return { ...prev, routes: newRoutes }
+    })
+  }
+
+  const applyHeratIslamQalaDougharounPreset = () => {
+    setFormData((prev) => ({
+      ...prev,
+      routes: [
+        {
+          id: crypto.randomUUID(),
+          location: "Herat, AF",
+          locationPersian: "هرات، افغانستان",
+          stopOrder: 1,
+          transportMode: "truck",
+        },
+        {
+          id: crypto.randomUUID(),
+          location: "Islam Qala, AF",
+          locationPersian: "اسلام قلعه، افغانستان",
+          stopOrder: 2,
+          transportMode: "truck",
+          customsSealRequired: true,
+          customsSealNote: "📍 په ګمرک کې سیل غواړي / Customs Seal Required",
+        },
+        {
+          id: crypto.randomUUID(),
+          location: "Dougharoun, IR",
+          locationPersian: "دوغارون، ایران",
+          stopOrder: 3,
+          transportMode: "truck",
+        },
+      ],
+    }))
+    setActiveRouteIndex(0)
+    toast.success("Applied Truck Route Preset", {
+      description: "هرات → اسلام قلعه → دوغارون (په ګمرک کې سیل غواړي) مسیر اضافه شد",
     })
   }
 
@@ -1088,6 +1290,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       : ""
 
   const quickLocationMatches = predefinedLocations.filter((loc) => {
+    if (selectedCountryFilter !== "ALL" && loc.country !== selectedCountryFilter) {
+      return false
+    }
     if (!quickLocationQuery) return true
 
     return [loc.name, loc.persian, loc.country, loc.code]
@@ -1305,65 +1510,80 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   const handlePrint = async (options: PrintOptions) => {
     try {
       setIsSaving(true)
+      setActivePrintOptions(options)
+
       const toastId = toast.loading("Opening print preview...", {
-        description: "Preparing the BOL print layout. Use your browser print dialog to print or save as PDF.",
+        description: `Preparing BOL layout (${options.quality} quality, ${options.copies} ${options.copies === 1 ? "copy" : "copies"})...`,
       })
 
-      if (typeof window !== "undefined" && typeof window.print === "function") {
-        window.print()
-        toast.success("Print preview opened", {
-          id: toastId,
-          description: "Use the browser print dialog to print the document or save it as PDF.",
+      if (options.quality === "high-quality") {
+        const fileName = `${bolNumber || "BOL"}.pdf`
+        const printWindow = openPDFPrintWindow(fileName)
+
+        const previewElement = document.querySelector('[data-pdf-export="true"]') as HTMLElement | null
+        const pdfBlob = await generateBOLPDFBlob({
+          fileName,
+          previewElement,
+          modern: {
+            bolNumber: bolNumber || "BOL",
+            issueDate,
+            persianDateNumeric,
+            formData,
+            logoUrl,
+            companyName,
+            companyNamePersian,
+            companySubtitle,
+            companyPhone,
+            companyEmail,
+            companyAddress,
+            companyLicence,
+            onProgress: (progress, message) => {
+              toast.loading(`${message} (${Math.round(progress)}%)`, {
+                id: toastId,
+                description: `Building high-quality PDF print preview...`,
+              })
+            },
+          },
+          onFallback: (reason) => {
+            toast.warning("Using compatibility PDF mode", {
+              description: reason,
+            })
+          },
         })
+        const printed = await printPDFBlobInWindow(pdfBlob, fileName, printWindow)
+
+        if (printed) {
+          toast.success("High-quality PDF print preview opened", {
+            id: toastId,
+            description: `Review and click Print in the preview window (${options.copies} ${options.copies === 1 ? "copy" : "copies"}).`,
+          })
+        } else {
+          toast.error("Failed to open print PDF window", {
+            id: toastId,
+          })
+        }
         setIsSaving(false)
         return
       }
 
-      const fileName = `${bolNumber || "BOL"}.pdf`
-      const printWindow = openPDFPrintWindow(fileName)
+      if (typeof window !== "undefined" && typeof window.print === "function") {
+        const previewEl = document.getElementById("bol-print-preview")
+        if (previewEl) {
+          previewEl.setAttribute("data-print-quality", options.quality)
+          previewEl.setAttribute("data-color-strip", options.includeColorStrip ? "true" : "false")
+          previewEl.setAttribute("data-fit-to-page", options.fitToPage ? "true" : "false")
+        }
 
-      const previewElement = document.querySelector('[data-pdf-export="true"]') as HTMLElement | null
-      const pdfBlob = await generateBOLPDFBlob({
-        fileName,
-        previewElement,
-        modern: {
-          bolNumber: bolNumber || "BOL",
-          issueDate,
-          persianDateNumeric,
-          formData,
-          logoUrl,
-          companyName,
-          companyNamePersian,
-          companySubtitle,
-          companyPhone,
-          companyEmail,
-          companyAddress,
-          companyLicence,
-          onProgress: (progress, message) => {
-            toast.loading(`${message} (${Math.round(progress)}%)`, {
-              id: toastId,
-              description: `Quality: ${options.quality}`,
-            })
-          },
-        },
-        onFallback: (reason) => {
-          toast.warning("Using compatibility PDF mode", {
-            description: reason,
-          })
-        },
-      })
-      const printed = await printPDFBlobInWindow(pdfBlob, fileName, printWindow)
+        await new Promise((resolve) => setTimeout(resolve, 80))
+        window.print()
 
-      if (printed) {
-        const copyText = options.copies > 1 ? `(${options.copies} copies)` : ""
-        toast.success("PDF preview opened", {
+        const copyText = options.copies > 1 ? ` (${options.copies} copies requested)` : ""
+        toast.success("Print preview opened", {
           id: toastId,
-          description: `${options.quality} quality. Review and use the Print button in the preview window ${copyText}`,
+          description: `Use your browser print dialog to complete printing${copyText}.`,
         })
-      } else {
-        toast.error("Failed to open print PDF", {
-          id: toastId,
-        })
+        setIsSaving(false)
+        return
       }
     } catch (error) {
       console.error("Error preparing print:", error)
@@ -1698,8 +1918,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                 <div className="grid md:grid-cols-2 gap-4">
                   {/* Note 1 */}
                   <div className={`p-4 rounded-2xl backdrop-blur-xl border shadow-sm ${getNoteThemeStyles(formData.notes_1_theme).container}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className={`text-sm font-medium ${getNoteThemeStyles(formData.notes_1_theme).label}`}>
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <label className={`text-sm font-medium flex-1 ${getNoteThemeStyles(formData.notes_1_theme).label}`}>
                         <Input
                           type="text"
                           value={formData.notes_1_label || ""}
@@ -1707,7 +1927,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           className={`h-7 p-2 text-xs font-medium backdrop-blur-sm rounded-lg ${getNoteThemeStyles(formData.notes_1_theme).input}`}
                         />
                       </label>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 shrink-0">
                         {NOTE_THEMES.map((theme) => (
                           <button
                             key={theme.value}
@@ -1725,6 +1945,58 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         ))}
                       </div>
                     </div>
+
+                    {/* Saved Options Selector for Note 1 */}
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div className="flex-1">
+                        <Select
+                          value={selectedNote1Id || "none"}
+                          onValueChange={(value) => {
+                            if (value === "none") {
+                              setSelectedNote1Id("")
+                              return
+                            }
+                            applySavedNote1(value)
+                          }}
+                        >
+                          <SelectTrigger className="h-7 text-xs border-white/60 bg-white/70 backdrop-blur-sm rounded-lg">
+                            <SelectValue placeholder="Saved options / گزینه‌های ذخیره شده" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Saved Note 1 Options...</SelectItem>
+                            {savedNotes1.map((opt) => (
+                              <SelectItem key={opt.id} value={opt.id} className="text-xs">
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={saveCurrentNote1}
+                        className="h-7 px-2 text-xs border-white/60 bg-white/70 hover:bg-white/90 text-blue-700 rounded-lg shrink-0"
+                        title="Save current text as option"
+                      >
+                        <Save className="h-3.5 w-3.5 mr-1" />
+                        Save
+                      </Button>
+                      {selectedNote1Id && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={deleteSavedNote1}
+                          className="h-7 px-2 text-xs border-red-200 bg-white/70 hover:bg-red-50 text-red-600 rounded-lg shrink-0"
+                          title="Delete saved option"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+
                     <Textarea
                       value={formData.notes_1 || ""}
                       onChange={(e) => setFormData({ ...formData, notes_1: e.target.value })}
@@ -1733,10 +2005,11 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       rows={4}
                     />
                   </div>
+
                   {/* Note 2 */}
                   <div className={`p-4 rounded-2xl backdrop-blur-xl border shadow-sm ${getNoteThemeStyles(formData.notes_2_theme).container}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className={`text-sm font-medium ${getNoteThemeStyles(formData.notes_2_theme).label}`}>
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <label className={`text-sm font-medium flex-1 ${getNoteThemeStyles(formData.notes_2_theme).label}`}>
                         <Input
                           type="text"
                           value={formData.notes_2_label || ""}
@@ -1744,7 +2017,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           className={`h-7 p-2 text-xs font-medium backdrop-blur-sm rounded-lg ${getNoteThemeStyles(formData.notes_2_theme).input}`}
                         />
                       </label>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 shrink-0">
                         {NOTE_THEMES.map((theme) => (
                           <button
                             key={theme.value}
@@ -1762,6 +2035,58 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         ))}
                       </div>
                     </div>
+
+                    {/* Saved Options Selector for Note 2 */}
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div className="flex-1">
+                        <Select
+                          value={selectedNote2Id || "none"}
+                          onValueChange={(value) => {
+                            if (value === "none") {
+                              setSelectedNote2Id("")
+                              return
+                            }
+                            applySavedNote2(value)
+                          }}
+                        >
+                          <SelectTrigger className="h-7 text-xs border-white/60 bg-white/70 backdrop-blur-sm rounded-lg">
+                            <SelectValue placeholder="Saved options / گزینه‌های ذخیره شده" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Saved Note 2 Options...</SelectItem>
+                            {savedNotes2.map((opt) => (
+                              <SelectItem key={opt.id} value={opt.id} className="text-xs">
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={saveCurrentNote2}
+                        className="h-7 px-2 text-xs border-white/60 bg-white/70 hover:bg-white/90 text-blue-700 rounded-lg shrink-0"
+                        title="Save current text as option"
+                      >
+                        <Save className="h-3.5 w-3.5 mr-1" />
+                        Save
+                      </Button>
+                      {selectedNote2Id && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={deleteSavedNote2}
+                          className="h-7 px-2 text-xs border-red-200 bg-white/70 hover:bg-red-50 text-red-600 rounded-lg shrink-0"
+                          title="Delete saved option"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+
                     <Textarea
                       value={formData.notes_2 || ""}
                       onChange={(e) => setFormData({ ...formData, notes_2: e.target.value })}
@@ -2100,121 +2425,152 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                   <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">جزئیات محموله</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-5 pb-6">
-                <div className="grid md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-4">
+              <CardContent className="space-y-5 pt-5 pb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Container No. / شماره کانتینر</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>Container No.</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">شماره کانتینر</span>
+                    </label>
                     <Input
                       name="container_numbers"
                       value={formData.container_numbers}
                       onChange={handleInputChange}
                       placeholder="Container numbers"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Seal No. / شماره پلمپ</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>Seal No.</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">شماره پلمپ</span>
+                    </label>
                     <Input
                       name="seal_numbers"
                       value={formData.seal_numbers}
                       onChange={handleInputChange}
                       placeholder="Seal numbers"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">No. of Packages / تعداد بسته</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>No. of Packages</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">تعداد بسته</span>
+                    </label>
                     <Input
                       name="number_of_packages"
                       value={formData.number_of_packages}
                       onChange={handleInputChange}
                       placeholder="Package count"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">KGS per Carton / کیلو فی کارتن</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>KGS / Carton</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">کیلو فی کارتن</span>
+                    </label>
                     <Input
                       name="kgs_per_carton"
                       value={formData.kgs_per_carton}
                       onChange={handleInputChange}
                       placeholder="e.g., 12.5"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Gross Weight per Carton KGS / وزن ناخالص فی کارتن</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>Gross Wt. / Carton</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">وزن ناخالص کارتن</span>
+                    </label>
                     <Input
                       name="gross_weight_per_carton"
                       value={formData.gross_weight_per_carton}
                       onChange={handleInputChange}
                       placeholder="e.g., 13"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Rate per KGS / نرخ فی کیلو</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>Rate per KGS</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">نرخ فی کیلو</span>
+                    </label>
                     <Input
                       name="rate_per_kgs"
                       value={formData.rate_per_kgs}
                       onChange={handleInputChange}
                       placeholder="e.g., $1.20"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Goods Value / ارزش کالا</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>Goods Value</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">ارزش کالا</span>
+                    </label>
                     <Input
                       name="goods_value"
                       value={formData.goods_value}
                       onChange={handleInputChange}
                       placeholder="e.g., 1000"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Net Weight / وزن خالص</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>Net Weight</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">وزن خالص</span>
+                    </label>
                     <Input
                       name="net_weight"
                       value={formData.net_weight}
                       onChange={handleInputChange}
                       placeholder="e.g., 4,800 KG"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Gross Weight / وزن ناخالص</label>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>Gross Weight</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">وزن ناخالص</span>
+                    </label>
                     <Input
                       name="gross_weight"
                       value={formData.gross_weight}
                       onChange={handleInputChange}
                       placeholder="e.g., 5,000 KG"
-                      className="glass-input rounded-xl h-11"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                      <span>Measurement</span>
+                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">حجم (CBM)</span>
+                    </label>
+                    <Input
+                      name="measurement"
+                      value={formData.measurement}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 25 CBM"
+                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-600 mb-2 block">Description / شرح کالا</label>
+                  <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <span>Cargo Description</span>
+                    <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">شرح کامل کالا</span>
+                  </label>
                   <Textarea
                     name="cargo_description"
                     value={formData.cargo_description}
                     onChange={handleInputChange}
                     placeholder="Detailed cargo description"
                     rows={4}
-                    className="glass-input rounded-xl min-h-25"
+                    className="glass-input rounded-xl p-3.5 text-sm font-medium leading-relaxed text-slate-900 min-h-28 placeholder:text-slate-400 placeholder:font-normal"
                   />
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Measurement / حجم</label>
-                    <Input
-                      name="measurement"
-                      value={formData.measurement}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 25 CBM"
-                      className="glass-input rounded-xl h-11"
-                    />
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -2287,252 +2643,482 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Routes - Multiple Stops */}
-            <Card className="glass-card rounded-2xl overflow-hidden">
+            <Card className="glass-card rounded-2xl overflow-hidden shadow-xl border-amber-200/50">
               <CardHeader className="pb-3 glass-header">
-                <CardTitle className="text-base flex items-center justify-between">
+                <CardTitle className="text-base flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                      <div className="p-3 rounded-2xl bg-linear-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/25">
-                        <MapPin className="h-6 w-6 text-white" />
-                      </div>
-                    <span className="font-semibold text-gray-800">Route Stops</span>
+                    <div className="p-2.5 rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-cyan-500 shadow-lg shadow-blue-500/25">
+                      <MapPin className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-black text-slate-900">Route Stops</span>
+                      <span className="ml-2 text-xs font-bold text-amber-700 font-[vazirmatn]">مسیر حمل و نقل</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">مسیر حمل</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={applyHeratIslamQalaDougharounPreset}
+                      className="h-9 rounded-xl border-blue-300 bg-blue-50 px-3 text-xs font-black text-blue-900 shadow-2xs hover:bg-blue-100 cursor-pointer"
+                      title="Quick Preset: Herat → Islam Qala → Dougharoun (Afghanistan to Iran)"
+                    >
+                      <Truck className="h-4 w-4 mr-1 text-blue-700" />
+                      🚛 Herat → Islam Qala → Dougharoun / هرات → اسلام قلعه → دوغارون
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addRouteStop}
+                      className="h-9 rounded-xl border-amber-300 bg-amber-500/10 px-3 text-xs font-black text-amber-800 shadow-xs hover:bg-amber-500/20 cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4 mr-1 text-amber-700" />
+                      Add Stop / افزودن توقفگاه
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-5 pt-5 pb-6">
-                <div className="rounded-xl border border-blue-100/70 bg-white/70 px-3 py-3 shadow-sm">
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                    {formData.routes.map((route, index) => (
-                      <div key={route.id} className="flex items-center gap-2 shrink-0">
-                        <div className="min-w-36 rounded-lg border border-blue-100 bg-linear-to-br from-blue-50/80 to-white px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-semibold text-white">
+              <CardContent className="space-y-6 pt-5 pb-6">
+                {/* Visual Route Pathway Timeline */}
+                <div className="rounded-2xl border border-blue-200/80 bg-linear-to-r from-blue-50/70 via-indigo-50/40 to-cyan-50/70 p-4 shadow-sm">
+                  <div className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 scrollbar-thin">
+                    {formData.routes.map((route, index) => {
+                      const isOrigin = index === 0
+                      const isDest = index === formData.routes.length - 1
+                      const stopName = route.location || getRouteStopLabel(index, formData.routes.length)
+                      
+                      return (
+                        <div key={route.id} className="flex items-center gap-3 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setActiveRouteIndex(index)}
+                            className={`group flex items-center gap-3 rounded-2xl border p-3 text-left transition-all cursor-pointer ${
+                              activeRouteIndex === index
+                                ? "border-amber-500 bg-white shadow-md shadow-amber-500/15 ring-2 ring-amber-400/30"
+                                : "border-slate-200/90 bg-white/90 hover:border-blue-300 hover:bg-white"
+                            }`}
+                          >
+                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black text-white shadow-md ${
+                              isOrigin
+                                ? "bg-linear-to-br from-emerald-500 to-teal-700 shadow-emerald-500/20"
+                                : isDest
+                                ? "bg-linear-to-br from-indigo-600 to-purple-700 shadow-indigo-500/20"
+                                : "bg-linear-to-br from-blue-600 to-cyan-600 shadow-blue-500/20"
+                            }`}>
                               {index + 1}
-                            </span>
-                            {getTransportIcon(route.transportMode)}
-                            <span className="text-[12px] font-semibold uppercase tracking-wide text-blue-600">
-                              {getRouteStopLabel(index, formData.routes.length)}
-                            </span>
-                          </div>
-                          <p className="mt-1 truncate text-sm font-semibold text-gray-800">
-                            {route.location || getRouteStopLabel(index, formData.routes.length)}
-                          </p>
-                          {route.locationPersian && (
-                            <p className="truncate text-xs text-gray-500 font-[vazirmatn]" dir="rtl">{route.locationPersian}</p>
-                          )}
-                        </div>
-                        {index < formData.routes.length - 1 && (
-                          <ArrowRight className="h-4 w-4 text-blue-400" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {formData.routes.map((route, index) => (
-                    <div key={route.id} className="rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-sm">
-                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-linear-to-br from-blue-600 to-cyan-500 text-lg font-semibold text-white shadow-md shadow-blue-500/20">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">{getRouteStopLabel(index, formData.routes.length)}</p>
-                            <p className="text-xs text-gray-500 font-[vazirmatn]" dir="rtl">{getRouteStopLabelPersian(index, formData.routes.length)}</p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 border border-red-100 px-2 text-red-500 hover:bg-red-50 hover:text-red-600 disabled:border-slate-100 disabled:text-slate-300"
-                          onClick={() => removeRouteStop(index)}
-                          disabled={formData.routes.length <= 2}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1.35fr]">
-                        <div>
-                          <label className="text-xs text-gray-600 mb-1 block">
-                            Location (English) / {getRouteStopLabelPersian(index, formData.routes.length)}
-                          </label>
-                          <Input
-                            value={route.location}
-                            onFocus={() => setActiveRouteIndex(index)}
-                            onChange={(e) => {
-                              setActiveRouteIndex(index)
-                              handleRouteChange(index, "location", e.target.value)
-                            }}
-                            placeholder={getRouteStopLabel(index, formData.routes.length)}
-                            className="glass-input rounded-xl h-11"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-600 mb-1 block">Location (Persian) / موقعیت فارسی</label>
-                          <Input
-                            value={route.locationPersian}
-                            onChange={(e) => handleRouteChange(index, "locationPersian", e.target.value)}
-                            placeholder="نام محل"
-                            dir="rtl"
-                            className="font-[vazirmatn] border-blue-100/60 bg-white/60 backdrop-blur-sm focus:border-blue-400 focus:ring-blue-400/30 focus:bg-white/80"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-600 mb-1 block">Transport Mode / حالت حمل</label>
-                          <Select value={route.transportMode || "none"} onValueChange={(value) => handleRouteChange(index, "transportMode", value === "none" ? undefined : (value as any))}>
-                            <SelectTrigger className="h-auto py-2.5 glass-input rounded-xl">
-                              <SelectValue placeholder="Select mode">
-                                <div className="flex items-center gap-2.5">
-                                  {getTransportIcon(route.transportMode)}
-                                  <div className="text-left">
-                                    <span className="font-medium text-sm">{getTransportLabel(route.transportMode)}</span>
-                                  </div>
-                                </div>
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent className="w-full">
-                              <SelectItem value="none">
-                                <div className="flex items-center gap-2.5">
-                                  <MapPin className="h-6 w-6 text-gray-500" />
-                                  <span>None / انتخاب نکنید</span>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="truck">
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center gap-2.5">
-                                    <Truck className="h-6 w-6 text-blue-600" />
-                                    <span className="font-medium">Truck / تراک</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground ml-6 space-y-0.5">
-                                    <p>Duration: 1-3 Days / مدت: 1-3 روز</p>
-                                    <p>Capacity: 20-25 Tons / ظرفیت: 20-25 تن</p>
-                                    <p>Cost: Low-Medium / هزینه: پایین-متوسط</p>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="vessel">
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center gap-2.5">
-                                    <Ship className="h-6 w-6 text-cyan-600" />
-                                    <span className="font-medium">Vessel / کشتی</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground ml-6 space-y-0.5">
-                                    <p>Duration: 7-14 Days / مدت: 7-14 روز</p>
-                                    <p>Capacity: 1000+ Tons / ظرفیت: 1000+ تن</p>
-                                    <p>Cost: Low (Bulk) / هزینه: پایین</p>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="airplane">
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center gap-2.5">
-                                    <Plane className="h-6 w-6 text-sky-600" />
-                                    <span className="font-medium">Airplane / هواپیما</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground ml-6 space-y-0.5">
-                                    <p>Duration: 1-2 Days / مدت: 1-2 روز</p>
-                                    <p>Capacity: 50-100 Tons / ظرفیت: 50-100 تن</p>
-                                    <p>Cost: High / هزینه: بالا</p>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="train">
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center gap-2.5">
-                                    <Train className="h-6 w-6 text-orange-600" />
-                                    <span className="font-medium">Train / قطار</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground ml-6 space-y-0.5">
-                                    <p>Duration: 3-7 Days / مدت: 3-7 روز</p>
-                                    <p>Capacity: 500+ Tons / ظرفیت: 500+ تن</p>
-                                    <p>Cost: Medium / هزینه: متوسط</p>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="road">
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center gap-2.5">
-                                    <AlertCircle className="h-6 w-6 text-amber-600" />
-                                    <span className="font-medium">Road / جاده</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground ml-6 space-y-0.5">
-                                    <p>Duration: 2-5 Days / مدت: 2-5 روز</p>
-                                    <p>Capacity: 15-20 Tons / ظرفیت: 15-20 تن</p>
-                                    <p>Cost: Medium / هزینه: متوسط</p>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {route.transportMode && (
-                            <div className="mt-2 p-2 bg-linear-to-br from-blue-50/80 to-white/60 backdrop-blur-sm rounded-lg border border-blue-100/40">
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div>
-                                  <p className="text-gray-500 font-medium">Duration</p>
-                                  <p className="font-semibold text-gray-800">{getTransportDetails(route.transportMode).duration}</p>
-                                  <p className="text-gray-500 font-[vazirmatn]">{getTransportDetails(route.transportMode).durationPersian}</p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-500 font-medium">Capacity</p>
-                                  <p className="font-semibold text-gray-800">{getTransportDetails(route.transportMode).capacity}</p>
-                                  <p className="text-gray-500 font-[vazirmatn]">{getTransportDetails(route.transportMode).capacityPersian}</p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-500 font-medium">Cost</p>
-                                  <p className="font-semibold text-gray-800">{getTransportDetails(route.transportMode).cost}</p>
-                                  <p className="text-gray-500 font-[vazirmatn]">{getTransportDetails(route.transportMode).costPersian}</p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-500 font-medium">Notes</p>
-                                  <p className="font-semibold text-gray-800 text-[11px]">{getTransportDetails(route.transportMode).notes}</p>
-                                </div>
+                            </div>
+                            <div className="min-w-28 max-w-52">
+                              <div className="flex items-center gap-1.5">
+                                {getTransportIcon(route.transportMode)}
+                                <span className={`text-[10px] font-black uppercase tracking-wider ${
+                                  isOrigin ? "text-emerald-700" : isDest ? "text-indigo-700" : "text-blue-700"
+                                }`}>
+                                  {getRouteStopLabel(index, formData.routes.length)}
+                                </span>
                               </div>
+                              <p className="mt-0.5 truncate text-xs font-black text-slate-900">{stopName}</p>
+                              {route.locationPersian && (
+                                <p className="truncate text-[11px] font-semibold text-slate-500 font-[vazirmatn]" dir="rtl">{route.locationPersian}</p>
+                              )}
+
+                              {/* Truck Badge info if present */}
+                              {route.plateNumber && (
+                                <span className="mt-1 inline-block rounded-md bg-blue-100 px-1.5 py-0.5 text-[9px] font-black text-blue-900">
+                                  Plate: {route.plateNumber}
+                                </span>
+                              )}
+                              {route.customsSealRequired && (
+                                <span className="mt-1 ml-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-black text-amber-900" dir="rtl">
+                                  📍 سیل غواړي
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                          {index < formData.routes.length - 1 && (
+                            <div className="flex items-center gap-1 text-blue-400 shrink-0">
+                              <span className="h-0.5 w-4 bg-blue-300/80 rounded-full" />
+                              <ArrowRight className="h-4 w-4 text-blue-500" />
                             </div>
                           )}
                         </div>
-                      </div>
-                    </div>
-                  ))}
+                      )
+                    })}
+                  </div>
                 </div>
 
-                {/* Quick location buttons */}
-                <div className="pt-3 border-t border-blue-100/30">
-                  <div className="flex items-center justify-between gap-3 mb-3">
+                {/* Stop Cards List */}
+                <div className="space-y-4">
+                  {formData.routes.map((route, index) => {
+                    const isOrigin = index === 0
+                    const isDest = index === formData.routes.length - 1
+                    const isSelected = activeRouteIndex === index
+
+                    return (
+                      <div
+                        key={route.id}
+                        className={`rounded-2xl border transition-all ${
+                          isSelected
+                            ? "border-amber-400 bg-white shadow-lg shadow-amber-500/10 ring-2 ring-amber-400/20"
+                            : "border-slate-200/90 bg-white/95 hover:border-slate-300"
+                        } p-4`}
+                      >
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`flex h-11 w-11 items-center justify-center rounded-xl text-base font-black text-white shadow-md ${
+                              isOrigin
+                                ? "bg-linear-to-br from-emerald-500 to-teal-700"
+                                : isDest
+                                ? "bg-linear-to-br from-indigo-600 to-purple-700"
+                                : "bg-linear-to-br from-blue-600 to-cyan-600"
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-black text-slate-900">{getRouteStopLabel(index, formData.routes.length)}</span>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                                  isOrigin ? "bg-emerald-100 text-emerald-800" : isDest ? "bg-indigo-100 text-indigo-800" : "bg-blue-100 text-blue-800"
+                                }`}>
+                                  {isOrigin ? "Origin Point" : isDest ? "Final Destination" : `Stop #${index}`}
+                                </span>
+                              </div>
+                              <p className="text-xs font-semibold text-slate-500 font-[vazirmatn]" dir="rtl">{getRouteStopLabelPersian(index, formData.routes.length)}</p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 rounded-xl border border-red-200 bg-red-50/50 px-3 text-xs font-bold text-red-600 hover:bg-red-100 hover:text-red-700 disabled:opacity-40"
+                            onClick={() => removeRouteStop(index)}
+                            disabled={formData.routes.length <= 2}
+                            title="Remove this route stop"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Remove Stop
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr]">
+                          {/* English Location with Inline Quick Select Popover */}
+                          <div className="relative">
+                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center justify-between">
+                              <span>Location (English) / {getRouteStopLabel(index, formData.routes.length)}</span>
+                              {route.location && (
+                                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Selected</span>
+                              )}
+                            </label>
+                            <Input
+                              value={route.location}
+                              onFocus={() => {
+                                setActiveRouteIndex(index)
+                                setShowLocationDropdown(index)
+                              }}
+                              onChange={(e) => {
+                                setActiveRouteIndex(index)
+                                setShowLocationDropdown(index)
+                                handleRouteChange(index, "location", e.target.value)
+                              }}
+                              placeholder={`e.g. ${isOrigin ? "Kandahar, AF" : isDest ? "Nhava Sheva, IN" : "Bandar Abbas, IR"}`}
+                              className="h-11 rounded-xl border-slate-200 bg-white/90 font-semibold text-slate-900 focus:border-amber-400 focus:ring-amber-200"
+                            />
+
+                            {/* Floating Inline Recommendation Popover */}
+                            {showLocationDropdown === index && (
+                              <div className="absolute left-0 right-0 top-full z-40 mt-1 max-h-64 overflow-y-auto rounded-2xl border border-amber-300 bg-white p-2 shadow-2xl shadow-slate-900/20 backdrop-blur-xl">
+                                <div className="flex items-center justify-between border-b border-slate-100 px-2 pb-1.5 mb-1.5 text-[11px] font-black text-amber-800">
+                                  <span>Suggested Locations ({quickLocationMatches.length})</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowLocationDropdown(null)}
+                                    className="text-xs text-slate-400 hover:text-slate-700"
+                                  >
+                                    ✕ Close
+                                  </button>
+                                </div>
+                                <div className="grid gap-1">
+                                  {quickLocationMatches.slice(0, 10).map((loc) => (
+                                    <button
+                                      key={loc.name}
+                                      type="button"
+                                      onClick={() => {
+                                        handleQuickLocationSelect(loc)
+                                        setShowLocationDropdown(null)
+                                      }}
+                                      className="flex items-center justify-between rounded-xl p-2 text-left transition hover:bg-amber-50/80 cursor-pointer"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-base shrink-0">{countryFlags[loc.country] || "🌍"}</span>
+                                        <div className="min-w-0">
+                                          <p className="text-xs font-black text-slate-900 truncate">{loc.name}</p>
+                                          <p className="text-[10px] font-semibold text-slate-500 font-[vazirmatn] truncate" dir="rtl">{loc.persian}</p>
+                                        </div>
+                                      </div>
+                                      <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-black text-amber-800 shrink-0">{loc.code}</span>
+                                    </button>
+                                  ))}
+                                  {quickLocationMatches.length === 0 && (
+                                    <div className="p-3 text-center text-xs font-bold text-slate-400">
+                                      Type to search locations...
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Persian Location */}
+                          <div className="relative">
+                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1.5 block">
+                              Location (Persian) / موقعیت فارسی
+                            </label>
+                            <Input
+                              value={route.locationPersian}
+                              onFocus={() => {
+                                setActiveRouteIndex(index)
+                                setShowLocationDropdown(index)
+                              }}
+                              onChange={(e) => {
+                                setActiveRouteIndex(index)
+                                handleRouteChange(index, "locationPersian", e.target.value)
+                              }}
+                              placeholder="نام محل یا بند"
+                              dir="rtl"
+                              className="h-11 rounded-xl border-slate-200 bg-white/90 font-semibold text-slate-900 font-[vazirmatn] focus:border-amber-400 focus:ring-amber-200"
+                            />
+                          </div>
+
+                          {/* Transport Mode & Details */}
+                          <div>
+                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1.5 block">
+                              Transport Mode / حالت حمل و نقل
+                            </label>
+                            <Select value={route.transportMode || "none"} onValueChange={(value) => handleRouteChange(index, "transportMode", value === "none" ? undefined : (value as any))}>
+                              <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white/90 font-semibold text-slate-900 focus:border-amber-400 focus:ring-amber-200">
+                                <SelectValue placeholder="Select transport mode">
+                                  <div className="flex items-center gap-2">
+                                    {getTransportIcon(route.transportMode)}
+                                    <span className="font-bold text-sm text-slate-900">{getTransportLabel(route.transportMode)}</span>
+                                  </div>
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-slate-400" />
+                                    <span>None / انتخاب نشده</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="truck">
+                                  <div className="flex items-center gap-2.5">
+                                    <Truck className="h-4 w-4 text-blue-600" />
+                                    <span className="font-bold">Truck / تراک (زمینی)</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="vessel">
+                                  <div className="flex items-center gap-2.5">
+                                    <Ship className="h-4 w-4 text-cyan-600" />
+                                    <span className="font-bold">Vessel / کشتی (دریایی)</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="airplane">
+                                  <div className="flex items-center gap-2.5">
+                                    <Plane className="h-4 w-4 text-sky-600" />
+                                    <span className="font-bold">Airplane / هواپیما (هوایی)</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="train">
+                                  <div className="flex items-center gap-2.5">
+                                    <Train className="h-4 w-4 text-orange-600" />
+                                    <span className="font-bold">Train / قطار (ریلی)</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="road">
+                                  <div className="flex items-center gap-2.5">
+                                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                                    <span className="font-bold">Road / جاده (ترانزیت)</span>
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            {route.transportMode && (
+                              <div className="mt-2.5 rounded-xl border border-blue-100 bg-linear-to-br from-blue-50/90 to-amber-50/40 p-3 shadow-xs">
+                                <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-800">
+                                  <div>
+                                    <span className="text-[10px] font-extrabold uppercase text-slate-500 block">Duration</span>
+                                    <p className="font-black text-slate-900">{getTransportDetails(route.transportMode).duration}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[10px] font-extrabold uppercase text-slate-500 block">Capacity</span>
+                                    <p className="font-black text-slate-900">{getTransportDetails(route.transportMode).capacity}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[10px] font-extrabold uppercase text-slate-500 block">Cost</span>
+                                    <p className="font-black text-amber-700">{getTransportDetails(route.transportMode).cost}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[10px] font-extrabold uppercase text-slate-500 block">Notes</span>
+                                    <p className="font-bold text-slate-700 text-[11px] truncate">{getTransportDetails(route.transportMode).notes}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Dedicated Truck Details Specifications Panel (When Truck/Road mode is selected) */}
+                        {(route.transportMode === "truck" || route.transportMode === "road") && (
+                          <div className="mt-4 rounded-2xl border border-blue-200/90 bg-linear-to-br from-blue-50/80 via-indigo-50/40 to-amber-50/40 p-4 shadow-sm space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-200/60 pb-2.5">
+                              <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded-lg bg-blue-600 text-white shadow-xs">
+                                  <Truck className="h-4 w-4" />
+                                </div>
+                                <span className="text-xs font-black uppercase tracking-wider text-blue-950">
+                                  Truck Details &amp; Customs Seal / مشخصات موتر و ګمرک
+                                </span>
+                              </div>
+                              <span className="text-[11px] font-bold text-blue-800 font-[vazirmatn]" dir="rtl">
+                                جزئیات پلیټ، شاسی و ټیلر مان
+                              </span>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              {/* Plate Number (پلیټ نمبر / ليټ نمبر) */}
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Plate No. / پلیټ نمبر / ليټ نمبر
+                                </label>
+                                <Input
+                                  value={route.plateNumber || ""}
+                                  onChange={(e) => handleRouteChange(index, "plateNumber", e.target.value)}
+                                  placeholder="مثلا: KBL-7842"
+                                  className="h-10 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs focus:border-amber-400 focus:ring-amber-200"
+                                />
+                              </div>
+
+                              {/* Chassis Number (شاسی نمبر) */}
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Chassis No. / شاسی نمبر
+                                </label>
+                                <Input
+                                  value={route.chassisNumber || ""}
+                                  onChange={(e) => handleRouteChange(index, "chassisNumber", e.target.value)}
+                                  placeholder="CH-908712"
+                                  className="h-10 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs focus:border-amber-400 focus:ring-amber-200"
+                                />
+                              </div>
+
+                              {/* Trailer Man / Driver (ټیلر مان / ډریور) */}
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1 font-[vazirmatn]">
+                                  Trailer Man / ټیلر مان / ډریور
+                                </label>
+                                <Input
+                                  value={route.trailerMan || ""}
+                                  onChange={(e) => handleRouteChange(index, "trailerMan", e.target.value)}
+                                  placeholder="نام دریور / ټیلر مان"
+                                  className="h-10 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs font-[vazirmatn] focus:border-amber-400 focus:ring-amber-200"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Customs Seal Requirement (📍 په ګمرک کې سیل غواړي) */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-blue-200/60">
+                              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(route.customsSealRequired)}
+                                  onChange={(e) => handleRouteChange(index, "customsSealRequired", e.target.checked)}
+                                  className="h-4.5 w-4.5 rounded-md border-amber-400 text-amber-600 focus:ring-amber-400 cursor-pointer"
+                                />
+                                <span className="text-xs font-black text-slate-900 font-[vazirmatn]" dir="rtl">
+                                  📍 په ګمرک کې سیل غواړي (Customs Seal Required)
+                                </span>
+                              </label>
+                              {route.customsSealRequired && (
+                                <Input
+                                  value={route.customsSealNote || ""}
+                                  onChange={(e) => handleRouteChange(index, "customsSealNote", e.target.value)}
+                                  placeholder="Customs seal details / جزئیات سیل ګمرک"
+                                  className="h-9 w-full sm:w-72 rounded-xl border-amber-400 bg-white text-xs font-bold text-slate-900 font-[vazirmatn] focus:border-amber-500"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Quick Select Locations Bar */}
+                <div className="pt-4 border-t border-slate-200/80">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Quick Select Locations / انتخاب سریع:</p>
+                      <p className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                        Quick Select Location / انتخاب سریع محل:
+                      </p>
                       {activeRouteIndex !== null && (
-                        <p className="text-xs text-gray-500">
-                          Showing matches for {getRouteStopLabel(activeRouteIndex, formData.routes.length)}
-                          {quickLocationQuery && <span>: "{formData.routes[activeRouteIndex]?.location}"</span>}
+                        <p className="text-xs font-bold text-amber-700">
+                          Active Target: <span className="font-black text-slate-900">{getRouteStopLabel(activeRouteIndex, formData.routes.length)}</span>
                         </p>
                       )}
                     </div>
-                    <Button variant="outline" size="sm" onClick={addRouteStop} className="h-8 border-blue-200 bg-white/70 text-blue-700 hover:bg-blue-50">
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Stop
-                    </Button>
+
+                    {/* Regional Country Tabs */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {[
+                        { label: "ALL", country: "ALL" },
+                        { label: "🇦🇫 AFGHANISTAN", country: "Afghanistan" },
+                        { label: "🇮🇷 IRAN", country: "Iran" },
+                        { label: "🇦🇪 UAE", country: "UAE" },
+                        { label: "🇮🇳 INDIA", country: "India" },
+                        { label: "🇹🇷 TURKEY", country: "Turkey" },
+                        { label: "🇨🇳 CHINA", country: "China" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.country}
+                          type="button"
+                          onClick={() => setSelectedCountryFilter(tab.country)}
+                          className={`rounded-xl px-2.5 py-1 text-[11px] font-black transition-all cursor-pointer ${
+                            selectedCountryFilter === tab.country
+                              ? "bg-amber-500 text-slate-950 shadow-xs"
+                              : "bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-800"
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
                   <div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     {quickLocationMatches.map((loc) => (
                       <Button
                         key={loc.name}
+                        type="button"
                         variant="outline"
                         size="sm"
-                        className="text-xs h-auto py-2 px-3 flex flex-col items-start border-blue-100/60 bg-linear-to-br from-white/80 to-blue-50/30 hover:from-blue-50 hover:to-blue-100/50 hover:border-blue-300 transition-all shadow-sm"
+                        className="text-xs h-auto py-2 px-3 flex flex-col items-start rounded-xl border-slate-200 bg-white/90 hover:border-amber-400 hover:bg-amber-50/60 transition-all shadow-2xs cursor-pointer"
                         onClick={() => handleQuickLocationSelect(loc)}
                         title={`${loc.name} - ${loc.country} (${loc.code})`}
                       >
                         <div className="flex items-center gap-1.5 w-full">
                           <span className="text-base shrink-0">{countryFlags[loc.country] || "🌍"}</span>
-                          <span className="font-medium text-gray-700 truncate">{loc.name}</span>
-                          <span className="text-[10px] bg-blue-100/80 text-blue-600 rounded px-1.5 py-0.5 ml-auto shrink-0">{loc.code}</span>
+                          <span className="font-black text-slate-900 truncate">{loc.name}</span>
+                          <span className="text-[10px] font-black bg-amber-100 text-amber-800 rounded-md px-1.5 py-0.5 ml-auto shrink-0">{loc.code}</span>
                         </div>
-                        <span className="text-gray-500 font-[vazirmatn] text-[10px] truncate w-full text-right" dir="rtl">{loc.persian}</span>
+                        <span className="text-slate-500 font-[vazirmatn] text-[10px] font-bold truncate w-full text-right" dir="rtl">{loc.persian}</span>
                       </Button>
                     ))}
                     {quickLocationMatches.length === 0 && (
-                      <div className="col-span-full rounded-lg border border-dashed border-slate-200 bg-white/70 px-3 py-5 text-center text-sm text-slate-500">
+                      <div className="col-span-full rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-5 text-center text-xs font-bold text-slate-500">
                         No matching locations / نتیجه‌ای یافت نشد
                       </div>
                     )}
@@ -3075,231 +3661,6 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                 )}
               </CardContent>
             </Card>
-            {/* Iran Office Information */}
-            <Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
-                <CardTitle className="text-base flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                      <Building2 className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-semibold text-gray-800">Iran Office Information</span>
-                  </div>
-                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">اطلاعات دفتر ایران</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid md:grid-cols-2 gap-4 pt-5 pb-6">
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Building / ساختمان</label>
-                  <Input
-                    value={formData.iran_office_building || ""}
-                    onChange={(e) => setFormData({ ...formData, iran_office_building: e.target.value })}
-                    placeholder="CUBIC BUILDING"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Location / موقعیت</label>
-                  <Input
-                    value={formData.iran_office_location || ""}
-                    onChange={(e) => setFormData({ ...formData, iran_office_location: e.target.value })}
-                    placeholder="BANDAR ABBASS - IRAN"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">P.O. Box / صندوق پستی</label>
-                  <Input
-                    value={formData.iran_office_pobox || ""}
-                    onChange={(e) => setFormData({ ...formData, iran_office_pobox: e.target.value })}
-                    placeholder="7913973295"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Telefax / تلفکس</label>
-                  <Input
-                    value={formData.iran_office_telefax || ""}
-                    onChange={(e) => setFormData({ ...formData, iran_office_telefax: e.target.value })}
-                    placeholder="+98 76 32226028"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Cell Phone / تلفن همراه</label>
-                  <Input
-                    value={formData.iran_office_cellphone || ""}
-                    onChange={(e) => setFormData({ ...formData, iran_office_cellphone: e.target.value })}
-                    placeholder="+98 09172325086"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Email / ایمیل</label>
-                  <Input
-                    value={formData.iran_office_email || ""}
-                    onChange={(e) => setFormData({ ...formData, iran_office_email: e.target.value })}
-                    placeholder="info@balambarbaran.com"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Logo Editor */}
-            <Card className="mb-4 md:mb-6 glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
-                <CardTitle className="text-sm md:text-base flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                      <ImageIcon className="h-4 w-4 text-white shrink-0" />
-                    </div>
-                    <span className="font-semibold text-gray-800">Company Logo</span>
-                  </div>
-                  <span className="text-xs md:text-sm font-normal text-blue-600/80 font-[vazirmatn]">لوگوی شرکت</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-5 pb-6">
-                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-                  <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-blue-200/60 bg-linear-to-br from-white/80 to-blue-50/50 backdrop-blur-sm flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={logoUrl}
-                      alt="Company Logo"
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2 flex-1">
-                    <p className="text-xs md:text-sm text-gray-600">Upload your company logo for the Bill of Lading</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <input
-                        ref={logoInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                        id="logo-upload"
-                        title="Upload company logo"
-                        aria-label="Upload company logo"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => logoInputRef.current?.click()}
-                        className="text-xs md:text-sm h-8 md:h-9 border-blue-200/60 bg-white/50 hover:bg-blue-50/80 hover:border-blue-300 shadow-sm"
-                      >
-                        <Upload className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1 text-blue-600" />
-                        Upload Logo
-                      </Button>
-                      {logoUrl !== "/images/logo.png" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={resetLogo}
-                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50/50 text-xs md:text-sm h-8 md:h-9"
-                        >
-                          <RotateCcw className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1" />
-                          Reset
-                        </Button>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-400">Recommended: PNG or SVG, max 200x100px</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Company Details */}
-<Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
-                <CardTitle className="text-base flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                      <Building2 className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-semibold text-gray-800">Company Information</span>
-                  </div>
-                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">اطلاعات شرکت</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-5 pb-6">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-gray-700">Company Name (English)</label>
-                    <Input
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="SKY ARIANA & BALAM BAR BARAN"
-                      className="glass-input rounded-xl h-11"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block font-[vazirmatn] text-gray-700" dir="rtl">نام شرکت (فارسی)</label>
-                    <Input
-                      value={companyNamePersian}
-                      onChange={(e) => setCompanyNamePersian(e.target.value)}
-                      placeholder="شرکت حمل و نقل بین المللی"
-                      dir="rtl"
-                      className="font-[vazirmatn] glass-input rounded-xl h-11"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Subtitle / Description</label>
-                  <Input
-                    value={companySubtitle}
-                    onChange={(e) => setCompanySubtitle(e.target.value)}
-                    placeholder="Import & Export - International Transportation"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 flex items-center gap-2 text-gray-700">
-                      <Phone className="h-3.5 w-3.5 text-blue-500" />
-                      Phone
-                    </label>
-                    <Input
-                      value={companyPhone}
-                      onChange={(e) => setCompanyPhone(e.target.value)}
-                      placeholder="+93 700 000 000"
-                      className="glass-input rounded-xl h-11"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 flex items-center gap-2 text-gray-700">
-                      <Mail className="h-3.5 w-3.5 text-blue-500" />
-                      Email
-                    </label>
-                    <Input
-                      value={companyEmail}
-                      onChange={(e) => setCompanyEmail(e.target.value)}
-                      placeholder="info@company.com"
-                      className="glass-input rounded-xl h-11"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Address</label>
-                  <Input
-                    value={companyAddress}
-                    onChange={(e) => setCompanyAddress(e.target.value)}
-                    placeholder="2nd Floor, 16 No. Office, Shahidano, Chowk..."
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block text-gray-700">Licence Number</label>
-                  <Input
-                    value={companyLicence}
-                    onChange={(e) => setCompanyLicence(e.target.value)}
-                    placeholder="2401-2198"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
           </TabsContent>
 
           <TabsContent value="preview">
@@ -3332,7 +3693,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
           {accountLedgerPanel && (
             <TabsContent value="account">
-              <section className="min-h-0 rounded-[30px] border border-white/70 bg-white/45 p-3 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl print:hidden">
+              <section className="min-h-0 w-full overflow-hidden rounded-[30px] border border-white/70 bg-white/45 p-1 sm:p-2 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl print:hidden">
                 {accountLedgerPanel}
               </section>
             </TabsContent>
@@ -3469,6 +3830,231 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                 </div>
               </CardContent>
             </Card>
+
+            {/* Logo Editor */}
+            <Card className="glass-card rounded-2xl overflow-hidden mt-6">
+              <CardHeader className="pb-3 glass-header">
+                <CardTitle className="text-sm md:text-base flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
+                      <ImageIcon className="h-4 w-4 text-white shrink-0" />
+                    </div>
+                    <span className="font-semibold text-gray-800">Company Logo</span>
+                  </div>
+                  <span className="text-xs md:text-sm font-normal text-blue-600/80 font-[vazirmatn]">لوگوی شرکت</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-5 pb-6">
+                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+                  <div className="relative w-20 h-20 rounded-xl border-2 border-dashed border-blue-200/60 bg-linear-to-br from-white/80 to-blue-50/50 backdrop-blur-sm flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={logoUrl}
+                      alt="Company Logo"
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2 flex-1">
+                    <p className="text-xs md:text-sm text-gray-600">Upload your company logo for the Bill of Lading</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        id="logo-upload-settings"
+                        title="Upload company logo"
+                        aria-label="Upload company logo"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => logoInputRef.current?.click()}
+                        className="text-xs md:text-sm h-8 md:h-9 border-blue-200/60 bg-white/50 hover:bg-blue-50/80 hover:border-blue-300 shadow-sm"
+                      >
+                        <Upload className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1 text-blue-600" />
+                        Upload Logo
+                      </Button>
+                      {logoUrl !== "/images/logo.png" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={resetLogo}
+                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50/50 text-xs md:text-sm h-8 md:h-9"
+                        >
+                          <RotateCcw className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1" />
+                          Reset
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400">Recommended: PNG or SVG, max 200x100px</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Company Information */}
+            <Card className="glass-card rounded-2xl overflow-hidden mt-6">
+              <CardHeader className="pb-3 glass-header">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
+                      <Building2 className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-800">Company Information</span>
+                  </div>
+                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">اطلاعات شرکت</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-5 pb-6">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block text-gray-700">Company Name (English)</label>
+                    <Input
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="SKY ARIANA & BALAM BAR BARAN"
+                      className="glass-input rounded-xl h-11"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block font-[vazirmatn] text-gray-700" dir="rtl">نام شرکت (فارسی)</label>
+                    <Input
+                      value={companyNamePersian}
+                      onChange={(e) => setCompanyNamePersian(e.target.value)}
+                      placeholder="شرکت حمل و نقل بین المللی"
+                      dir="rtl"
+                      className="font-[vazirmatn] glass-input rounded-xl h-11"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">Subtitle / Description</label>
+                  <Input
+                    value={companySubtitle}
+                    onChange={(e) => setCompanySubtitle(e.target.value)}
+                    placeholder="Import & Export - International Transportation"
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 flex items-center gap-2 text-gray-700">
+                      <Phone className="h-3.5 w-3.5 text-blue-500" />
+                      Phone
+                    </label>
+                    <Input
+                      value={companyPhone}
+                      onChange={(e) => setCompanyPhone(e.target.value)}
+                      placeholder="+93 700 000 000"
+                      className="glass-input rounded-xl h-11"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 flex items-center gap-2 text-gray-700">
+                      <Mail className="h-3.5 w-3.5 text-blue-500" />
+                      Email
+                    </label>
+                    <Input
+                      value={companyEmail}
+                      onChange={(e) => setCompanyEmail(e.target.value)}
+                      placeholder="info@company.com"
+                      className="glass-input rounded-xl h-11"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">Address</label>
+                  <Input
+                    value={companyAddress}
+                    onChange={(e) => setCompanyAddress(e.target.value)}
+                    placeholder="2nd Floor, 16 No. Office, Shahidano, Chowk..."
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">Licence Number</label>
+                  <Input
+                    value={companyLicence}
+                    onChange={(e) => setCompanyLicence(e.target.value)}
+                    placeholder="2401-2198"
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Iran Office Information */}
+            <Card className="glass-card rounded-2xl overflow-hidden mt-6">
+              <CardHeader className="pb-3 glass-header">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
+                      <Building2 className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-800">Iran Office Information</span>
+                  </div>
+                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">اطلاعات دفتر ایران</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-2 gap-4 pt-5 pb-6">
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">Building / ساختمان</label>
+                  <Input
+                    value={formData.iran_office_building || ""}
+                    onChange={(e) => setFormData({ ...formData, iran_office_building: e.target.value })}
+                    placeholder="CUBIC BUILDING"
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">Location / موقعیت</label>
+                  <Input
+                    value={formData.iran_office_location || ""}
+                    onChange={(e) => setFormData({ ...formData, iran_office_location: e.target.value })}
+                    placeholder="BANDAR ABBASS - IRAN"
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">P.O. Box / صندوق پستی</label>
+                  <Input
+                    value={formData.iran_office_pobox || ""}
+                    onChange={(e) => setFormData({ ...formData, iran_office_pobox: e.target.value })}
+                    placeholder="7913973295"
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">Telefax / تلفکس</label>
+                  <Input
+                    value={formData.iran_office_telefax || ""}
+                    onChange={(e) => setFormData({ ...formData, iran_office_telefax: e.target.value })}
+                    placeholder="+98 76 32226028"
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">Cell Phone / تلفن همراه</label>
+                  <Input
+                    value={formData.iran_office_cellphone || ""}
+                    onChange={(e) => setFormData({ ...formData, iran_office_cellphone: e.target.value })}
+                    placeholder="+98 09172325086"
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">Email / ایمیل</label>
+                  <Input
+                    value={formData.iran_office_email || ""}
+                    onChange={(e) => setFormData({ ...formData, iran_office_email: e.target.value })}
+                    placeholder="info@balambarbaran.com"
+                    className="glass-input rounded-xl h-11"
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
@@ -3494,6 +4080,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                 companyEmail={companyEmail}
                 companyAddress={companyAddress}
                 companyLicence={companyLicence}
+                includeColorStrip={activePrintOptions.includeColorStrip}
               />
             </PrintSafeBOL>
           </div>

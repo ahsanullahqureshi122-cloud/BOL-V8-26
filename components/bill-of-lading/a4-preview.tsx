@@ -15,6 +15,7 @@ import {
   Phone,
   Route,
   ShieldCheck,
+  Truck,
   UserRound,
 } from "lucide-react"
 import {
@@ -41,6 +42,7 @@ interface A4PreviewProps {
   companyLicence?: string
   exportTarget?: boolean
   pdfExport?: boolean
+  includeColorStrip?: boolean
 }
 
 type DetailItem = {
@@ -254,12 +256,12 @@ function Section({
           <div className="flex items-center gap-2">
           {icon}
           {/* Force English title to render left-to-right so mixed-language headers don't flip */}
-          <h3 dir="ltr" className={`${titleClassName || 'text-[12.2pt]'} font-black uppercase leading-none tracking-wide`}>
+          <h3 dir="ltr" className={`${titleClassName || 'text-[10.5pt]'} font-black uppercase leading-none tracking-wide`}>
             {title}
           </h3>
         </div>
         {subtitle && (
-          <p className="persian-text bol-persian-text font-[vazirmatn] text-[12.8pt] font-bold leading-none" dir="rtl">
+          <p className="persian-text bol-persian-text font-[vazirmatn] text-[10.5pt] font-bold leading-none" dir="rtl">
             {subtitle}
           </p>
         )}
@@ -312,17 +314,17 @@ function DetailCard({
       style={{ ...(pdfMode ? { background: '#fff' } : undefined), unicodeBidi: 'plaintext' }}
     >
       <p
-        className={`${isDriverLabel ? "text-[8.2pt]" : isShipmentInfoCard ? "text-[7.8pt]" : (compact ? "text-[4.6pt]" : "text-[5.0pt]")} ${isDriverLabel ? "font-extrabold" : "font-black"} tracking-wide text-blue-600 ${isMostlyLTR ? "uppercase" : ""} ${
+        className={`${isDriverLabel ? "text-[7.2pt]" : isShipmentInfoCard ? "text-[7.2pt]" : (compact ? "text-[6.8pt]" : "text-[7.2pt]")} ${isDriverLabel ? "font-extrabold" : "font-black"} tracking-wide text-blue-700 ${isMostlyLTR ? "uppercase" : ""} ${
           (labelDirection === "rtl" || /[\u0600-\u06FF]/.test(label)) ? "persian-text bol-persian-text font-[vazirmatn]" : ""
         }`}
         dir={rightAligned ? "rtl" : "ltr"}
-        style={{ unicodeBidi: "plaintext" }}
+        style={{ unicodeBidi: "plaintext", color: "#1d4ed8" }}
       >
         {label}
       </p>
       <TextLines
         value={cleanText(value)}
-        className={`${important ? (compact ? "text-[13.2pt]" : isShipmentInfoCard ? "text-[15.2pt]" : "text-[13.2pt]") : (compact ? "text-[13.4pt]" : "text-[13.2pt]")} font-bold leading-tight ${isRedHighlight ? "text-red-700" : isBlueHighlight ? "text-blue-800" : isGreenHighlight ? "text-green-700" : (highlight ? "text-red-600" : (important ? "text-blue-950" : "text-slate-600"))}`}
+        className={`${important ? (compact ? "text-[10.5pt]" : isShipmentInfoCard ? "text-[9.5pt]" : "text-[10.0pt]") : (compact ? "text-[10.5pt]" : "text-[9.5pt]")} font-bold leading-tight ${isRedHighlight ? "text-red-700" : isBlueHighlight ? "text-blue-800" : isGreenHighlight ? "text-green-700" : (highlight ? "text-red-600" : (important ? "text-blue-950" : "text-slate-600"))}`}
       />
     </div>
   )
@@ -714,6 +716,34 @@ function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData
                     </span>
                     {routeModeLabel(mode)}
                   </div>
+
+                  {/* Truck Specification & Customs Seal Badges inside Route Card */}
+                  {(route.plateNumber || route.chassisNumber || route.trailerMan || route.customsSealRequired) && (
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 space-y-1 text-left w-full">
+                      {route.plateNumber && (
+                        <div className="inline-flex items-center gap-1 bg-blue-100/90 text-blue-950 font-mono font-black text-[7.5pt] px-1.5 py-0.5 rounded border border-blue-200">
+                          <span>پلیټ:</span>
+                          <span>{route.plateNumber}</span>
+                        </div>
+                      )}
+                      {route.chassisNumber && (
+                        <div className="text-[7.5pt] font-extrabold text-slate-800">
+                          <span className="text-slate-500">شاسی:</span> {route.chassisNumber}
+                        </div>
+                      )}
+                      {route.trailerMan && (
+                        <div className="text-[7.5pt] font-extrabold text-slate-800 truncate" dir="rtl font-[vazirmatn]">
+                          <span className="text-slate-500">ټیلر مان:</span> {route.trailerMan}
+                        </div>
+                      )}
+                      {route.customsSealRequired && (
+                        <div className="mt-0.5 bg-amber-100 text-amber-950 font-black text-[7.5pt] px-1.5 py-0.5 rounded border border-amber-300 flex items-center gap-1" dir="rtl font-[vazirmatn]">
+                          <span>📍 په ګمرک کې سیل غواړي</span>
+                          {route.customsSealNote ? <span className="font-semibold text-amber-800">({route.customsSealNote})</span> : null}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
               </button>
@@ -745,6 +775,7 @@ export function A4Preview({
   companyLicence,
   exportTarget = false,
   pdfExport = false,
+  includeColorStrip = true,
 }: A4PreviewProps) {
   const pdfMode = exportTarget || pdfExport
   const companyTitle = cleanText(companyName) || "SKY ARIANA & BALAM BAR BARAN"
@@ -776,13 +807,14 @@ export function A4Preview({
   const driverFatherNameVal = formData.driver_father_name ? ` S/O ${formData.driver_father_name}` : ""
   const driverFullInfo = driverNameVal || driverFatherNameVal ? `${driverNameVal}${driverFatherNameVal}` : undefined
 
+  const combinedDateVal = [issueDate, persianDateNumeric].filter(Boolean).join("\n")
+
   const shipmentItems: DetailItem[] = [
     { label: "Truck Number / شماره کامیون", value: formData.truck_number, important: true, highlight: true },
     { label: "Driver Name / نام راننده", value: driverFullInfo, important: true, highlight: true },
     { label: "Driver Contact / تماس راننده", value: formData.driver_contact, highlight: true },
     { label: "Driver Rent / کرایه راننده", value: formData.driver_rent, highlight: true },
-    { label: "Date / تاریخ", value: issueDate, important: true },
-    { label: "Persian Date / تاریخ شمسی", value: persianDateNumeric, important: true },
+    { label: "Date / تاریخ / شمسی", value: combinedDateVal, important: true },
   ]
 
   const cargoSummaryItems: DetailItem[] = [
@@ -802,6 +834,7 @@ export function A4Preview({
     <div
       data-bol-a4="true"
       data-pdf-export={pdfMode ? "true" : undefined}
+      data-color-strip={includeColorStrip ? "true" : "false"}
       className="mx-auto flex min-h-[297mm] w-[210mm] max-w-[210mm] flex-col overflow-hidden text-slate-950 shadow-2xl shadow-blue-200/50 ring-1 ring-blue-100 print:m-0 print:h-[297mm] print:min-h-0 print:w-[210mm] print:max-w-none print:shadow-none"
       style={pdfMode ? { ...a4ShellStyle, width: "210mm", minHeight: "297mm", height: "297mm", overflow: "hidden" } : a4ShellStyle}
     >
@@ -869,7 +902,7 @@ export function A4Preview({
           className={`mt-0 flex min-h-0 flex-1 flex-col gap-[3mm] print:gap-[2mm] ${pdfMode ? "overflow-visible" : "overflow-y-auto"}`}
         >
           <Section title="Shipment Information" subtitle={labels.shipmentInfoFa} icon={<CalendarDays className="h-6 w-6" />} glass={!pdfMode} printKey="shipment" pdfMode={pdfMode} titleClassName="text-[10.2pt]">
-            <div className="grid grid-cols-6 gap-1">
+            <div className="grid grid-cols-5 gap-1.5">
               {shipmentItems.map((item) => (
                 <DetailCard key={item.label} {...item} glass={!pdfMode} pdfMode={pdfMode} className="shipment-info-card" />
               ))}
@@ -921,6 +954,53 @@ export function A4Preview({
 
           <Section title="Route / Transportation Path" subtitle={labels.routeFa} icon={<Route className="h-6 w-6" />} glass={!pdfMode} printKey="route" pdfMode={pdfMode}>
             <RouteTimeline routes={formData.routes} glass={!pdfMode} />
+            
+            {/* Dedicated Truck Details & Customs Seal Summary Bar */}
+            {formData.routes.some(r => r.plateNumber || r.chassisNumber || r.trailerMan || r.customsSealRequired) && (
+              <div className="mt-2 rounded-xl border border-blue-200 bg-linear-to-r from-blue-50/90 via-white to-amber-50/70 p-2 shadow-xs text-xs font-bold text-slate-900">
+                <div className="flex items-center justify-between border-b border-blue-200/60 pb-1 mb-1.5 text-[8.5pt] font-black text-blue-950">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="h-3.5 w-3.5 text-blue-700" />
+                    <span>Truck Transportation Specifications / مشخصات حمل موتر و ګمرک</span>
+                  </div>
+                  <span className="font-[vazirmatn] text-amber-800 text-[8pt]" dir="rtl">جزئیات پلیټ، شاسی و سیل ګمرک</span>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                  {formData.routes.map((r, i) => {
+                    if (!r.plateNumber && !r.chassisNumber && !r.trailerMan && !r.customsSealRequired) return null
+                    return (
+                      <div key={r.id || i} className="rounded-lg border border-blue-100 bg-white p-1.5 space-y-0.5">
+                        <div className="flex items-center justify-between text-[7.5pt] font-black text-blue-900 border-b border-slate-100 pb-0.5">
+                          <span>Stop #{i + 1}: {r.location || `Stop ${i+1}`}</span>
+                          {r.transportMode && <span className="uppercase text-[7pt] bg-blue-100 px-1 rounded text-blue-900">{r.transportMode}</span>}
+                        </div>
+                        {r.plateNumber && (
+                          <div className="text-[7.5pt] font-bold text-slate-800">
+                            <span className="text-slate-500">Plate / پلیټ:</span> <span className="font-mono font-black text-blue-950">{r.plateNumber}</span>
+                          </div>
+                        )}
+                        {r.chassisNumber && (
+                          <div className="text-[7.5pt] font-bold text-slate-800">
+                            <span className="text-slate-500">Chassis / شاسی:</span> <span className="font-mono">{r.chassisNumber}</span>
+                          </div>
+                        )}
+                        {r.trailerMan && (
+                          <div className="text-[7.5pt] font-bold text-slate-800 font-[vazirmatn]" dir="rtl">
+                            <span className="text-slate-500">Trailer Man / ټیلر مان:</span> <span className="font-black text-slate-900">{r.trailerMan}</span>
+                          </div>
+                        )}
+                        {r.customsSealRequired && (
+                          <div className="mt-0.5 rounded bg-amber-100 p-1 text-[7.5pt] font-black text-amber-950 font-[vazirmatn]" dir="rtl">
+                            📍 په ګمرک کې سیل غواړي {r.customsSealNote ? `- ${r.customsSealNote}` : ""}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </Section>
 
           <Section title="Cargo Description" subtitle={labels.cargoDescFa} icon={<Package className="h-6 w-6" />} glass={!pdfMode} printKey="cargo" pdfMode={pdfMode} titleClassName="text-[10.2pt]">
@@ -935,14 +1015,14 @@ export function A4Preview({
               }`}
             >
               <div className="mb-1 flex items-center gap-1.5 text-blue-800">
-                <FileText className="h-4 w-4" />
-                <p className="text-[8.6pt] font-black leading-tight">
+                <FileText className="h-4.5 w-4.5" />
+                <p className="text-[9.5pt] font-black leading-tight">
                   Description of Goods / <span className="persian-text bol-persian-text" dir="rtl">{labels.goodsDescriptionFa}</span>
                 </p>
               </div>
               <TextLines
                 value={formData.cargo_description}
-                className="text-[8.8pt] font-bold leading-[1.18] text-slate-950"
+                className="text-[10.2pt] font-bold leading-[1.25] text-slate-950"
               />
             </div>
           </Section>

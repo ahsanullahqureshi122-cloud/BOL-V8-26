@@ -13,17 +13,17 @@
 ============================================================================ */
 
 :root {
-  --ledger-col-sno: 44px;
-  --ledger-col-date: 96px;
-  --ledger-col-desc: minmax(180px, 2fr);
-  --ledger-col-bl: 130px;
-  --ledger-col-container: 120px;
-  --ledger-col-qty: 90px;
-  --ledger-col-debit: 110px;
-  --ledger-col-credit: 110px;
-  --ledger-col-balance: 110px;
-  --ledger-col-media: 110px;
-  --ledger-col-actions: 50px;
+  --ledger-col-sno: 36px;
+  --ledger-col-date: 85px;
+  --ledger-col-desc: minmax(130px, 1.8fr);
+  --ledger-col-bl: 105px;
+  --ledger-col-container: 95px;
+  --ledger-col-qty: 75px;
+  --ledger-col-debit: 90px;
+  --ledger-col-credit: 90px;
+  --ledger-col-balance: 90px;
+  --ledger-col-media: 85px;
+  --ledger-col-actions: 44px;
 
   --ledger-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
   --ledger-font-rtl: "Noto Naskh Arabic", "Noto Sans Arabic", Tahoma, "Arial Unicode MS", Arial, sans-serif;
@@ -63,7 +63,7 @@
     var(--ledger-col-media)
     var(--ledger-col-actions);
   width: 100%;
-  min-width: 1100px;
+  min-width: 1000px;
   background: transparent;
 }
 

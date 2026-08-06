@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,20 +9,16 @@ import { Input } from "@/components/ui/input"
 import {
   Building2,
   Calendar,
-  Download,
-  ExternalLink,
   FileSpreadsheet,
-  FileText,
-  Eye,
   Plus,
   Printer,
   Search,
   Trash2,
-  Upload,
-  X,
-  ZoomIn,
-  ZoomOut,
   Loader2,
+  Maximize2,
+  Minimize2,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react"
 
 const ACCOUNT_CUSTOM_COMPANIES_STORAGE_KEY = "sky-bol-account-custom-companies"
@@ -158,14 +155,19 @@ export function AccountLedger() {
   const [newCompanyName, setNewCompanyName] = useState("")
   const [query, setQuery] = useState("")
   const [draft, setDraft] = useState<LedgerEntry>(() => emptyEntry())
-  const [viewerRowId, setViewerRowId] = useState<string | null>(null)
-  const [pdfZoom, setPdfZoom] = useState(1)
   const [isLedgerLoading, setIsLedgerLoading] = useState(true)
   const [ledgerStorageError, setLedgerStorageError] = useState("")
   const [isAddingCompany, setIsAddingCompany] = useState(false)
   const [addCompanyError, setAddCompanyError] = useState("")
   const [recentlyAddedCompanyName, setRecentlyAddedCompanyName] = useState<string | null>(null)
+  const [isFullScreen, setIsFullScreen] = useState(false)
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const newCompanyInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   const lastSavedSnapshotRef = useRef("")
 
   useEffect(() => {
@@ -357,10 +359,6 @@ export function AccountLedger() {
 
   const selectedKey = selectedCompanyName ? cleanKey(selectedCompanyName) : ""
   const selectedRows = selectedKey ? ledgerRecords[selectedKey] || [] : []
-  const viewerRow = viewerRowId ? selectedRows.find((row) => row.id === viewerRowId) || null : null
-  const viewerPdfUrl = viewerRow?.pdfFile
-    ? `/ledger/${encodeURIComponent(viewerRow.id)}/pdf?path=${encodeURIComponent(viewerRow.pdfFile)}`
-    : ""
 
   const totals = selectedRows.reduce(
     (sum, row) => {
@@ -499,164 +497,11 @@ export function AccountLedger() {
     })
   }
 
-  const uploadLedgerPdf = (row: LedgerEntry) => {
-    const input = document.createElement("input")
-    input.type = "file"
-    input.accept = "application/pdf,.pdf"
-
-    input.onchange = async () => {
-      const file = input.files?.[0]
-      if (!file) return
-
-      if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
-        toast.error("Only PDF files are allowed")
-        return
-      }
-
-      const formData = new FormData()
-      formData.append("pdf", file)
-      if (row.pdfFile) {
-        formData.append("oldPath", row.pdfFile)
-      }
-
-      try {
-        const response = await fetch(`/ledger/${encodeURIComponent(row.id)}/upload-pdf`, {
-          method: "POST",
-          body: formData,
-        })
-        const result = await response.json()
-
-        if (!response.ok || !result.pdf_file) {
-          throw new Error(result.error || "Could not upload PDF")
-        }
-
-        updateLedgerRow(row.id, "pdfFile", result.pdf_file)
-        toast.success(row.pdfFile ? "Ledger PDF replaced" : "Ledger PDF uploaded")
-      } catch (error) {
-        toast.error("PDF upload failed", {
-          description: error instanceof Error ? error.message : "Please choose a valid PDF file.",
-        })
-      }
-    }
-
-    input.click()
-  }
-
-  const openPdfViewer = (row: LedgerEntry) => {
-    setViewerRowId(row.id)
-    setPdfZoom(1)
-  }
-
-  const closePdfViewer = () => {
-    setViewerRowId(null)
-    setPdfZoom(1)
-  }
-
-  const deleteLedgerPdf = async (row: LedgerEntry) => {
-    if (!row.pdfFile) return
-
-    try {
-      const response = await fetch(`/ledger/${encodeURIComponent(row.id)}/pdf`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: row.pdfFile }),
-      })
-      const result = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        throw new Error(result.error || "Could not delete PDF")
-      }
-
-      updateLedgerRow(row.id, "pdfFile", "")
-      closePdfViewer()
-      toast.success("Ledger PDF deleted")
-    } catch (error) {
-      toast.error("PDF delete failed", {
-        description: error instanceof Error ? error.message : "Could not delete this PDF.",
-      })
-    }
-  }
-
   const deleteLedgerRow = (rowId: string) => {
     persistLedger({
       ...ledgerRecords,
       [selectedKey]: selectedRows.filter((row) => row.id !== rowId),
     })
-  }
-
-  const addBolRowsToLedger = () => {
-    if (!selectedCompany || selectedCompany.docs.length === 0) return
-
-    const existingBolNumbers = new Set(selectedRows.map((row) => row.bolNo.trim()).filter(Boolean))
-    const rows = selectedCompany.docs
-      .filter((doc) => docBolNumber(doc) && !existingBolNumbers.has(docBolNumber(doc)))
-      .map((doc) => ledgerRowFromDocument(doc, selectedCompany.companyName))
-
-    if (rows.length === 0) {
-      toast.info("All BOL rows are already in this ledger")
-      return
-    }
-
-    persistLedger({
-      ...ledgerRecords,
-      [selectedKey]: [...selectedRows, ...rows],
-    })
-    toast.success(`${rows.length} BOL row${rows.length === 1 ? "" : "s"} added to ledger`)
-  }
-
-  const exportCsv = () => {
-    if (!selectedCompany) return
-
-    const headers = [
-      "S.NO",
-      "DATE",
-      "SHIPPER/DESCRIPTION",
-      "INVOICE.NO",
-      "DATE-OF-SHIP",
-      "BILL OF LANDING",
-      "TRUCK NO",
-      "CONTAINER.NO",
-      "CONTAINER TYPE",
-      "CONSIGNEE NAME",
-      "QUANTITY",
-      "DRIVER RENT",
-      "DEBIT",
-      "CREDIT",
-      "BALANCE USD",
-      "PDF ATTACHMENT",
-    ]
-    let balance = 0
-    const lines = selectedRows.map((row, index) => {
-      balance += numberValue(row.debit) - numberValue(row.credit)
-      return [
-        index + 1,
-        row.date,
-        row.description,
-        row.invoiceNo,
-        row.shipDate,
-        row.bolNo,
-        row.truckNo || "",
-        row.containerNo,
-        row.containerType || "",
-        row.consignee,
-        row.quantity,
-        row.driverRent || "",
-        row.debit,
-        row.credit,
-        balance.toFixed(2),
-        row.pdfFile || "",
-      ]
-        .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-        .join(",")
-    })
-
-    const blob = new Blob([[headers.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `${selectedCompany.companyName.replace(/[^a-z0-9]+/gi, "-")}-ledger.csv`
-    link.click()
-    URL.revokeObjectURL(url)
   }
 
   const printLedger = () => {
@@ -833,12 +678,16 @@ export function AccountLedger() {
               color: #92400e;
               border-color: rgba(217, 119, 6, 0.34);
             }
+            @page {
+              size: landscape;
+              margin: 8mm;
+            }
             .page {
-              max-width: 1180px;
+              max-width: 100%;
               margin: 0 auto;
               min-height: 190mm;
               border: 3px solid #d6a83d;
-              padding: 8mm;
+              padding: 6mm;
               background:
                 linear-gradient(rgba(255, 250, 240, 0.86), rgba(255, 250, 240, 0.86)),
                 url("${backgroundUrl}") center / cover no-repeat;
@@ -931,7 +780,7 @@ export function AccountLedger() {
               width: 100%;
               border-collapse: collapse;
               table-layout: fixed;
-              font-size: 8.2px;
+              font-size: 8.5px;
               background: rgba(255, 255, 255, 0.94);
             }
             .ledger-table-card {
@@ -941,36 +790,40 @@ export function AccountLedger() {
               background: rgba(255, 255, 255, 0.78);
               box-shadow: 0 16px 38px rgba(120, 53, 15, 0.12);
             }
-            col.serial { width: 5%; }
-            col.date { width: 8%; }
-            col.description { width: 13%; }
-            col.invoice { width: 8%; }
-            col.ship-date { width: 8%; }
-            col.bol { width: 8%; }
+            col.serial { width: 4%; }
+            col.date { width: 7%; }
+            col.description { width: 14%; }
+            col.invoice { width: 7%; }
+            col.ship-date { width: 7%; }
+            col.bol { width: 9%; }
             col.truck { width: 8%; }
-            col.container { width: 8%; }
-            col.consignee { width: 9%; }
-            col.quantity { width: 6%; }
+            col.container { width: 9%; }
+            col.container-type { width: 8%; }
+            col.consignee { width: 12%; }
+            col.quantity { width: 5%; }
             col.driver-rent { width: 7%; }
             col.money { width: 6%; }
             th {
               border: 1px solid #9a6a05;
               background: linear-gradient(180deg, #f8db86 0%, #efc65f 100%);
               color: #111827;
-              padding: 6px 5px;
-              text-align: left;
+              padding: 6px 4px;
+              text-align: center;
               font-weight: 900;
-              line-height: 1.12;
-              overflow-wrap: anywhere;
-              white-space: normal;
+              line-height: 1.15;
+              overflow-wrap: normal;
+              word-break: normal;
+              white-space: nowrap;
               text-transform: uppercase;
+              font-size: 9.5px;
             }
             td {
               border: 1px solid #d7b867;
-              padding: 6px 5px;
-              vertical-align: top;
-              overflow-wrap: anywhere;
+              padding: 5px 4px;
+              vertical-align: middle;
+              overflow-wrap: break-word;
               line-height: 1.2;
+              white-space: normal;
             }
             tbody tr:nth-child(even) td { background: #fff7df; }
             tfoot td {
@@ -1244,9 +1097,8 @@ export function AccountLedger() {
     printWindow.document.close()
   }
 
-  return (
-    <>
-    <Card className="min-h-[720px] overflow-hidden rounded-[28px] border-amber-200/80 bg-white/80 shadow-2xl shadow-amber-100/80 backdrop-blur-2xl">
+  const ledgerCard = (
+    <Card className={`min-h-[720px] overflow-hidden rounded-[28px] border-amber-200/80 bg-white/80 shadow-2xl shadow-amber-100/80 backdrop-blur-2xl transition-all ${isFullScreen ? "h-full w-full rounded-2xl border-2 border-[#D4AF37] bg-white shadow-2xl" : ""}`}>
       <CardHeader className="border-b border-amber-200/80 bg-linear-to-r from-white via-amber-50/90 to-white p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -1261,7 +1113,25 @@ export function AccountLedger() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row items-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+              className="h-10 rounded-xl border-amber-300 bg-white/90 font-black text-amber-800 shadow-sm transition hover:bg-amber-100 flex items-center gap-1.5"
+            >
+              {isHeaderCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              {isHeaderCollapsed ? "Show Full Header" : "Compact View"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsFullScreen(!isFullScreen)}
+              className="h-10 rounded-xl border-amber-300 bg-white/90 font-black text-amber-800 shadow-sm transition hover:bg-amber-100 flex items-center gap-1.5"
+            >
+              {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {isFullScreen ? "Exit Full Screen" : "Fit Full Screen"}
+            </Button>
             <Input
               ref={newCompanyInputRef}
               value={newCompanyName}
@@ -1386,60 +1256,59 @@ export function AccountLedger() {
                 }}
               >
                 <div className="border-b-2 border-[#D4AF37] bg-white/35 p-4 text-slate-950">
-                  <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-start">
-                    <div className="min-h-24 rounded-2xl border border-amber-200/80 bg-white/75 p-4 shadow-sm backdrop-blur-xl">
-                      <p className="text-xs font-black uppercase tracking-wide text-amber-700">Shipper Name</p>
-                      <h3 className="mt-2 text-2xl font-black leading-tight text-slate-950">{selectedCompany.companyName}</h3>
-                      <p className="mt-2 text-sm font-semibold text-slate-600">Company BOL account ledger entries</p>
-                    </div>
+                  {!isHeaderCollapsed ? (
+                    <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-start mb-4">
+                      <div className="min-h-24 rounded-2xl border border-amber-200/80 bg-white/75 p-4 shadow-sm backdrop-blur-xl">
+                        <p className="text-xs font-black uppercase tracking-wide text-amber-700">Shipper Name</p>
+                        <h3 className="mt-2 text-2xl font-black leading-tight text-slate-950">{selectedCompany.companyName}</h3>
+                        <p className="mt-2 text-sm font-semibold text-slate-600">Company BOL account ledger entries</p>
+                      </div>
 
-                    <div className="flex min-w-60 flex-col items-center rounded-2xl border border-amber-200/80 bg-white/75 p-4 text-center shadow-lg shadow-amber-100/70 backdrop-blur-xl">
-                      <img src={COMPANY_LOGO_URL} alt="Company logo" className="h-20 w-auto max-w-56 object-contain" />
-                      <p className="mt-2 text-xs font-black uppercase tracking-wide text-amber-700">Company BOL Account Ledger</p>
-                      <h3 className="mt-1 text-xl font-black text-slate-950">BOL Account Ledger</h3>
-                      <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-600">
-                        <Calendar className="h-4 w-4" />
-                        {new Date().toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-                      </p>
-                    </div>
+                      <div className="flex min-w-60 flex-col items-center rounded-2xl border border-amber-200/80 bg-white/75 p-4 text-center shadow-lg shadow-amber-100/70 backdrop-blur-xl">
+                        <img src={COMPANY_LOGO_URL} alt="Company logo" className="h-20 w-auto max-w-56 object-contain" />
+                        <p className="mt-2 text-xs font-black uppercase tracking-wide text-amber-700">Company BOL Account Ledger</p>
+                        <h3 className="mt-1 text-xl font-black text-slate-950">BOL Account Ledger</h3>
+                        <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-600">
+                          <Calendar className="h-4 w-4" />
+                          {new Date().toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                        </p>
+                      </div>
 
-                    <div className="min-h-24 rounded-2xl border border-amber-200/80 bg-white/75 p-4 text-left shadow-sm backdrop-blur-xl md:text-right">
-                      <p className="text-xs font-black uppercase tracking-wide text-amber-700">Company Address</p>
-                      <p className="mt-2 text-sm font-bold leading-relaxed text-slate-700">{COMPANY_ADDRESS}</p>
-                      <p className="mt-2 text-xs font-black text-slate-600">Licence: {COMPANY_LICENCE}</p>
-                      <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-600">{COMPANY_CONTACT}</p>
+                      <div className="min-h-24 rounded-2xl border border-amber-200/80 bg-white/75 p-4 text-left shadow-sm backdrop-blur-xl md:text-right">
+                        <p className="text-xs font-black uppercase tracking-wide text-amber-700">Company Address</p>
+                        <p className="mt-2 text-sm font-bold leading-relaxed text-slate-700">{COMPANY_ADDRESS}</p>
+                        <p className="mt-2 text-xs font-black text-slate-600">Licence: {COMPANY_LICENCE}</p>
+                        <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-600">{COMPANY_CONTACT}</p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mb-2 flex items-center justify-between rounded-xl border border-amber-200/90 bg-white/80 px-4 py-2.5 shadow-xs">
+                      <div className="flex items-center gap-2.5">
+                        <Building2 className="h-5 w-5 text-amber-700" />
+                        <span className="text-base font-black text-slate-950">{selectedCompany.companyName}</span>
+                        <span className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                          Licence: {COMPANY_LICENCE}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-                  <div className="mt-4 flex flex-wrap justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addBolRowsToLedger}
-                      className="h-10 rounded-xl border-amber-200 bg-white/80 text-amber-800 shadow-sm hover:bg-amber-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add BOL Rows
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={exportCsv}
-                      className="h-10 rounded-xl border-amber-200 bg-white/80 text-amber-800 shadow-sm hover:bg-amber-50"
-                    >
-                      <Download className="h-4 w-4" />
-                      Export
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={printLedger}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-amber-700 bg-amber-600 px-4 text-sm font-black text-white shadow-lg shadow-amber-200 transition hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
-                      title="Print ledger"
-                      aria-label="Print ledger"
-                    >
-                      <Printer className="h-4 w-4" />
-                      Print
-                    </button>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div className="text-xs font-bold text-slate-600">
+                      Rows: <span className="font-black text-slate-950">{selectedRows.length}</span> | USD Balance: <span className="font-black text-amber-700">{money(totals.debit - totals.credit)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={printLedger}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-amber-700 bg-amber-600 px-4 text-sm font-black text-white shadow-lg shadow-amber-200 transition hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
+                        title="Print ledger"
+                        aria-label="Print ledger"
+                      >
+                        <Printer className="h-4 w-4" />
+                        Print
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1462,32 +1331,28 @@ export function AccountLedger() {
                   </Button>
                 </div>
 
-                <div className="overflow-x-auto rounded-[24px] border border-slate-200/80 bg-white/90 shadow-xl shadow-slate-900/10">
-                  <table className="w-full min-w-[1840px] table-fixed border-separate border-spacing-0 text-[11px] sm:text-xs">
+                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-260px)] min-h-[400px] rounded-[24px] border border-slate-200/80 bg-white/90 shadow-xl shadow-slate-900/10">
+                  <table className="w-full min-w-[1600px] table-fixed border-separate border-spacing-0 text-[11px] sm:text-xs">
                     <colgroup>
-                      <col className="w-[5%]" />
-                      <col className="w-[7%]" />
                       <col className="w-[8%]" />
                       <col className="w-[7%]" />
                       <col className="w-[14%]" />
-                      <col className="w-[10%]" />
-                      <col className="w-[9%]" />
-                      <col className="w-[9%]" />
-                      <col className="w-[18%]" />
                       <col className="w-[8%]" />
+                      <col className="w-[9%]" />
                       <col className="w-[8%]" />
+                      <col className="w-[16%]" />
+                      <col className="w-[7%]" />
+                      <col className="w-[7%]" />
                       <col className="w-[4%]" />
                       <col className="w-[7%]" />
-                      <col className="w-[6%]" />
+                      <col className="w-[5%]" />
                       <col className="w-[7%]" />
                       <col className="w-[7%]" />
-                      <col className="w-[6%]" />
+                      <col className="w-[4%]" />
                     </colgroup>
                     <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-950/95 text-slate-100 backdrop-blur-md">
                       <tr>
                         {[
-                          ["MEDIA"],
-                          ["PDF", "STATUS"],
                           ["BALANCE", "USD"],
                           ["DEBIT"],
                           ["CONSIGNEE", "NAME / د مال وصول کوونکی"],
@@ -1517,24 +1382,14 @@ export function AccountLedger() {
                     <tbody>
                       {selectedRows.length === 0 ? (
                         <tr>
-                          <td colSpan={17} className="border border-slate-200 p-8 text-center text-sm font-semibold text-slate-500">
-                            No ledger rows yet. Add a row above or add saved BOL rows.
+                          <td colSpan={15} className="border border-slate-200 p-8 text-center text-sm font-semibold text-slate-500">
+                            No ledger rows yet. Add a row above to get started.
                           </td>
                         </tr>
                       ) : (
                         rowsWithBalance.map(({ row, balance }, index) => {
                           return (
                             <tr key={row.id} className="bg-white/90 transition hover:bg-slate-50">
-                              <td className="border border-slate-200/80 bg-slate-50 px-3 py-2 text-center text-[11px] font-black text-slate-700">
-                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                                  <FileText className="h-4 w-4" />
-                                </span>
-                              </td>
-                              <td className="border border-slate-200/80 bg-slate-50 px-3 py-2 text-[11px] font-black text-slate-700">
-                                <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black ${row.pdfFile ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
-                                  {row.pdfFile ? "Attached" : "Missing"}
-                                </span>
-                              </td>
                               <td className="border border-slate-200/80 bg-emerald-50 px-3 py-2 text-right font-black text-emerald-700">
                                 {money(balance)}
                               </td>
@@ -1558,29 +1413,15 @@ export function AccountLedger() {
                               <LedgerCell value={row.driverRent || ""} onChange={(value) => updateLedgerRow(row.id, "driverRent", value)} />
                               <LedgerCell value={row.credit} onChange={(value) => updateLedgerRow(row.id, "credit", value)} className="font-black text-emerald-700" />
                               <td className="border border-slate-200/80 px-2 py-2 text-center">
-                                {row.pdfFile ? (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => openPdfViewer(row)}
-                                    className="h-8 w-full rounded-lg border-emerald-200 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
-                                    title="View attached PDF"
-                                  >
-                                    <Eye className="h-3.5 w-3.5" />
-                                    View
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => uploadLedgerPdf(row)}
-                                    className="h-8 w-full rounded-lg border-amber-200 bg-white px-2 text-xs font-black text-amber-800 hover:bg-amber-50"
-                                    title="Upload PDF attachment"
-                                  >
-                                    <Upload className="h-3.5 w-3.5" />
-                                    Upload
-                                  </Button>
-                                )}
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={() => deleteLedgerRow(row.id)}
+                                  className="h-8 w-8 rounded-lg p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  title="Delete row"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </td>
                             </tr>
                           )
@@ -1589,12 +1430,12 @@ export function AccountLedger() {
                     </tbody>
                     <tfoot>
                       <tr className="bg-slate-950 text-white">
-                        <td colSpan={17} className="border border-slate-700 px-3 py-3 text-right text-sm font-black">
+                        <td colSpan={15} className="border border-slate-700 px-3 py-3 text-right text-sm font-black">
                           TOTALS — Driver Rent: {driverRentTotalText} · Debit: {money(totals.debit)} · Credit: {money(totals.credit)} · Balance: {money(totals.debit - totals.credit)}
                         </td>
                       </tr>
                       <tr className="bg-amber-600 text-white">
-                        <td colSpan={17} className="border border-amber-700 px-3 py-3 text-right text-sm font-black">
+                        <td colSpan={15} className="border border-amber-700 px-3 py-3 text-right text-sm font-black">
                           GRAND TOTAL DRIVER RENTS — {driverRentTotalText}
                         </td>
                       </tr>
@@ -1613,231 +1454,20 @@ export function AccountLedger() {
         </section>
       </CardContent>
     </Card>
-    {viewerRow && viewerPdfUrl ? (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-md">
-        <div className="flex h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-white/82 shadow-2xl shadow-slate-950/30 backdrop-blur-2xl">
-          <div className="flex flex-col gap-3 border-b border-amber-200/80 bg-linear-to-r from-white via-amber-50 to-yellow-100 p-3 text-slate-950 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
-                <FileText className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-black text-slate-950">Ledger PDF Attachment</p>
-                <p className="truncate text-xs font-semibold text-amber-800">{viewerRow.bolNo || viewerRow.invoiceNo || viewerRow.description}</p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setPdfZoom((value) => Math.max(0.5, Number((value - 0.1).toFixed(2))))}
-                className="h-9 rounded-xl border-amber-200 bg-white/80 text-slate-800 hover:bg-amber-50"
-                title="Zoom out"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <span className="min-w-14 rounded-xl border border-amber-200 bg-white/80 px-3 py-2 text-center text-xs font-black text-slate-700">
-                {Math.round(pdfZoom * 100)}%
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setPdfZoom((value) => Math.min(2, Number((value + 0.1).toFixed(2))))}
-                className="h-9 rounded-xl border-amber-200 bg-white/80 text-slate-800 hover:bg-amber-50"
-                title="Zoom in"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-              <a
-                href={viewerPdfUrl}
-                download
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white/80 px-3 text-xs font-black text-amber-800 shadow-sm transition hover:bg-amber-50"
-              >
-                <Download className="h-4 w-4" />
-                Download
-              </a>
-              <a
-                href={viewerPdfUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white/80 px-3 text-xs font-black text-amber-800 shadow-sm transition hover:bg-amber-50"
-              >
-                <ExternalLink className="h-4 w-4" />
-                New Tab
-              </a>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => uploadLedgerPdf(viewerRow)}
-                className="h-9 rounded-xl border-emerald-200 bg-emerald-50 text-xs font-black text-emerald-700 hover:bg-emerald-100"
-              >
-                <Upload className="h-4 w-4" />
-                Replace
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => deleteLedgerPdf(viewerRow)}
-                className="h-9 rounded-xl border-red-200 bg-red-50 text-xs font-black text-red-700 hover:bg-red-100"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closePdfViewer}
-                className="h-9 rounded-xl border-slate-200 bg-white/80 text-xs font-black text-slate-700 hover:bg-slate-50"
-              >
-                <X className="h-4 w-4" />
-                Close
-              </Button>
-            </div>
-          </div>
-
-          <PdfCanvasViewer pdfUrl={viewerPdfUrl} zoom={pdfZoom} />
-        </div>
-      </div>
-    ) : null}
-    </>
   )
-}
 
-const PDFJS_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-const PDFJS_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"
-
-declare global {
-  interface Window {
-    pdfjsLib?: any
-    __ledgerPdfJsLoading?: Promise<any>
+  if (isFullScreen && mounted) {
+    return createPortal(
+      <div className="fixed inset-0 z-[9999999] flex flex-col h-screen w-screen bg-slate-950/70 backdrop-blur-2xl p-2 sm:p-4 overflow-hidden">
+        <div className="flex-1 w-full h-full min-h-0 overflow-auto rounded-2xl shadow-2xl">
+          {ledgerCard}
+        </div>
+      </div>,
+      document.body
+    )
   }
-}
 
-function loadPdfJs() {
-  if (typeof window === "undefined") return Promise.reject(new Error("PDF viewer is only available in the browser"))
-  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib)
-  if (window.__ledgerPdfJsLoading) return window.__ledgerPdfJsLoading
-
-  window.__ledgerPdfJsLoading = new Promise((resolve, reject) => {
-    const script = document.createElement("script")
-    script.src = PDFJS_SCRIPT_URL
-    script.async = true
-    script.onload = () => {
-      if (!window.pdfjsLib) {
-        reject(new Error("PDF.js did not load"))
-        return
-      }
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL
-      resolve(window.pdfjsLib)
-    }
-    script.onerror = () => reject(new Error("Could not load PDF.js viewer"))
-    document.head.appendChild(script)
-  })
-
-  return window.__ledgerPdfJsLoading
-}
-
-function PdfCanvasViewer({ pdfUrl, zoom }: { pdfUrl: string; zoom: number }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const renderRunRef = useRef(0)
-  const [status, setStatus] = useState("Loading PDF...")
-  const [error, setError] = useState("")
-
-  useEffect(() => {
-    let cancelled = false
-    const runId = renderRunRef.current + 1
-    renderRunRef.current = runId
-
-    const renderPdf = async () => {
-      const container = containerRef.current
-      if (!container) return
-
-      container.innerHTML = ""
-      setError("")
-      setStatus("Loading PDF...")
-
-      try {
-        const pdfjsLib = await loadPdfJs()
-        if (cancelled || runId !== renderRunRef.current) return
-
-        const response = await fetch(pdfUrl, { cache: "no-store" })
-        if (!response.ok) throw new Error(`PDF request failed (${response.status})`)
-
-        const contentType = response.headers.get("content-type") || ""
-        if (!contentType.includes("application/pdf")) {
-          throw new Error(`Server returned ${contentType || "unknown file type"} instead of application/pdf`)
-        }
-
-        const data = await response.arrayBuffer()
-        const pdf = await pdfjsLib.getDocument({ data }).promise
-        if (cancelled || runId !== renderRunRef.current) return
-
-        setStatus(`Rendering ${pdf.numPages} page${pdf.numPages === 1 ? "" : "s"}...`)
-        container.innerHTML = ""
-
-        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-          if (cancelled || runId !== renderRunRef.current) return
-
-          const page = await pdf.getPage(pageNumber)
-          const viewport = page.getViewport({ scale: Math.max(0.5, Math.min(2.5, zoom)) })
-          const canvas = document.createElement("canvas")
-          const context = canvas.getContext("2d")
-          if (!context) throw new Error("Canvas rendering is not available")
-
-          canvas.width = Math.floor(viewport.width)
-          canvas.height = Math.floor(viewport.height)
-          canvas.className = "mx-auto mb-5 block max-w-full rounded-lg bg-white shadow-xl shadow-slate-300"
-
-          const pageShell = document.createElement("div")
-          pageShell.className = "mx-auto mb-4 w-fit max-w-full rounded-xl border border-slate-200 bg-white p-3"
-          pageShell.appendChild(canvas)
-          container.appendChild(pageShell)
-
-          await page.render({ canvasContext: context, viewport }).promise
-        }
-
-        setStatus("")
-      } catch (viewerError) {
-        const message = viewerError instanceof Error ? viewerError.message : "Could not render this PDF"
-        setError(message)
-        setStatus("")
-      }
-    }
-
-    void renderPdf()
-
-    return () => {
-      cancelled = true
-    }
-  }, [pdfUrl, zoom])
-
-  return (
-    <div className="min-h-0 flex-1 overflow-auto bg-slate-100/80 p-4">
-      {status ? (
-        <div className="mb-3 rounded-xl border border-amber-200 bg-white/80 px-4 py-3 text-sm font-black text-amber-800 shadow-sm">
-          {status}
-        </div>
-      ) : null}
-      {error ? (
-        <div className="flex min-h-[62vh] flex-col items-center justify-center gap-3 rounded-xl border border-red-100 bg-white/85 p-8 text-center shadow-xl shadow-slate-200">
-          <FileText className="h-10 w-10 text-amber-700" />
-          <p className="text-sm font-black text-slate-900">PDF preview could not render inside this window.</p>
-          <p className="max-w-xl text-xs font-semibold text-slate-500">{error}</p>
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-black text-white shadow-lg shadow-amber-100"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Open PDF
-          </a>
-        </div>
-      ) : null}
-      <div ref={containerRef} className="mx-auto max-w-6xl pb-8" />
-    </div>
-  )
+  return ledgerCard
 }
 
 function LedgerCell({

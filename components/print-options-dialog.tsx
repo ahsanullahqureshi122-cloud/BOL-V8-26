@@ -40,7 +40,7 @@ export function PrintOptionsDialog({
 }: PrintOptionsDialogProps) {
   const [copies, setCopies] = useState(1)
   const [quality, setQuality] = useState<PrintQuality>("standard")
-  const [includeColorStrip, setIncludeColorStrip] = useState(false)
+  const [includeColorStrip, setIncludeColorStrip] = useState(true)
   const [fitToPage, setFitToPage] = useState(true)
 
   const handlePrint = async () => {
