@@ -1,5 +1,5 @@
-import fs from "fs"
 import path from "path"
+import { readJsonFile, writeJsonFile } from "./blob-db"
 
 export type BolAccountLedgerDatabase = {
   customCompanies: string[]
@@ -12,20 +12,6 @@ const bolAccountLedgerFile = path.join(process.cwd(), ".local-bol-account-ledger
 const emptyDatabase: BolAccountLedgerDatabase = {
   customCompanies: [],
   ledgerRecords: {},
-}
-
-async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
-  try {
-    if (!fs.existsSync(filePath)) return fallback
-    return JSON.parse(await fs.promises.readFile(filePath, "utf-8")) as T
-  } catch (error) {
-    console.error("[bol-account-ledgers] Failed to read local database:", error)
-    return fallback
-  }
-}
-
-async function writeJsonFile<T>(filePath: string, value: T) {
-  await fs.promises.writeFile(filePath, JSON.stringify(value, null, 2), "utf-8")
 }
 
 export async function getBolAccountLedgerDatabase() {

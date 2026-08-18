@@ -15,7 +15,7 @@ import { BillOfLadingFormData, initialFormData, RouteStop, AFGHANISTAN_DOCUMENT_
 import consigneeSeedData from "@/lib/data/consignees-from-pdf.json"
 import shipperSeedData from "@/lib/data/shippers-from-pdf.json"
 import notifyPartySeedData from "@/lib/data/notify-parties-from-pdf.json"
-import { Printer, Save, FileText, Eye, Plus, Loader2, Calendar, Truck, MapPin, Trash2, ArrowRight, Package, Edit3, ImageIcon, Upload, RotateCcw, ScrollText, Check, Download, Building2, Phone, Mail, Ship, Plane, Train, AlertCircle, User, Bell, Globe, Shield, Leaf, Heart, Scale, Bookmark, IdCard, Car, Landmark, ShieldCheck, Receipt, List, ChevronDown, ChevronUp, Info, CheckCircle2, Circle, Sparkles } from "lucide-react"
+import { Printer, Save, FileText, Eye, Plus, Loader2, Calendar, Truck, MapPin, Trash2, ArrowRight, Package, Edit3, ImageIcon, Upload, RotateCcw, ScrollText, Check, Download, Building2, Phone, Mail, Ship, Plane, Train, AlertCircle, User, Bell, Globe, Shield, Leaf, Heart, Scale, Bookmark, IdCard, Car, Landmark, ShieldCheck, Receipt, List, ChevronDown, ChevronUp, Info, CheckCircle2, Circle, Sparkles, Copy, Box } from "lucide-react"
 import { formatPersianDate, getDualDates } from "@/lib/utils/persian-date"
 import {
   generateBOLPDFBlob,
@@ -24,6 +24,8 @@ import {
   openPDFPrintWindow,
   printPDFBlobInWindow,
 } from "@/lib/utils/pdf-upload"
+import { SavedDocuments } from "./saved-documents"
+import { LedgerView } from "@/components/ledger-view"
 import { PrintOptionsDialog, type PrintOptions } from "@/components/print-options-dialog"
 
 interface BOLEditorProps {
@@ -97,48 +99,66 @@ const NOTE_1_SEED_LIST: SavedNoteOption[] = [
   {
     id: "n1-yaramel",
     label: "دکندهار بارگیری مسؤول",
-    content: "نظرمحمد (یارمل)\n(+93) 0 700 203 307",
+    content: "نظرمحمد (یارمل) - (+93) 0 700 203 307",
     theme: "red",
   },
   {
     id: "n1-loading-contact",
     label: "Loading Contact / مسئول بارگیری",
-    content: "نظرمحمد (یارمل)\n(+93) 0 700 203 307",
+    content: "نظرمحمد (یارمل) - (+93) 0 700 203 307",
     theme: "blue",
   },
   {
     id: "n1-exporter-contact",
     label: "Exporter Contact / تماس صادرکننده",
-    content: "+93 700 939 365\n+93 711 435 529",
+    content: "+93 700 939 365 / +93 711 435 529",
     theme: "green",
+  },
+  {
+    id: "n1-border-rep",
+    label: "Border Representative / نماینده مرزی",
+    content: "اسلام قلعه نمبرونه | نماینده دوغارون / شماره تماس\nحاجی معلم صاحب : 0799007371 , عصمت الله : 0729807676 , حکمت الله :0794983011",
+    theme: "purple",
   },
 ]
 
 const NOTE_2_SEED_LIST: SavedNoteOption[] = [
   {
-    id: "n2-representatives",
-    label: "نماینده نمبر",
-    content: "اسلام قلعه نمبرونه | نماینده دوغارون /شماره تماس\nحاجی معلم صاحب : 0799007371\nعصمت الله : 0729807676",
-    theme: "red",
-  },
-  {
     id: "n2-border-rep",
     label: "Border Representative / نماینده مرزی",
-    content: "اسلام قلعه نمبرونه | نماینده دوغارون /شماره تماس\nحاجی معلم صاحب : 0799007371\nعصمت الله : 0729807676",
+    content: "اسلام قلعه نمبرونه | نماینده دوغارون / شماره تماس\nحاجی معلم صاحب : 0799007371 , عصمت الله : 0729807676 , حکمت الله :0794983011",
     theme: "purple",
+  },
+  {
+    id: "n2-representatives",
+    label: "نماینده نمبرونه",
+    content: "اسلام قلعه نمبرونه | نماینده دوغارون / شماره تماس\nحاجی معلم صاحب : 0799007371 , عصمت الله : 0729807676 , حکمت الله :0794983011",
+    theme: "red",
   },
   {
     id: "n2-clearance",
     label: "Customs Clearance / امور گمرکی",
-    content: "نماینده دوغارون و اسلام قلعه\nشماره تماس: 0799007371",
-    theme: "orange",
+    content: "نماینده دوغارون و اسلام قلعه\nحاجی معلم صاحب : 0799007371 , عصمت الله : 0729807676 , حکمت الله :0794983011",
+    theme: "blue",
   },
 ]
 
 function mergeSavedNoteOptions(seedOptions: SavedNoteOption[], storedOptions: SavedNoteOption[]) {
   const byId = new Map<string, SavedNoteOption>()
-  seedOptions.forEach((item) => byId.set(item.id, item))
   storedOptions.forEach((item) => byId.set(item.id, item))
+  seedOptions.forEach((seed) => {
+    const existing = byId.get(seed.id)
+    if (!existing) {
+      byId.set(seed.id, seed)
+    } else {
+      byId.set(seed.id, {
+        ...existing,
+        label: seed.label,
+        content: seed.content,
+        theme: seed.theme || existing.theme,
+      })
+    }
+  })
   return Array.from(byId.values())
 }
 
@@ -148,12 +168,14 @@ interface AccountLedgerEntry {
   description: string
   invoiceNo: string
   shipDate: string
+  barnamehNo?: string
   bolNo: string
   truckNo?: string
   containerNo: string
   consignee: string
   quantity: string
   driverRent?: string
+  driverFreight?: string
   debit: string
   credit: string
   pdfFile?: string
@@ -206,42 +228,69 @@ function syncBolToAccountLedger(data: BillOfLadingFormData & { bol_number?: stri
   if (!shipperName || !bolNo) return
 
   const companyKey = accountCompanyKey(shipperName)
-  const storedCompanies = JSON.parse(window.localStorage.getItem(ACCOUNT_CUSTOM_COMPANIES_STORAGE_KEY) || "[]") as string[]
+  const storedCompanies = JSON.parse(
+    window.localStorage.getItem(ACCOUNT_CUSTOM_COMPANIES_STORAGE_KEY) ||
+    window.localStorage.getItem("skybol:account-custom-companies") ||
+    "[]"
+  ) as string[]
   const hasCompany = storedCompanies.some((companyName) => accountCompanyKey(companyName) === companyKey)
 
+  const updatedCompanies = hasCompany ? storedCompanies : [...storedCompanies, shipperName]
   if (!hasCompany) {
-    window.localStorage.setItem(ACCOUNT_CUSTOM_COMPANIES_STORAGE_KEY, JSON.stringify([...storedCompanies, shipperName]))
+    window.localStorage.setItem(ACCOUNT_CUSTOM_COMPANIES_STORAGE_KEY, JSON.stringify(updatedCompanies))
+    window.localStorage.setItem("skybol:account-custom-companies", JSON.stringify(updatedCompanies))
+    window.dispatchEvent(new CustomEvent("skybol:account-company-updated", { detail: { companyName: shipperName } }))
   }
 
-  const records = JSON.parse(window.localStorage.getItem(ACCOUNT_LEDGER_STORAGE_KEY) || "{}") as AccountLedgerRecords
+  const rawRecords = window.localStorage.getItem(ACCOUNT_LEDGER_STORAGE_KEY) || window.localStorage.getItem("skybol:account-ledgers") || "{}"
+  const records = JSON.parse(rawRecords) as AccountLedgerRecords
   const existingRow = Object.values(records)
     .flat()
-    .find((row) => row.bolNo.trim() === bolNo)
+    .find((row) => (row.barnamehNo && row.barnamehNo.trim() === bolNo) || (row.bolNo && row.bolNo.trim() === bolNo))
+  
+  const driverRentVal = data.driver_rent?.trim() || ""
   const nextRow: AccountLedgerEntry = {
     id: existingRow?.id || crypto.randomUUID(),
     date: existingRow?.date || data.issue_date || new Date().toISOString().split("T")[0],
     description: shipperName,
     invoiceNo: getInvoiceNoFromDescription(data.cargo_description),
     shipDate: existingRow?.shipDate || data.issue_date || "",
-    bolNo,
+    barnamehNo: bolNo,
+    bolNo: bolNo,
     truckNo: data.truck_number || "",
     containerNo: data.container_numbers || "",
     consignee: data.consignee_name || "",
     quantity: data.number_of_packages || "",
-    driverRent: data.driver_rent || "",
+    driverRent: driverRentVal,
+    driverFreight: driverRentVal,
     debit: existingRow?.debit || "",
     credit: existingRow?.credit || "",
     pdfFile: existingRow?.pdfFile || "",
   }
 
   const nextRecords = Object.fromEntries(
-    Object.entries(records).map(([key, rows]) => [key, rows.filter((row) => row.bolNo.trim() !== bolNo)])
+    Object.entries(records).map(([key, rows]) => [
+      key, 
+      rows.filter((row) => (row.barnamehNo || row.bolNo || "").trim() !== bolNo)
+    ])
   ) as AccountLedgerRecords
 
   const companyRows = nextRecords[companyKey] || []
-  nextRecords[companyKey] = [...companyRows, nextRow]
+  nextRecords[companyKey] = [nextRow, ...companyRows]
 
   window.localStorage.setItem(ACCOUNT_LEDGER_STORAGE_KEY, JSON.stringify(nextRecords))
+  window.localStorage.setItem("skybol:account-ledgers", JSON.stringify(nextRecords))
+
+  // Sync to backend account ledgers API
+  fetch("/api/account-ledgers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      accounts: updatedCompanies,
+      ledgerEntries: nextRecords,
+    }),
+  }).catch((err) => console.warn("Background ledger sync to API:", err))
+
   window.dispatchEvent(
     new CustomEvent("skybol:account-ledger-updated", {
       detail: { companyName: shipperName, bolNo },
@@ -251,7 +300,7 @@ function syncBolToAccountLedger(data: BillOfLadingFormData & { bol_number?: stri
 
 export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocumentLoaded, savedDocumentsPanel, accountLedgerPanel }: BOLEditorProps) {
   const [formData, setFormData] = useState<BillOfLadingFormData>(initialFormData)
-  const [bolNumber, setBolNumber] = useState<string>("BOL-001")
+  const [bolNumber, setBolNumber] = useState<string>("BOL-2026-NSA470")
   const [isEditingBolNumber, setIsEditingBolNumber] = useState(false)
   const [issueDate, setIssueDate] = useState<string>("")
   const [persianDate, setPersianDate] = useState<string>("")
@@ -268,6 +317,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   const [companyEmail, setCompanyEmail] = useState("info@skyariana.com, transport@skyariana.com")
   const [companyAddress, setCompanyAddress] = useState("2nd Floor, 16 No. Office, Shahidano, Chowk, Etimad Rahmi Market, Kandahar, Afghanistan")
   const [companyLicence, setCompanyLicence] = useState("2401-2198")
+  const [bgImageUrl, setBgImageUrl] = useState<string>("/images/afghan_mountain_blueprint_bg.jpg")
+  const [bgOpacity, setBgOpacity] = useState<number>(0.22)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editDocumentId, setEditDocumentId] = useState<string | null>(null)
   const [activeRouteIndex, setActiveRouteIndex] = useState<number | null>(null)
@@ -343,15 +394,37 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   const loadDocument = async (id: string) => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/bol/${id}`)
-      const result = await response.json()
-      if (result.data) {
-        const doc = result.data
-        setBolNumber(doc.bol_number)
-        setIssueDate(doc.issue_date)
-        setEditDocumentId(id)
+      let doc: any = null
+      try {
+        const response = await fetch(`/api/bol/${id}`)
+        if (response.ok) {
+          const result = await response.json()
+          if (result.data) {
+            doc = result.data
+          }
+        }
+      } catch (err) {
+        console.warn("Server document fetch failed, trying local storage fallback:", err)
+      }
+
+      if (!doc) {
+        try {
+          const storedLocal = window.localStorage.getItem("sky-bol-browser-documents")
+          if (storedLocal) {
+            const clientLocalDocs: any[] = JSON.parse(storedLocal)
+            doc = clientLocalDocs.find((d) => d.id === id || d.bol_number === id)
+          }
+        } catch (e) {
+          console.error("Error reading browser local document fallback:", e)
+        }
+      }
+
+      if (doc) {
+        setBolNumber(doc.bol_number || "")
+        setIssueDate(doc.issue_date || new Date().toISOString().split("T")[0])
+        setEditDocumentId(doc.id || id)
         setIsEditMode(true)
-        const dualDates = getDualDates(doc.issue_date)
+        const dualDates = getDualDates(doc.issue_date || new Date().toISOString().split("T")[0])
         if (dualDates) {
           setPersianDate(dualDates.persian)
           setPersianDateNumeric(formatPersianDate(doc.issue_date) ?? dualDates.persianNumeric)
@@ -404,9 +477,12 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
           afghanistan_document_details: doc.afghanistan_document_details || {},
         })
         onDocumentLoaded?.()
+      } else {
+        toast.error("Unable to load document data")
       }
     } catch (error) {
       console.error("[v0] Error loading document:", error)
+      toast.error("Failed to load document")
     } finally {
       setIsLoading(false)
     }
@@ -415,11 +491,37 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   const fetchNextBolNumber = async () => {
     setIsLoading(true)
     try {
+      let maxLocalSuffix = 0
+      try {
+        const storedLocal = window.localStorage.getItem("sky-bol-browser-documents")
+        const localDocs: any[] = storedLocal ? JSON.parse(storedLocal) : []
+        for (const doc of localDocs) {
+          const numStr = doc.bol_number || doc.id || ""
+          const match = numStr.match(/NSA(\d+)/i) || numStr.match(/(\d+)\s*$/)
+          if (match && match[1]) {
+            const val = parseInt(match[1], 10)
+            if (!isNaN(val) && val > maxLocalSuffix) maxLocalSuffix = val
+          }
+        }
+      } catch (e) {
+        console.error("Error reading browser docs for sequence:", e)
+      }
+
       const response = await fetch("/api/bol?action=next-number")
       const result = await response.json()
+      
+      let serverSuffix = 0
       if (result.bolNumber) {
-        setBolNumber(result.bolNumber)
+        const serverMatch = result.bolNumber.match(/NSA(\d+)/i) || result.bolNumber.match(/(\d+)\s*$/)
+        if (serverMatch && serverMatch[1]) {
+          serverSuffix = parseInt(serverMatch[1], 10) || 0
+        }
       }
+
+      const currentYear = new Date().getFullYear()
+      const nextSeq = Math.max(470, maxLocalSuffix + 1, serverSuffix)
+      const formattedNextBol = `BOL-${currentYear}-NSA${String(nextSeq).padStart(3, "0")}`
+      setBolNumber(formattedNextBol)
     } catch (error) {
       console.error("Error fetching BOL number:", error)
     } finally {
@@ -527,8 +629,10 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       toast.error("Enter Note 1 content first")
       return
     }
+
+    const existingMatch = savedNotes1.find((n) => n.id === selectedNote1Id || (n.label === label && n.content === content))
     const currentNote: SavedNoteOption = {
-      id: selectedNote1Id || `n1-${Date.now()}`,
+      id: existingMatch ? existingMatch.id : `n1-${Date.now()}`,
       label,
       content,
       theme: formData.notes_1_theme || "red",
@@ -538,7 +642,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     setSavedNotes1(nextList)
     setSelectedNote1Id(currentNote.id)
     window.localStorage.setItem(SAVED_NOTES_1_STORAGE_KEY, JSON.stringify(nextList))
-    toast.success("Saved Note 1 option")
+    toast.success("Saved Note 1 option", { description: `"${label}" added to options` })
   }
 
   const deleteSavedNote1 = () => {
@@ -558,7 +662,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       ...prev,
       notes_2_label: found.label,
       notes_2: found.content,
-      notes_2_theme: found.theme || prev.notes_2_theme || "red",
+      notes_2_theme: found.theme || prev.notes_2_theme || "green",
     }))
     toast.success("Applied saved option to Note 2")
   }
@@ -570,18 +674,20 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       toast.error("Enter Note 2 content first")
       return
     }
+
+    const existingMatch = savedNotes2.find((n) => n.id === selectedNote2Id || (n.label === label && n.content === content))
     const currentNote: SavedNoteOption = {
-      id: selectedNote2Id || `n2-${Date.now()}`,
+      id: existingMatch ? existingMatch.id : `n2-${Date.now()}`,
       label,
       content,
-      theme: formData.notes_2_theme || "red",
+      theme: formData.notes_2_theme || "green",
       savedAt: new Date().toISOString(),
     }
     const nextList = [currentNote, ...savedNotes2.filter((n) => n.id !== currentNote.id)]
     setSavedNotes2(nextList)
     setSelectedNote2Id(currentNote.id)
     window.localStorage.setItem(SAVED_NOTES_2_STORAGE_KEY, JSON.stringify(nextList))
-    toast.success("Saved Note 2 option")
+    toast.success("Saved Note 2 option", { description: `"${label}" added to options` })
   }
 
   const deleteSavedNote2 = () => {
@@ -602,28 +708,28 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       return
     }
 
+    const existingMatch = savedShippers.find(
+      (s) => s.name.trim().toLowerCase() === shipperName.toLowerCase() || (selectedShipperId && s.id === selectedShipperId && s.name.trim().toLowerCase() === shipperName.toLowerCase())
+    )
+
     const currentShipper: SavedParty = {
-      id: selectedShipperId || crypto.randomUUID(),
+      id: existingMatch ? existingMatch.id : crypto.randomUUID(),
       name: shipperName,
-      address: formData.shipper_address || "",
-      contact: formData.shipper_contact || "",
-      email: formData.shipper_email || "",
+      address: (formData.shipper_address || "").trim(),
+      contact: (formData.shipper_contact || "").trim(),
+      email: (formData.shipper_email || "").trim(),
       savedAt: new Date().toISOString(),
     }
 
     const nextShippers = [
       currentShipper,
-      ...savedShippers.filter(
-        (shipper) =>
-          shipper.id !== currentShipper.id &&
-          shipper.name.trim().toLowerCase() !== shipperName.toLowerCase()
-      ),
-    ].slice(0, 50)
+      ...savedShippers.filter((s) => s.id !== currentShipper.id && s.name.trim().toLowerCase() !== shipperName.toLowerCase()),
+    ].slice(0, 100)
 
     persistSavedParties(SAVED_SHIPPERS_STORAGE_KEY, nextShippers, setSavedShippers)
     setSelectedShipperId(currentShipper.id)
-    toast.success("Shipper saved", {
-      description: `${currentShipper.name} is available for future BOLs.`,
+    toast.success("Shipper saved successfully!", {
+      description: `${currentShipper.name} is stored in saved shippers options.`,
     })
   }
 
@@ -634,11 +740,12 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     setSelectedShipperId(shipperId)
     setFormData((prev) => ({
       ...prev,
-      shipper_name: shipper.name,
-      shipper_address: shipper.address,
-      shipper_contact: shipper.contact,
-      shipper_email: shipper.email,
+      shipper_name: shipper.name || prev.shipper_name,
+      shipper_address: shipper.address || "",
+      shipper_contact: shipper.contact || "",
+      shipper_email: shipper.email || "",
     }))
+    toast.success(`Loaded Shipper: ${shipper.name}`)
   }
 
   const deleteSavedShipper = () => {
@@ -661,28 +768,28 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       return
     }
 
+    const existingMatch = savedConsignees.find(
+      (c) => c.name.trim().toLowerCase() === consigneeName.toLowerCase() || (selectedConsigneeId && c.id === selectedConsigneeId && c.name.trim().toLowerCase() === consigneeName.toLowerCase())
+    )
+
     const currentConsignee: SavedParty = {
-      id: selectedConsigneeId || crypto.randomUUID(),
+      id: existingMatch ? existingMatch.id : crypto.randomUUID(),
       name: consigneeName,
-      address: formData.consignee_address || "",
-      contact: formData.consignee_contact || "",
-      email: formData.consignee_email || "",
+      address: (formData.consignee_address || "").trim(),
+      contact: (formData.consignee_contact || "").trim(),
+      email: (formData.consignee_email || "").trim(),
       savedAt: new Date().toISOString(),
     }
 
     const nextConsignees = [
       currentConsignee,
-      ...savedConsignees.filter(
-        (consignee) =>
-          consignee.id !== currentConsignee.id &&
-          consignee.name.trim().toLowerCase() !== consigneeName.toLowerCase()
-      ),
-    ].slice(0, 50)
+      ...savedConsignees.filter((c) => c.id !== currentConsignee.id && c.name.trim().toLowerCase() !== consigneeName.toLowerCase()),
+    ].slice(0, 100)
 
     persistSavedParties(SAVED_CONSIGNEES_STORAGE_KEY, nextConsignees, setSavedConsignees)
     setSelectedConsigneeId(currentConsignee.id)
-    toast.success("Consignee saved", {
-      description: `${currentConsignee.name} is available for future BOLs.`,
+    toast.success("Consignee saved successfully!", {
+      description: `${currentConsignee.name} is stored in saved consignees options.`,
     })
   }
 
@@ -693,11 +800,12 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     setSelectedConsigneeId(consigneeId)
     setFormData((prev) => ({
       ...prev,
-      consignee_name: consignee.name,
-      consignee_address: consignee.address,
-      consignee_contact: consignee.contact,
-      consignee_email: consignee.email,
+      consignee_name: consignee.name || prev.consignee_name,
+      consignee_address: consignee.address || "",
+      consignee_contact: consignee.contact || "",
+      consignee_email: consignee.email || "",
     }))
+    toast.success(`Loaded Consignee: ${consignee.name}`)
   }
 
   const deleteSavedConsignee = () => {
@@ -926,7 +1034,40 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     }))
     setActiveRouteIndex(0)
     toast.success("Applied Truck Route Preset", {
-      description: "هرات → اسلام قلعه → دوغارون (په ګمرک کې سیل غواړي) مسیر اضافه شد",
+      description: "هرات → اسلام قلعه → دوغارون مسیر اضافه شد",
+    })
+  }
+
+  const applyKandaharNimrozBandarAbbasDubaiIndiaPreset = () => {
+    setFormData((prev) => ({
+      ...prev,
+      routes: [
+        { id: crypto.randomUUID(), location: "Kandahar, AF", locationPersian: "کندهار، افغانستان", stopOrder: 1, transportMode: "truck" },
+        { id: crypto.randomUUID(), location: "Nimroz, AF", locationPersian: "نیمروز / میلک", stopOrder: 2, transportMode: "truck" },
+        { id: crypto.randomUUID(), location: "Bandar Abbas, IR", locationPersian: "بندرعباس، ایران", stopOrder: 3, transportMode: "vessel" },
+        { id: crypto.randomUUID(), location: "Dubai, AE", locationPersian: "دبی، امارات", stopOrder: 4, transportMode: "vessel" },
+        { id: crypto.randomUUID(), location: "Nhava Sheva, IN", locationPersian: "نهاوا شوا، هند", stopOrder: 5, transportMode: "vessel" },
+      ],
+    }))
+    setActiveRouteIndex(0)
+    toast.success("Applied Afghanistan-India Sea Route", {
+      description: "کندهار → نیمروز → بندرعباس → دبی → نهاوا شوا هند مسیر اضافه شد",
+    })
+  }
+
+  const applyKandaharChamanKarachiDubaiPreset = () => {
+    setFormData((prev) => ({
+      ...prev,
+      routes: [
+        { id: crypto.randomUUID(), location: "Kandahar, AF", locationPersian: "کندهار، افغانستان", stopOrder: 1, transportMode: "truck" },
+        { id: crypto.randomUUID(), location: "Chaman, PK", locationPersian: "چمن / کویته پاکستان", stopOrder: 2, transportMode: "truck" },
+        { id: crypto.randomUUID(), location: "Karachi Port, PK", locationPersian: "بندر کراچی، پاکستان", stopOrder: 3, transportMode: "vessel" },
+        { id: crypto.randomUUID(), location: "Dubai, AE", locationPersian: "دبی، امارات", stopOrder: 4, transportMode: "vessel" },
+      ],
+    }))
+    setActiveRouteIndex(0)
+    toast.success("Applied Pakistan Transit Route", {
+      description: "کندهار → چمن → کراچی → دبی مسیر اضافه شد",
     })
   }
 
@@ -1331,14 +1472,19 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const method = isEditMode ? "PUT" : "POST"
-      const url = isEditMode ? `/api/bol/${editDocumentId}` : "/api/bol"
+      const validEditId = editDocumentId || formData.id || bolNumber
+      const method = (isEditMode && validEditId) ? "PUT" : "POST"
+      const url = (isEditMode && validEditId) ? `/api/bol/${encodeURIComponent(validEditId)}` : "/api/bol"
       
       // Include the BOL number in the request
       const dataToSend = {
         ...formData,
         bol_number: bolNumber,
         issue_date: issueDate,
+      }
+
+      if (!isEditMode) {
+        delete dataToSend.id
       }
       
       const response = await fetch(url, {
@@ -1364,39 +1510,86 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       const result = await response.json()
       
       if (result.success && result.data) {
-        // Update form data with saved IDs for PDF storage linking
+        const savedId = result.data.id || result.data.bol_number || bolNumber
+        const savedBolNumber = result.data.bol_number || bolNumber
+
+        // Update form data and switch to edit mode so user keeps current document
         const updatedFormData = {
           ...formData,
-          id: result.data.id,
-          bol_number: result.data.bol_number,
+          id: savedId,
+          bol_number: savedBolNumber,
           issue_date: result.data.issue_date || issueDate,
         }
         setFormData(updatedFormData)
+        setIsEditMode(true)
+        setEditDocumentId(savedId)
+        setBolNumber(savedBolNumber)
+
+        // Save directly to browser local storage for 100% instant UI sync
+        try {
+          const storedLocal = window.localStorage.getItem("sky-bol-browser-documents")
+          const currentList: any[] = storedLocal ? JSON.parse(storedLocal) : []
+          const updatedList = [
+            updatedFormData,
+            ...currentList.filter((d) => (d.bol_number || d.id) !== (updatedFormData.bol_number || updatedFormData.id)),
+          ]
+          window.localStorage.setItem("sky-bol-browser-documents", JSON.stringify(updatedList))
+          window.localStorage.setItem("skybol:saved-documents", JSON.stringify(updatedList))
+        } catch (e) {
+          console.error("Browser local storage error:", e)
+        }
+
+        // Auto-save shipper and consignee details into quick saved options
+        try {
+          if (updatedFormData.shipper_name?.trim()) {
+            const sName = updatedFormData.shipper_name.trim()
+            const matchS = savedShippers.find((s) => s.name.trim().toLowerCase() === sName.toLowerCase())
+            const curS: SavedParty = {
+              id: matchS ? matchS.id : crypto.randomUUID(),
+              name: sName,
+              address: updatedFormData.shipper_address || "",
+              contact: updatedFormData.shipper_contact || "",
+              email: updatedFormData.shipper_email || "",
+              savedAt: new Date().toISOString(),
+            }
+            const nextS = [curS, ...savedShippers.filter((s) => s.id !== curS.id)].slice(0, 100)
+            persistSavedParties(SAVED_SHIPPERS_STORAGE_KEY, nextS, setSavedShippers)
+          }
+
+          if (updatedFormData.consignee_name?.trim()) {
+            const cName = updatedFormData.consignee_name.trim()
+            const matchC = savedConsignees.find((c) => c.name.trim().toLowerCase() === cName.toLowerCase())
+            const curC: SavedParty = {
+              id: matchC ? matchC.id : crypto.randomUUID(),
+              name: cName,
+              address: updatedFormData.consignee_address || "",
+              contact: updatedFormData.consignee_contact || "",
+              email: updatedFormData.consignee_email || "",
+              savedAt: new Date().toISOString(),
+            }
+            const nextC = [curC, ...savedConsignees.filter((c) => c.id !== curC.id)].slice(0, 100)
+            persistSavedParties(SAVED_CONSIGNEES_STORAGE_KEY, nextC, setSavedConsignees)
+          }
+        } catch (err) {
+          console.error("Auto-save party error:", err)
+        }
+
         syncBolToAccountLedger(updatedFormData)
         
+        window.dispatchEvent(new CustomEvent("skybol:documents-updated", { detail: updatedFormData }))
+
         onSave?.(updatedFormData)
         onRefreshDocuments?.()
         
-        // Show success toast with BOL number
+        // Show success toast with BOL number & 1-click action to View Saved BOLs
         const action = isEditMode ? "updated" : "saved"
         toast.success(`Document ${action} successfully!`, {
-          description: `BOL ${result.data.bol_number} ${action} in your documents library`,
+          description: `BOL ${savedBolNumber} ${action} in your documents library`,
+          action: {
+            label: "View Saved BOLs",
+            onClick: () => setActiveTab("saved-documents"),
+          },
         })
-        
-        // If creating new, reset form and get next number
-        if (!isEditMode) {
-          setFormData(initialFormData)
-          setIsEditMode(false)
-          setEditDocumentId(null)
-          await fetchNextBolNumber()
-          const today = new Date().toISOString().split("T")[0]
-          setIssueDate(today)
-          const dualDates = getDualDates(today)
-          if (dualDates) {
-            setPersianDate(dualDates.persian)
-            setPersianDateNumeric(formatPersianDate(today) ?? dualDates.persianNumeric)
-          }
-        }
       } else if (result.error) {
         toast.error("Failed to save document", {
           description: result.error,
@@ -1416,7 +1609,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     setIsEditMode(false)
     setEditDocumentId(null)
     setFormData(initialFormData)
-    setBolNumber("BOL-001")
+    setBolNumber("BOL-2026-NSA470")
     fetchNextBolNumber()
     const today = new Date().toISOString().split("T")[0]
     setIssueDate(today)
@@ -1427,13 +1620,36 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     }
   }
 
+  const handleDuplicateCurrent = async () => {
+    setIsSaving(true)
+    const toastId = toast.loading("Duplicating BOL...", {
+      description: "Generating next sequence number...",
+    })
+    try {
+      const response = await fetch("/api/bol?action=next-number")
+      const result = await response.json()
+      const newBolNumber = result.bolNumber || "BOL-2026-NSA471"
+
+      setIsEditMode(false)
+      setEditDocumentId(null)
+      setBolNumber(newBolNumber)
+      setFormData((prev) => ({ ...prev, id: "", bol_number: newBolNumber }))
+
+      toast.success(`Cloned as ${newBolNumber}!`, {
+        id: toastId,
+        description: "Form pre-filled with party data. Click Save when ready.",
+      })
+    } catch (e) {
+      toast.error("Failed to duplicate document", { id: toastId })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleExportPDF = async () => {
     try {
       if (!formData.id) {
-        toast.error("Document not saved", {
-          description: "Please save the document first before exporting to PDF",
-        })
-        return
+        await handleSave()
       }
 
       setIsSaving(true)
@@ -1481,7 +1697,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       // Upload to server
       const uploadResult = await uploadPDFToServer(
         pdfBlob,
-        formData.id,
+        formData.id || "",
         formData.bol_number || "BOL"
       )
 
@@ -1703,10 +1919,23 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     }
   })
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (bolNumber && !isSaving) {
+          handleSave()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [bolNumber, handleSave, isSaving])
+
   return (
     <div className="min-h-screen bg-transparent print:min-h-0 print:bg-white print:overflow-visible">
-      {/* Action Bar - Mobile optimized */}
-      <div className="sticky top-0 z-20 rounded-3xl border border-white/70 bg-white/60 px-3 py-2 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl md:px-4 md:py-3 print:hidden">
+      {/* Action Bar - Mobile & Desktop sticky beneath header */}
+      <div className="sticky top-[61px] z-30 border-b border-blue-100/70 bg-white/90 px-3 py-2 shadow-md shadow-blue-900/5 backdrop-blur-xl md:px-4 md:py-2.5 print:hidden">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
           {/* Header Info - Stacked on mobile */}
           <div className="flex items-start md:items-center gap-2 md:gap-4 flex-wrap">
@@ -1729,7 +1958,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </div>
             {persianDateNumeric && (
               <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-blue-100 bg-white/70 px-2 py-0.5 text-xs md:text-sm">
-                <span className="text-slate-600 font-[vazirmatn]" dir="rtl">
+                <span className="text-slate-600 font-bold font-[vazirmatn]" dir="ltr" style={{ unicodeBidi: "isolate" }}>
                   {persianDateNumeric}
                 </span>
               </div>
@@ -1738,6 +1967,15 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
           
           {/* Actions - Responsive button layout */}
           <div className="flex items-center gap-1.5 md:gap-2 flex-wrap md:flex-nowrap justify-end">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setActiveTab("saved-documents")}
+              className="h-8 rounded-2xl border-emerald-200 bg-emerald-50/80 px-2 text-xs font-bold text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100 md:h-9 md:px-3 md:text-sm shadow-2xs"
+            >
+              <FileText className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1 text-emerald-600" />
+              <span>Saved BOLs</span>
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
@@ -1780,6 +2018,17 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                 <Save className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1" />
               )}
               {isEditMode ? "Update" : "Save"}
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleDuplicateCurrent} 
+              disabled={isSaving}
+              className="h-8 rounded-2xl border-purple-200 bg-purple-50/75 px-2 text-xs text-purple-700 hover:border-purple-300 hover:bg-purple-100 md:h-9 md:px-3 md:text-sm font-bold"
+              title="Clone current document into a new BOL draft"
+            >
+              <Copy className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1 text-purple-600" />
+              <span className="hidden sm:inline">Duplicate</span>
             </Button>
             <Button 
               size="sm" 
@@ -1846,70 +2095,92 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
           </TabsList>
 
           <TabsContent value="form" className="edit-form-panel space-y-4">
-            {/* Document Info - Editable Dates */}
-            <Card className="glass-card overflow-hidden rounded-[28px] border-white/70 bg-white/55 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl">
-              <CardHeader className="glass-header pb-3">
-                <CardTitle className="flex items-center justify-between text-base">
+            {/* 01 Document Information Card */}
+            <Card className="glass-card overflow-hidden rounded-3xl border border-blue-200/90 shadow-xl shadow-blue-500/5 bg-white/95">
+              <CardHeader className="pb-3.5 glass-header border-b border-blue-100 bg-linear-to-r from-blue-50/90 via-white to-blue-50/40">
+                <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="rounded-2xl bg-linear-to-br from-blue-600 to-cyan-500 p-2 shadow-lg shadow-blue-300/50">
-                      <Calendar className="h-4 w-4 text-white" />
+                    <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
+                      01
+                    </span>
+                    <div className="p-2 rounded-xl bg-blue-100 text-blue-700 border border-blue-200 shadow-2xs">
+                      <Calendar className="h-4.5 w-4.5" />
                     </div>
-                    <span className="font-semibold text-gray-800">Document Information</span>
+                    <div>
+                      <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Document Information</span>
+                      <span className="text-[11px] text-blue-700 font-medium block">BOL Reference & Issue Dates</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">اطلاعات سند</span>
+                  <span className="text-xs font-extrabold text-blue-900 font-[vazirmatn] bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                    اطلاعات سند و تاریخ‌ها
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-5 pb-6">
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm text-gray-600 mb-2 block">BOL Number / شماره بارنامه</label>
+                    <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>BOL Number</span>
+                      <span className="font-[vazirmatn] text-blue-800 font-bold text-[11px]">شماره بارنامه</span>
+                    </label>
                     {isEditingBolNumber ? (
                       <div className="flex gap-2">
                         <Input
                           value={bolNumber}
                           onChange={(e) => setBolNumber(e.target.value)}
-                          className="font-mono font-bold glass-input rounded-xl h-11"
+                          className="font-mono font-black text-sm text-slate-950 bg-slate-50/70 border-slate-300 rounded-xl h-11"
                           placeholder="BOL-XXX"
                         />
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setIsEditingBolNumber(false)}
-                          className="glass-input rounded-xl"
+                          className="rounded-xl h-11 px-4 font-bold text-xs bg-blue-600 text-white hover:bg-blue-500"
                         >
                           Done
                         </Button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2.5">
-                        <div className="flex-1 px-4 py-2.5 bg-linear-to-br from-blue-50/80 to-white/60 backdrop-blur-sm rounded-xl font-mono font-bold text-blue-700 border border-blue-100/50">
-                          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : bolNumber}
+                        <div className="flex-1 px-4 py-2.5 bg-blue-50/70 rounded-xl font-mono font-black text-sm text-blue-800 border border-blue-200/80 shadow-2xs">
+                          {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> : bolNumber}
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => setIsEditingBolNumber(true)}
-                          className="h-10 w-10 rounded-xl hover:bg-blue-50/50"
+                          className="h-11 w-11 rounded-xl hover:bg-blue-50 border border-blue-200/60"
                         >
-                          <Edit3 className="h-4 w-4" />
+                          <Edit3 className="h-4 w-4 text-blue-700" />
                         </Button>
                       </div>
                     )}
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Issue Date (Gregorian) / تاریخ میلادی</label>
-                    <Input
-                      type="date"
-                      value={issueDate}
-                      onChange={(e) => handleDateChange(e.target.value)}
-                      className="font-mono glass-input rounded-xl h-11"
-                    />
+                    <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>Issue Date (Gregorian)</span>
+                      <span className="font-[vazirmatn] text-blue-800 font-bold text-[11px]">تاریخ میلادی</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-blue-600 pointer-events-none">
+                        <Calendar className="w-4 h-4" />
+                      </div>
+                      <Input
+                        type="date"
+                        value={issueDate}
+                        onChange={(e) => handleDateChange(e.target.value)}
+                        className="pl-9 font-mono font-black text-sm text-slate-950 bg-slate-50/70 border-slate-300 rounded-xl h-11 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Issue Date (Persian) / تاریخ شمسی</label>
-                    <div className="px-4 py-2.5 bg-linear-to-br from-blue-50/80 to-white/60 backdrop-blur-sm rounded-xl border border-blue-100/50">
-                      <p className="font-[vazirmatn] text-sm text-gray-800" dir="rtl">{persianDate}</p>
-                      <p className="font-[vazirmatn] text-xs text-gray-500" dir="rtl">{persianDateNumeric}</p>
+                    <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>Issue Date (Persian)</span>
+                      <span className="font-[vazirmatn] text-blue-800 font-bold text-[11px]">تاریخ شمسی</span>
+                    </label>
+                    <div className="px-4 py-1.5 bg-blue-50/70 rounded-xl border border-blue-200/80 flex flex-col items-start justify-center h-11">
+                      <p className="font-[vazirmatn] text-xs font-black text-slate-900 leading-tight" dir="ltr" style={{ unicodeBidi: "isolate" }}>{persianDate}</p>
+                      <p className="font-[vazirmatn] text-[11px] font-extrabold text-blue-800 leading-tight" dir="ltr" style={{ unicodeBidi: "isolate" }}>{persianDateNumeric}</p>
                     </div>
                   </div>
                 </div>
@@ -1965,8 +2236,13 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           <SelectContent>
                             <SelectItem value="none">Saved Note 1 Options...</SelectItem>
                             {savedNotes1.map((opt) => (
-                              <SelectItem key={opt.id} value={opt.id} className="text-xs">
-                                {opt.label}
+                              <SelectItem key={opt.id} value={opt.id} className="text-xs py-1.5">
+                                <div className="flex flex-col gap-0.5 text-left max-w-[280px]">
+                                  <span className="font-bold text-slate-900 truncate">{opt.label}</span>
+                                  <span className="text-[10px] text-slate-500 font-mono truncate">
+                                    {opt.content.replace(/\s+/g, ' ')}
+                                  </span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -2055,8 +2331,13 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           <SelectContent>
                             <SelectItem value="none">Saved Note 2 Options...</SelectItem>
                             {savedNotes2.map((opt) => (
-                              <SelectItem key={opt.id} value={opt.id} className="text-xs">
-                                {opt.label}
+                              <SelectItem key={opt.id} value={opt.id} className="text-xs py-1.5">
+                                <div className="flex flex-col gap-0.5 text-left max-w-[280px]">
+                                  <span className="font-bold text-slate-900 truncate">{opt.label}</span>
+                                  <span className="text-[10px] text-slate-500 font-mono truncate">
+                                    {opt.content.replace(/\s+/g, ' ')}
+                                  </span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -2101,23 +2382,35 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
             {/* Shipper & Consignee */}
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="glass-card rounded-2xl overflow-hidden">
-                <CardHeader className="pb-3 glass-header">
+              {/* 02 Shipper Card */}
+              <Card className="glass-card rounded-3xl overflow-hidden border border-blue-200/90 shadow-xl shadow-blue-500/5 bg-white/95">
+                <CardHeader className="pb-3.5 glass-header border-b border-blue-100 bg-linear-to-r from-blue-50/90 via-white to-blue-50/40">
                   <CardTitle className="text-base flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                        <User className="h-4 w-4 text-white" />
+                      <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
+                        02
+                      </span>
+                      <div className="p-2 rounded-xl bg-blue-100 text-blue-700 border border-blue-200 shadow-2xs">
+                        <User className="h-4.5 w-4.5" />
                       </div>
-                      <span className="font-semibold text-gray-800">Shipper</span>
+                      <div>
+                        <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Shipper / Exporter</span>
+                        <span className="text-[11px] text-blue-700 font-medium block">Origin Consignor Information</span>
+                      </div>
                     </div>
-                    <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">فرستنده</span>
+                    <span className="text-xs font-extrabold text-blue-900 font-[vazirmatn] bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                      فرستنده / صادرکننده
+                    </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 pt-5 pb-6">
-                  <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3">
+                <CardContent className="space-y-4 pt-5 pb-6">
+                  <div className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-3.5 shadow-2xs">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                       <div className="flex-1">
-                        <label className="text-sm text-gray-600 mb-2 block">Saved Shippers / فرستنده‌های ذخیره شده</label>
+                        <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                          <span>Saved Shippers</span>
+                          <span className="font-[vazirmatn] text-blue-900 font-bold text-[11px]">فرستنده‌های ذخیره شده</span>
+                        </label>
                         <Select
                           value={selectedShipperId || "none"}
                           onValueChange={(value) => {
@@ -2128,14 +2421,21 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             applySavedShipper(value)
                           }}
                         >
-                          <SelectTrigger className="h-11 glass-input rounded-xl bg-white/90">
+                          <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-slate-300 bg-white rounded-xl shadow-2xs">
                             <SelectValue placeholder="Select saved shipper" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">Select saved shipper</SelectItem>
+                            <SelectItem value="none">Select saved shipper...</SelectItem>
                             {savedShippers.map((shipper, index) => (
-                              <SelectItem key={`${shipper.id}-${index}`} value={shipper.id}>
-                                {shipper.name}
+                              <SelectItem key={`${shipper.id}-${index}`} value={shipper.id} className="text-xs py-2">
+                                <div className="flex flex-col gap-0.5 text-left max-w-[280px]">
+                                  <span className="font-bold text-slate-900 truncate">{shipper.name}</span>
+                                  {(shipper.address || shipper.contact || shipper.email) && (
+                                    <span className="text-[10px] text-slate-500 font-mono truncate">
+                                      {[shipper.address, shipper.contact, shipper.email].filter(Boolean).join(" • ")}
+                                    </span>
+                                  )}
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -2146,9 +2446,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           type="button"
                           variant="outline"
                           onClick={saveCurrentShipper}
-                          className="h-11 border-blue-200 bg-white/80 px-3 text-blue-700 hover:bg-blue-50"
+                          className="h-11 border-blue-300 bg-white hover:bg-blue-50 text-blue-900 font-extrabold text-xs rounded-xl shadow-2xs"
                         >
-                          <Save className="h-4 w-4 mr-2" />
+                          <Save className="h-3.5 w-3.5 mr-1 text-blue-700" />
                           Save
                         </Button>
                         <Button
@@ -2156,78 +2456,121 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           variant="outline"
                           onClick={deleteSavedShipper}
                           disabled={!selectedShipperId}
-                          className="h-11 border-red-100 bg-white/80 px-3 text-red-600 hover:bg-red-50 disabled:text-slate-300"
-                          aria-label="Delete saved shipper"
+                          className="h-11 border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-xl shadow-2xs disabled:opacity-40"
                           title="Delete saved shipper"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
                   </div>
+
                   <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Name / نام</label>
-                    <Input
-                      name="shipper_name"
-                      value={formData.shipper_name}
-                      onChange={handleInputChange}
-                      placeholder="Enter shipper name"
-                      className="glass-input rounded-xl h-11"
-                    />
+                    <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>Shipper Name</span>
+                      <span className="font-[vazirmatn] text-blue-900 font-bold text-[11px]">نام فرستنده</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-blue-600 pointer-events-none">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="shipper_name"
+                        value={formData.shipper_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter shipper name"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Address / آدرس</label>
+                    <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>Shipper Address</span>
+                      <span className="font-[vazirmatn] text-blue-900 font-bold text-[11px]">آدرس فرستنده</span>
+                    </label>
                     <Textarea
                       name="shipper_address"
                       value={formData.shipper_address}
                       onChange={handleInputChange}
                       placeholder="Enter shipper address"
                       rows={3}
-                      className="glass-input rounded-xl min-h-20"
+                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs min-h-[76px] transition-all"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Phone / تلفن</label>
-                    <Input
-                      name="shipper_contact"
-                      value={formData.shipper_contact || ""}
-                      onChange={handleInputChange}
-                      placeholder="Enter phone number"
-                      type="tel"
-                      className="glass-input rounded-xl h-11"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-600 mb-2 block">Email / ایمیل</label>
-                    <Input
-                      name="shipper_email"
-                      value={formData.shipper_email || ""}
-                      onChange={handleInputChange}
-                      placeholder="Enter email address"
-                      type="email"
-                      className="glass-input rounded-xl h-11"
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                        <span>Phone / Contact</span>
+                        <span className="font-[vazirmatn] text-blue-900 font-bold text-[11px]">شماره تماس</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-blue-600 pointer-events-none">
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="shipper_contact"
+                          value={formData.shipper_contact || ""}
+                          onChange={handleInputChange}
+                          placeholder="Enter phone number"
+                          type="tel"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                        <span>Email</span>
+                        <span className="font-[vazirmatn] text-blue-900 font-bold text-[11px]">ایمیل</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-blue-600 pointer-events-none">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="shipper_email"
+                          value={formData.shipper_email || ""}
+                          onChange={handleInputChange}
+                          placeholder="Enter email address"
+                          type="email"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="glass-card rounded-2xl overflow-hidden">
-                <CardHeader className="pb-3 glass-header">
+              {/* 03 Consignee Card */}
+              <Card className="glass-card rounded-3xl overflow-hidden border border-emerald-200/90 shadow-xl shadow-emerald-500/5 bg-white/95">
+                <CardHeader className="pb-3.5 glass-header border-b border-emerald-100 bg-linear-to-r from-emerald-50/90 via-white to-emerald-50/40">
                   <CardTitle className="text-base flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-linear-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/25">
-                        <User className="h-4 w-4 text-white" />
+                      <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-600 text-white text-[11px] font-black shadow-xs">
+                        03
+                      </span>
+                      <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-2xs">
+                        <User className="h-4.5 w-4.5" />
                       </div>
-                      <span className="font-semibold text-gray-800">Consignee</span>
+                      <div>
+                        <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Consignee</span>
+                        <span className="text-[11px] text-emerald-700 font-medium block">Destination Recipient Details</span>
+                      </div>
                     </div>
-                    <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">گیرنده</span>
+                    <span className="text-xs font-extrabold text-emerald-900 font-[vazirmatn] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                      گیرنده / تحویل گیرنده
+                    </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 pt-5 pb-6">
-                  <div className="rounded-xl border border-green-100 bg-green-50/40 p-3">
+                <CardContent className="space-y-4 pt-5 pb-6">
+                  <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-3.5 shadow-2xs">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                       <div className="flex-1">
-                        <label className="text-sm text-gray-900 mb-2 block">Saved Consignees / گیرنده‌های ذخیره شده</label>
+                        <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                          <span>Saved Consignees</span>
+                          <span className="font-[vazirmatn] text-emerald-900 font-bold text-[11px]">گیرنده‌های ذخیره شده</span>
+                        </label>
                         <Select
                           value={selectedConsigneeId || "none"}
                           onValueChange={(value) => {
@@ -2238,14 +2581,21 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             applySavedConsignee(value)
                           }}
                         >
-                          <SelectTrigger className="h-11 glass-input rounded-xl bg-white/90">
+                          <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-slate-300 bg-white rounded-xl shadow-2xs">
                             <SelectValue placeholder="Select saved consignee" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">Select saved consignee</SelectItem>
+                            <SelectItem value="none">Select saved consignee...</SelectItem>
                             {savedConsignees.map((consignee, index) => (
-                              <SelectItem key={`${consignee.id}-${index}`} value={consignee.id}>
-                                {consignee.name}
+                              <SelectItem key={`${consignee.id}-${index}`} value={consignee.id} className="text-xs py-2">
+                                <div className="flex flex-col gap-0.5 text-left max-w-[280px]">
+                                  <span className="font-bold text-slate-900 truncate">{consignee.name}</span>
+                                  {(consignee.address || consignee.contact || consignee.email) && (
+                                    <span className="text-[10px] text-slate-500 font-mono truncate">
+                                      {[consignee.address, consignee.contact, consignee.email].filter(Boolean).join(" • ")}
+                                    </span>
+                                  )}
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -2256,9 +2606,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           type="button"
                           variant="outline"
                           onClick={saveCurrentConsignee}
-                          className="h-11 border-green-200 bg-white/80 px-3 text-green-700 hover:bg-green-50"
+                          className="h-11 border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 font-extrabold text-xs rounded-xl shadow-2xs"
                         >
-                          <Save className="h-4 w-4 mr-2" />
+                          <Save className="h-3.5 w-3.5 mr-1 text-emerald-700" />
                           Save
                         </Button>
                         <Button
@@ -2266,80 +2616,123 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           variant="outline"
                           onClick={deleteSavedConsignee}
                           disabled={!selectedConsigneeId}
-                          className="h-11 border-red-100 bg-white/80 px-3 text-red-600 hover:bg-red-50 disabled:text-slate-300"
-                          aria-label="Delete saved consignee"
+                          className="h-11 border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-xl shadow-2xs disabled:opacity-40"
                           title="Delete saved consignee"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
                   </div>
+
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Name / نام</label>
-                    <Input
-                      name="consignee_name"
-                      value={formData.consignee_name}
-                      onChange={handleInputChange}
-                      placeholder="Enter consignee name"
-                      className="glass-input rounded-xl h-11"
-                    />
+                    <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>Consignee Name</span>
+                      <span className="font-[vazirmatn] text-emerald-900 font-bold text-[11px]">نام گیرنده</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-emerald-600 pointer-events-none">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="consignee_name"
+                        value={formData.consignee_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter consignee name"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                        dir="auto"
+                      />
+                    </div>
                   </div>
+
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Address / آدرس</label>
+                    <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>Consignee Address</span>
+                      <span className="font-[vazirmatn] text-emerald-900 font-bold text-[11px]">آدرس گیرنده</span>
+                    </label>
                     <Textarea
                       name="consignee_address"
                       value={formData.consignee_address}
                       onChange={handleInputChange}
                       placeholder="Enter consignee address"
                       rows={3}
-                      className="glass-input rounded-xl min-h-20"
+                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs min-h-[76px] transition-all"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Phone / تلفن</label>
-                    <Input
-                      name="consignee_contact"
-                      value={formData.consignee_contact || ""}
-                      onChange={handleInputChange}
-                      placeholder="Enter phone number"
-                      type="tel"
-                      className="glass-input rounded-xl h-11"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Email / ایمیل</label>
-                    <Input
-                      name="consignee_email"
-                      value={formData.consignee_email || ""}
-                      onChange={handleInputChange}
-                      placeholder="Enter email address"
-                      type="email"
-                      className="glass-input rounded-xl h-11"
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                        <span>Phone / Contact</span>
+                        <span className="font-[vazirmatn] text-emerald-900 font-bold text-[11px]">شماره تماس</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-emerald-600 pointer-events-none">
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="consignee_contact"
+                          value={formData.consignee_contact || ""}
+                          onChange={handleInputChange}
+                          placeholder="Enter phone number"
+                          type="tel"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                        <span>Email</span>
+                        <span className="font-[vazirmatn] text-emerald-900 font-bold text-[11px]">ایمیل</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-emerald-600 pointer-events-none">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="consignee_email"
+                          value={formData.consignee_email || ""}
+                          onChange={handleInputChange}
+                          placeholder="Enter email address"
+                          type="email"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Notify Party */}
-            <Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
+            {/* 04 Notify Party Card */}
+            <Card className="glass-card rounded-3xl overflow-hidden border border-amber-200/90 shadow-xl shadow-amber-500/5 bg-white/95">
+              <CardHeader className="pb-3.5 glass-header border-b border-amber-100 bg-linear-to-r from-amber-50/90 via-white to-amber-50/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-linear-to-br from-amber-500 to-amber-600 shadow-md shadow-amber-500/30">
-                      <Bell className="h-4 w-4 text-white" />
+                    <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-amber-600 text-white text-[11px] font-black shadow-xs">
+                      04
+                    </span>
+                    <div className="p-2 rounded-xl bg-amber-100 text-amber-700 border border-amber-200 shadow-2xs">
+                      <Bell className="h-4.5 w-4.5" />
                     </div>
-                    <span className="font-semibold text-gray-800">Notify Party</span>
+                    <div>
+                      <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Notify Party</span>
+                      <span className="text-[11px] text-amber-700 font-medium block">Secondary Contact on Arrival</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">طرف اطلاع رسانی</span>
+                  <span className="text-xs font-extrabold text-amber-900 font-[vazirmatn] bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                    طرف اطلاع‌رسانی
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-5 pb-6">
-                <div className="rounded-xl border border-amber-100 bg-amber-50/40 p-3">
+                <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-3.5 shadow-2xs">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <div className="flex-1">
-                      <label className="text-sm text-gray-600 mb-2 block">Saved Notify Parties / طرف‌های اطلاع ذخیره شده</label>
+                      <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
+                        <span>Saved Notify Parties</span>
+                        <span className="font-[vazirmatn] text-amber-900 font-bold text-[11px]">طرف‌های اطلاع ذخیره شده</span>
+                      </label>
                       <Select
                         value={selectedNotifyPartyId || "none"}
                         onValueChange={(value) => {
@@ -2350,13 +2743,13 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           applySavedNotifyParty(value)
                         }}
                       >
-                        <SelectTrigger className="h-11 glass-input rounded-xl bg-white/90">
+                        <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-slate-300 bg-white rounded-xl shadow-2xs">
                           <SelectValue placeholder="Select saved notify party" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Select saved notify party</SelectItem>
                           {savedNotifyParties.map((notifyParty, index) => (
-                            <SelectItem key={`${notifyParty.id}-${index}`} value={notifyParty.id}>
+                            <SelectItem key={`${notifyParty.id}-${index}`} value={notifyParty.id} className="text-xs font-medium">
                               {notifyParty.name}
                             </SelectItem>
                           ))}
@@ -2368,9 +2761,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         type="button"
                         variant="outline"
                         onClick={saveCurrentNotifyParty}
-                        className="h-11 border-amber-200 bg-white/80 px-3 text-amber-700 hover:bg-amber-50"
+                        className="h-11 border-amber-300 bg-white hover:bg-amber-50 text-amber-900 font-extrabold text-xs rounded-xl shadow-2xs"
                       >
-                        <Save className="h-4 w-4 mr-2" />
+                        <Save className="h-3.5 w-3.5 mr-1 text-amber-700" />
                         Save
                       </Button>
                       <Button
@@ -2378,281 +2771,434 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         variant="outline"
                         onClick={deleteSavedNotifyParty}
                         disabled={!selectedNotifyPartyId}
-                        className="h-11 border-red-100 bg-white/80 px-3 text-red-600 hover:bg-red-50 disabled:text-slate-300"
-                        aria-label="Delete saved notify party"
+                        className="h-10 border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-xl shadow-2xs disabled:opacity-40"
                         title="Delete saved notify party"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Name / نام</label>
+                    <label className="text-xs font-extrabold text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>Notify Party Name</span>
+                      <span className="font-[vazirmatn] text-amber-900 font-bold text-[11px]">نام طرف اطلاع</span>
+                    </label>
                     <Input
                       name="notify_party"
                       value={formData.notify_party}
                       onChange={handleInputChange}
                       placeholder="Enter notify party name"
-                      className="glass-input rounded-xl h-11"
+                      className="rounded-xl h-10 text-xs font-bold text-slate-950 bg-white border-slate-300 focus:border-amber-500 shadow-2xs"
+                      dir="auto"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-900 mb-2 block">Address / آدرس</label>
+                    <label className="text-xs font-extrabold text-slate-800 mb-1.5 flex items-center justify-between">
+                      <span>Address / Contact</span>
+                      <span className="font-[vazirmatn] text-amber-900 font-bold text-[11px]">آدرس و تلفن</span>
+                    </label>
                     <Input
                       name="notify_party_address"
                       value={formData.notify_party_address}
                       onChange={handleInputChange}
                       placeholder="Enter notify party address"
-                      className="glass-input rounded-xl h-11"
+                      className="rounded-xl h-10 text-xs font-bold text-slate-950 bg-white border-slate-300 focus:border-amber-500 shadow-2xs"
+                      dir="auto"
                     />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Cargo Details */}
-            <Card className="glass-card overflow-hidden rounded-[28px] border-white/70 bg-white/55 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl">
-              <CardHeader className="pb-3 glass-header">
+            {/* 06 Cargo Details Card */}
+            <Card className="glass-card overflow-hidden rounded-3xl border border-purple-200/90 shadow-xl shadow-purple-500/5 bg-white/95">
+              <CardHeader className="pb-3.5 glass-header border-b border-purple-100 bg-linear-to-r from-purple-50/90 via-white to-purple-50/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-linear-to-br from-purple-500 to-purple-600 shadow-md shadow-purple-500/30">
-                      <Package className="h-4 w-4 text-white" />
+                    <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-purple-600 text-white text-[11px] font-black shadow-xs">
+                      06
+                    </span>
+                    <div className="p-2 rounded-xl bg-purple-100 text-purple-700 border border-purple-200 shadow-2xs">
+                      <Package className="h-4.5 w-4.5" />
                     </div>
-                    <span className="font-semibold text-gray-800">Cargo Details</span>
+                    <div>
+                      <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Cargo Details & Specifications</span>
+                      <span className="text-[11px] text-purple-700 font-medium block">Packages, Weights, Rates & Cargo Description</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">جزئیات محموله</span>
+                  <span className="text-xs font-extrabold text-purple-900 font-[vazirmatn] bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+                    مشخصات کالا و محموله
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5 pt-5 pb-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+                  {/* Container No */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
                       <span>Container No.</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">شماره کانتینر</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">شماره کانتینر</span>
                     </label>
-                    <Input
-                      name="container_numbers"
-                      value={formData.container_numbers}
-                      onChange={handleInputChange}
-                      placeholder="Container numbers"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-purple-500 pointer-events-none">
+                        <Box className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="container_numbers"
+                        value={formData.container_numbers}
+                        onChange={handleInputChange}
+                        placeholder="Container numbers"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* Seal No */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
                       <span>Seal No.</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">شماره پلمپ</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">شماره پلمپ</span>
                     </label>
-                    <Input
-                      name="seal_numbers"
-                      value={formData.seal_numbers}
-                      onChange={handleInputChange}
-                      placeholder="Seal numbers"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-purple-500 pointer-events-none">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="seal_numbers"
+                        value={formData.seal_numbers}
+                        onChange={handleInputChange}
+                        placeholder="Seal numbers"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* No. of Packages */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
                       <span>No. of Packages</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">تعداد بسته</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">تعداد بسته</span>
                     </label>
-                    <Input
-                      name="number_of_packages"
-                      value={formData.number_of_packages}
-                      onChange={handleInputChange}
-                      placeholder="Package count"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-purple-500 pointer-events-none">
+                        <Package className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="number_of_packages"
+                        value={formData.number_of_packages}
+                        onChange={handleInputChange}
+                        placeholder="Package count"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* KGS / Carton */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
                       <span>KGS / Carton</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">کیلو فی کارتن</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">کیلو فی کارتن</span>
                     </label>
-                    <Input
-                      name="kgs_per_carton"
-                      value={formData.kgs_per_carton}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 12.5"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-purple-500 pointer-events-none">
+                        <Scale className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="kgs_per_carton"
+                        value={formData.kgs_per_carton}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 12.5"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* Gross Wt. / Carton */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
                       <span>Gross Wt. / Carton</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">وزن ناخالص کارتن</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">وزن ناخالص کارتن</span>
                     </label>
-                    <Input
-                      name="gross_weight_per_carton"
-                      value={formData.gross_weight_per_carton}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 13"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-purple-500 pointer-events-none">
+                        <Scale className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="gross_weight_per_carton"
+                        value={formData.gross_weight_per_carton}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 13"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* Rate per KGS */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-emerald-900 flex items-center justify-between gap-1">
                       <span>Rate per KGS</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">نرخ فی کیلو</span>
+                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-emerald-700">نرخ فی کیلو</span>
                     </label>
-                    <Input
-                      name="rate_per_kgs"
-                      value={formData.rate_per_kgs}
-                      onChange={handleInputChange}
-                      placeholder="e.g., $1.20"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-emerald-600 pointer-events-none">
+                        <Receipt className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="rate_per_kgs"
+                        value={formData.rate_per_kgs}
+                        onChange={handleInputChange}
+                        placeholder="e.g., $1.20"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-emerald-950 bg-emerald-50/50 border-emerald-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* Goods Value */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-emerald-900 flex items-center justify-between gap-1">
                       <span>Goods Value</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">ارزش کالا</span>
+                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-emerald-700">ارزش کالا</span>
                     </label>
-                    <Input
-                      name="goods_value"
-                      value={formData.goods_value}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 1000"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-emerald-600 pointer-events-none">
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="goods_value"
+                        value={formData.goods_value}
+                        onChange={handleInputChange}
+                        placeholder="e.g., $10,000"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-emerald-950 bg-emerald-50/50 border-emerald-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* Net Weight */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-blue-950 flex items-center justify-between gap-1">
                       <span>Net Weight</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">وزن خالص</span>
+                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-blue-700">وزن خالص</span>
                     </label>
-                    <Input
-                      name="net_weight"
-                      value={formData.net_weight}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 4,800 KG"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-blue-600 pointer-events-none">
+                        <Scale className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="net_weight"
+                        value={formData.net_weight}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 4,800 KG"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-blue-950 bg-blue-50/50 border-blue-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* Gross Weight */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-blue-950 flex items-center justify-between gap-1">
                       <span>Gross Weight</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">وزن ناخالص</span>
+                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-blue-700">وزن ناخالص</span>
                     </label>
-                    <Input
-                      name="gross_weight"
-                      value={formData.gross_weight}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 5,000 KG"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-blue-600 pointer-events-none">
+                        <Scale className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="gross_weight"
+                        value={formData.gross_weight}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 5,000 KG"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-blue-950 bg-blue-50/50 border-blue-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
+
+                  {/* Measurement */}
                   <div>
-                    <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
                       <span>Measurement</span>
-                      <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">حجم (CBM)</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-amber-800">حجم (CBM)</span>
                     </label>
-                    <Input
-                      name="measurement"
-                      value={formData.measurement}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 25 CBM"
-                      className="glass-input rounded-xl h-11 text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    />
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-amber-600 pointer-events-none">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="measurement"
+                        value={formData.measurement}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 25 CBM"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="mb-2 text-xs font-bold text-slate-800 flex items-center justify-between gap-1">
-                    <span>Cargo Description</span>
-                    <span className="font-[vazirmatn] text-[11px] font-medium text-blue-600/90">شرح کامل کالا</span>
+
+                {/* Cargo Description Field */}
+                <div className="pt-1">
+                  <label className="mb-2 text-xs font-black text-slate-900 flex items-center justify-between gap-1">
+                    <span className="flex items-center gap-1.5">
+                      <FileText className="h-4 w-4 text-purple-600" />
+                      <span>Cargo Description / Specification Details</span>
+                    </span>
+                    <span className="font-[vazirmatn] text-[11px] font-extrabold text-purple-900">شرح کامل کالا و محموله</span>
                   </label>
                   <Textarea
                     name="cargo_description"
                     value={formData.cargo_description}
                     onChange={handleInputChange}
-                    placeholder="Detailed cargo description"
+                    placeholder="Detailed cargo description..."
                     rows={4}
-                    className="glass-input rounded-xl p-3.5 text-sm font-medium leading-relaxed text-slate-900 min-h-28 placeholder:text-slate-400 placeholder:font-normal"
+                    className="rounded-2xl p-4 text-sm font-semibold leading-relaxed text-slate-950 bg-white border border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-inner transition-all min-h-32"
                   />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Truck Information */}
-            <Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
+            {/* 07 Truck Information Card */}
+            <Card className="glass-card overflow-hidden rounded-3xl border border-blue-200/90 shadow-xl shadow-blue-500/5 bg-white/95">
+              <CardHeader className="pb-3.5 glass-header border-b border-blue-100 bg-linear-to-r from-blue-50/90 via-white to-blue-50/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                      <Truck className="h-4 w-4 text-white" />
+                    <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
+                      07
+                    </span>
+                    <div className="p-2 rounded-xl bg-blue-100 text-blue-700 border border-blue-200 shadow-2xs">
+                      <Truck className="h-4.5 w-4.5" />
                     </div>
-                    <span className="font-semibold text-gray-800">Truck Information</span>
+                    <div>
+                      <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Truck Information</span>
+                      <span className="text-[11px] text-blue-700 font-medium block">Vehicle Registration, Driver Details & Freight Costs</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-normal text-blue-600/80 font-[vazirmatn]">اطلاعات کامیون</span>
+                  <span className="text-xs font-extrabold text-blue-900 font-[vazirmatn] bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                    اطلاعات کامیون و راننده
+                  </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 pt-5 pb-6">
-                <div>
-                  <label className="text-sm text-gray-600 mb-2 block">Truck No. / شماره کامیون</label>
-                  <Input
-                    name="truck_number"
-                    value={formData.truck_number}
-                    onChange={handleInputChange}
-                    placeholder="e.g., AF-1234-KBL"
-                    className="font-mono glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600 mb-2 block">Driver Name / نام راننده</label>
-                  <Input
-                    name="driver_name"
-                    value={formData.driver_name}
-                    onChange={handleInputChange}
-                    placeholder="Enter driver name"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600 mb-2 block">Father Name / نام پدر</label>
-                  <Input
-                    name="driver_father_name"
-                    value={formData.driver_father_name}
-                    onChange={handleInputChange}
-                    placeholder="Father's name"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-600 mb-2 block">Driver Contact / تماس راننده</label>
-                  <Input
-                    name="driver_contact"
-                    value={formData.driver_contact}
-                    onChange={handleInputChange}
-                    placeholder="Phone number"
-                    className="glass-input rounded-xl h-11"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-red-600 mb-2 block font-medium">Driver Rent / کرایه راننده</label>
-                  <Input
-                    name="driver_rent"
-                    value={formData.driver_rent}
-                    onChange={handleInputChange}
-                    placeholder="e.g., $500"
-                    className="border-red-200/60 bg-red-50/60 backdrop-blur-sm focus-visible:ring-red-400/30 text-red-600 rounded-xl h-11"
-                  />
+              <CardContent className="pt-5 pb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                  {/* Truck No */}
+                  <div>
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                      <span>Truck No.</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-blue-800">شماره کامیون</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-blue-600 pointer-events-none">
+                        <Truck className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="truck_number"
+                        value={formData.truck_number}
+                        onChange={handleInputChange}
+                        placeholder="e.g., AF-1234-KBL"
+                        className="pl-9 rounded-xl h-11 font-mono text-sm font-black uppercase text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Driver Name */}
+                  <div>
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                      <span>Driver Name</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-blue-800">نام راننده</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-blue-600 pointer-events-none">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="driver_name"
+                        value={formData.driver_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter driver name"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Father Name */}
+                  <div>
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                      <span>Father Name</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-blue-800">نام پدر</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-slate-500 pointer-events-none">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="driver_father_name"
+                        value={formData.driver_father_name}
+                        onChange={handleInputChange}
+                        placeholder="Father's name"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Driver Contact */}
+                  <div>
+                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                      <span>Driver Contact</span>
+                      <span className="font-[vazirmatn] text-[11px] font-bold text-blue-800">تماس راننده</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-blue-600 pointer-events-none">
+                        <Phone className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="driver_contact"
+                        value={formData.driver_contact}
+                        onChange={handleInputChange}
+                        placeholder="Phone number"
+                        className="pl-9 rounded-xl h-11 font-mono text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Driver Rent */}
+                  <div>
+                    <label className="mb-1.5 text-xs font-black text-red-700 flex items-center justify-between gap-1">
+                      <span>Driver Rent</span>
+                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-red-700">کرایه راننده</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3 text-red-600 pointer-events-none">
+                        <Receipt className="w-4 h-4" />
+                      </div>
+                      <Input
+                        name="driver_rent"
+                        value={formData.driver_rent}
+                        onChange={handleInputChange}
+                        placeholder="e.g., $500"
+                        className="pl-9 rounded-xl h-11 text-sm font-black text-red-700 bg-red-50/70 border-red-300 focus:bg-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 shadow-2xs transition-all"
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Routes - Multiple Stops */}
-            <Card className="glass-card rounded-2xl overflow-hidden shadow-xl border-amber-200/50">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="glass-card rounded-3xl overflow-hidden shadow-2xl border-white/80">
+              <CardHeader className="pb-3.5 glass-header border-b border-blue-100/60 bg-white/90">
                 <CardTitle className="text-base flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-cyan-500 shadow-lg shadow-blue-500/25">
-                      <MapPin className="h-5 w-5 text-white" />
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-cyan-500 shadow-lg shadow-blue-500/25 text-white">
+                      <MapPin className="h-5 w-5" />
                     </div>
                     <div>
-                      <span className="font-black text-slate-900">Route Stops</span>
-                      <span className="ml-2 text-xs font-bold text-amber-700 font-[vazirmatn]">مسیر حمل و نقل</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-blue-950 text-lg tracking-tight">Route Stops</span>
+                        <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200 font-[vazirmatn]">
+                          مسیر حمل و نقل
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">Define transport pathway origin, intermediate border transit stops, and final destination</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -2660,22 +3206,33 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={applyHeratIslamQalaDougharounPreset}
-                      className="h-9 rounded-xl border-blue-300 bg-blue-50 px-3 text-xs font-black text-blue-900 shadow-2xs hover:bg-blue-100 cursor-pointer"
-                      title="Quick Preset: Herat → Islam Qala → Dougharoun (Afghanistan to Iran)"
+                      onClick={applyKandaharNimrozBandarAbbasDubaiIndiaPreset}
+                      className="h-9.5 rounded-xl border-emerald-200 bg-emerald-50/80 px-3 text-xs font-extrabold text-emerald-900 shadow-xs hover:bg-emerald-100 cursor-pointer transition-all"
+                      title="Quick Preset: Kandahar → Nimroz → Bandar Abbas → Dubai → Nhava Sheva (India)"
                     >
-                      <Truck className="h-4 w-4 mr-1 text-blue-700" />
-                      🚛 Herat → Islam Qala → Dougharoun / هرات → اسلام قلعه → دوغارون
+                      <Ship className="h-4 w-4 mr-1.5 text-emerald-700" />
+                      🇦🇫 → 🇮🇷 → 🇦🇪 → 🇮🇳 Kandahar to India Route
                     </Button>
 
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={addRouteStop}
-                      className="h-9 rounded-xl border-amber-300 bg-amber-500/10 px-3 text-xs font-black text-amber-800 shadow-xs hover:bg-amber-500/20 cursor-pointer"
+                      onClick={applyHeratIslamQalaDougharounPreset}
+                      className="h-9.5 rounded-xl border-blue-200 bg-blue-50/80 px-3 text-xs font-extrabold text-blue-900 shadow-xs hover:bg-blue-100 cursor-pointer transition-all"
+                      title="Quick Preset: Herat → Islam Qala → Dougharoun (Afghanistan to Iran)"
                     >
-                      <Plus className="h-4 w-4 mr-1 text-amber-700" />
+                      <Truck className="h-4 w-4 mr-1.5 text-blue-700" />
+                      🚛 Herat → Dougharoun Route
+                    </Button>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={addRouteStop}
+                      className="h-9.5 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 text-white px-3.5 text-xs font-extrabold shadow-md shadow-amber-500/20 hover:from-amber-600 hover:to-orange-600 cursor-pointer transition-all"
+                    >
+                      <Plus className="h-4 w-4 mr-1 text-white" />
                       Add Stop / افزودن توقفگاه
                     </Button>
                   </div>
@@ -2683,7 +3240,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               </CardHeader>
               <CardContent className="space-y-6 pt-5 pb-6">
                 {/* Visual Route Pathway Timeline */}
-                <div className="rounded-2xl border border-blue-200/80 bg-linear-to-r from-blue-50/70 via-indigo-50/40 to-cyan-50/70 p-4 shadow-sm">
+                <div className="rounded-2xl border border-blue-200/80 bg-linear-to-r from-blue-50/90 via-indigo-50/60 to-cyan-50/90 p-4 shadow-inner overflow-hidden">
                   <div className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 scrollbar-thin">
                     {formData.routes.map((route, index) => {
                       const isOrigin = index === 0
@@ -2692,55 +3249,84 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       
                       return (
                         <div key={route.id} className="flex items-center gap-3 shrink-0">
-                          <button
-                            type="button"
+                          <div
                             onClick={() => setActiveRouteIndex(index)}
-                            className={`group flex items-center gap-3 rounded-2xl border p-3 text-left transition-all cursor-pointer ${
+                            className={`group relative flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all duration-300 cursor-pointer ${
                               activeRouteIndex === index
-                                ? "border-amber-500 bg-white shadow-md shadow-amber-500/15 ring-2 ring-amber-400/30"
-                                : "border-slate-200/90 bg-white/90 hover:border-blue-300 hover:bg-white"
+                                ? "border-2 border-blue-600 bg-white shadow-xl shadow-blue-500/15 ring-4 ring-blue-500/10 scale-102"
+                                : "border-slate-200/90 bg-white/95 hover:border-blue-300 hover:bg-white hover:shadow-md"
                             }`}
                           >
-                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black text-white shadow-md ${
-                              isOrigin
-                                ? "bg-linear-to-br from-emerald-500 to-teal-700 shadow-emerald-500/20"
-                                : isDest
-                                ? "bg-linear-to-br from-indigo-600 to-purple-700 shadow-indigo-500/20"
-                                : "bg-linear-to-br from-blue-600 to-cyan-600 shadow-blue-500/20"
-                            }`}>
+                            {/* Action Buttons (Hover) */}
+                            <div className="absolute -top-3 -right-2 hidden group-hover:flex items-center gap-1 bg-white p-1 rounded-xl shadow-lg border border-slate-200 z-10">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setActiveRouteIndex(index)
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"
+                                title="Edit Stop"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              {formData.routes.length > 2 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    removeRouteStop(index)
+                                  }}
+                                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
+                                  title="Delete Stop"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-extrabold text-white text-base shadow-md ${
+                                isOrigin
+                                  ? "bg-linear-to-br from-emerald-500 to-teal-700 shadow-emerald-500/25"
+                                  : isDest
+                                  ? "bg-linear-to-br from-indigo-600 to-purple-700 shadow-indigo-500/25"
+                                  : "bg-linear-to-br from-blue-600 to-cyan-600 shadow-blue-500/25"
+                              }`}
+                            >
                               {index + 1}
                             </div>
-                            <div className="min-w-28 max-w-52">
+                            <div className="min-w-28 max-w-56">
                               <div className="flex items-center gap-1.5">
                                 {getTransportIcon(route.transportMode)}
-                                <span className={`text-[10px] font-black uppercase tracking-wider ${
+                                <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
                                   isOrigin ? "text-emerald-700" : isDest ? "text-indigo-700" : "text-blue-700"
                                 }`}>
                                   {getRouteStopLabel(index, formData.routes.length)}
                                 </span>
                               </div>
-                              <p className="mt-0.5 truncate text-xs font-black text-slate-900">{stopName}</p>
+                              <p className="mt-0.5 truncate text-xs font-extrabold text-blue-950">{stopName}</p>
                               {route.locationPersian && (
-                                <p className="truncate text-[11px] font-semibold text-slate-500 font-[vazirmatn]" dir="rtl">{route.locationPersian}</p>
+                                <p className="truncate text-[11px] font-bold text-slate-500 font-[vazirmatn]" dir="rtl">{route.locationPersian}</p>
                               )}
 
                               {/* Truck Badge info if present */}
                               {route.plateNumber && (
-                                <span className="mt-1 inline-block rounded-md bg-blue-100 px-1.5 py-0.5 text-[9px] font-black text-blue-900">
+                                <span className="mt-1 inline-block rounded-md bg-blue-100 px-1.5 py-0.5 text-[9px] font-extrabold text-blue-900 border border-blue-200">
                                   Plate: {route.plateNumber}
                                 </span>
                               )}
                               {route.customsSealRequired && (
-                                <span className="mt-1 ml-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-black text-amber-900" dir="rtl">
+                                <span className="mt-1 ml-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-extrabold text-amber-900 border border-amber-200" dir="rtl">
                                   📍 سیل غواړي
                                 </span>
                               )}
                             </div>
-                          </button>
+                          </div>
                           {index < formData.routes.length - 1 && (
-                            <div className="flex items-center gap-1 text-blue-400 shrink-0">
-                              <span className="h-0.5 w-4 bg-blue-300/80 rounded-full" />
-                              <ArrowRight className="h-4 w-4 text-blue-500" />
+                            <div className="flex items-center gap-1.5 px-1 text-blue-500 shrink-0">
+                              <span className="h-0.5 w-5 bg-linear-to-r from-blue-400 to-indigo-400 rounded-full" />
+                              <ArrowRight className="h-4 w-4 text-blue-600" />
                             </div>
                           )}
                         </div>
@@ -2761,9 +3347,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         key={route.id}
                         className={`rounded-2xl border transition-all ${
                           isSelected
-                            ? "border-amber-400 bg-white shadow-lg shadow-amber-500/10 ring-2 ring-amber-400/20"
+                            ? "border-2 border-blue-500 bg-white shadow-xl shadow-blue-500/10 ring-4 ring-blue-500/10"
                             : "border-slate-200/90 bg-white/95 hover:border-slate-300"
-                        } p-4`}
+                        } p-4.5`}
                       >
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-3">
@@ -2778,14 +3364,14 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-black text-slate-900">{getRouteStopLabel(index, formData.routes.length)}</span>
-                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                                  isOrigin ? "bg-emerald-100 text-emerald-800" : isDest ? "bg-indigo-100 text-indigo-800" : "bg-blue-100 text-blue-800"
+                                <span className="text-base font-extrabold text-blue-950">{getRouteStopLabel(index, formData.routes.length)}</span>
+                                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                                  isOrigin ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : isDest ? "bg-indigo-100 text-indigo-800 border border-indigo-200" : "bg-blue-100 text-blue-800 border border-blue-200"
                                 }`}>
                                   {isOrigin ? "Origin Point" : isDest ? "Final Destination" : `Stop #${index}`}
                                 </span>
                               </div>
-                              <p className="text-xs font-semibold text-slate-500 font-[vazirmatn]" dir="rtl">{getRouteStopLabelPersian(index, formData.routes.length)}</p>
+                              <p className="text-xs font-bold text-slate-500 font-[vazirmatn] mt-0.5" dir="rtl">{getRouteStopLabelPersian(index, formData.routes.length)}</p>
                             </div>
                           </div>
                           <Button
@@ -2828,19 +3414,43 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
                             {/* Floating Inline Recommendation Popover */}
                             {showLocationDropdown === index && (
-                              <div className="absolute left-0 right-0 top-full z-40 mt-1 max-h-64 overflow-y-auto rounded-2xl border border-amber-300 bg-white p-2 shadow-2xl shadow-slate-900/20 backdrop-blur-xl">
-                                <div className="flex items-center justify-between border-b border-slate-100 px-2 pb-1.5 mb-1.5 text-[11px] font-black text-amber-800">
-                                  <span>Suggested Locations ({quickLocationMatches.length})</span>
+                              <div className="absolute left-0 right-0 top-full z-40 mt-1.5 max-h-80 overflow-y-auto rounded-2xl border border-amber-300/80 bg-white/95 p-3 shadow-2xl shadow-slate-900/20 backdrop-blur-xl">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-black text-amber-900">Suggested Locations</span>
+                                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-800">
+                                      {quickLocationMatches.length}
+                                    </span>
+                                  </div>
                                   <button
                                     type="button"
                                     onClick={() => setShowLocationDropdown(null)}
-                                    className="text-xs text-slate-400 hover:text-slate-700"
+                                    className="text-xs font-bold text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md transition"
                                   >
                                     ✕ Close
                                   </button>
                                 </div>
-                                <div className="grid gap-1">
-                                  {quickLocationMatches.slice(0, 10).map((loc) => (
+
+                                {/* Quick Country Filter Chips */}
+                                <div className="flex flex-wrap gap-1 mb-2.5 pb-1 border-b border-slate-100">
+                                  {["ALL", "Afghanistan", "Iran", "Pakistan", "United Arab Emirates", "China", "India"].map((ctry) => (
+                                    <button
+                                      key={ctry}
+                                      type="button"
+                                      onClick={() => setSelectedCountryFilter(ctry)}
+                                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition cursor-pointer ${
+                                        selectedCountryFilter === ctry
+                                          ? "bg-amber-600 text-white shadow-sm"
+                                          : "bg-slate-100 text-slate-700 hover:bg-amber-100 hover:text-amber-900"
+                                      }`}
+                                    >
+                                      {ctry === "ALL" ? "🌍 All" : ctry === "Afghanistan" ? "🇦🇫 AF" : ctry === "Iran" ? "🇮🇷 IR" : ctry === "Pakistan" ? "🇵🇰 PK" : ctry === "United Arab Emirates" ? "🇦🇪 UAE" : ctry === "China" ? "🇨🇳 CN" : "🇮🇳 IN"}
+                                    </button>
+                                  ))}
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                  {quickLocationMatches.slice(0, 18).map((loc) => (
                                     <button
                                       key={loc.name}
                                       type="button"
@@ -2848,21 +3458,21 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                         handleQuickLocationSelect(loc)
                                         setShowLocationDropdown(null)
                                       }}
-                                      className="flex items-center justify-between rounded-xl p-2 text-left transition hover:bg-amber-50/80 cursor-pointer"
+                                      className="flex items-center justify-between rounded-xl p-2 text-left transition bg-slate-50/60 hover:bg-amber-50 border border-slate-100 hover:border-amber-300 cursor-pointer group"
                                     >
                                       <div className="flex items-center gap-2 min-w-0">
                                         <span className="text-base shrink-0">{countryFlags[loc.country] || "🌍"}</span>
                                         <div className="min-w-0">
-                                          <p className="text-xs font-black text-slate-900 truncate">{loc.name}</p>
+                                          <p className="text-xs font-black text-slate-900 group-hover:text-amber-900 truncate">{loc.name}</p>
                                           <p className="text-[10px] font-semibold text-slate-500 font-[vazirmatn] truncate" dir="rtl">{loc.persian}</p>
                                         </div>
                                       </div>
-                                      <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-black text-amber-800 shrink-0">{loc.code}</span>
+                                      <span className="rounded-md bg-amber-100/80 px-1.5 py-0.5 text-[10px] font-black text-amber-800 shrink-0 ml-1">{loc.code}</span>
                                     </button>
                                   ))}
                                   {quickLocationMatches.length === 0 && (
-                                    <div className="p-3 text-center text-xs font-bold text-slate-400">
-                                      Type to search locations...
+                                    <div className="col-span-2 p-4 text-center text-xs font-bold text-slate-400 bg-slate-50 rounded-xl">
+                                      No locations found. Type to search or add custom location...
                                     </div>
                                   )}
                                 </div>
@@ -3663,41 +4273,112 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
           </TabsContent>
 
-          <TabsContent value="preview">
-            <div className="overflow-auto flex justify-center rounded-[30px] border border-white/80 bg-linear-to-br from-white/70 via-blue-50/45 to-cyan-50/30 p-6 shadow-2xl shadow-blue-200/45 backdrop-blur-2xl ring-1 ring-blue-100/60 print:hidden">
-              <A4Preview
-                bolNumber={bolNumber}
-                issueDate={issueDate}
-                persianDate={persianDate}
-                persianDateNumeric={persianDateNumeric}
-                formData={formData}
-                logoUrl={logoUrl}
-                companyName={companyName}
-                companyNamePersian={companyNamePersian}
-                companySubtitle={companySubtitle}
-                companyPhone={companyPhone}
-                companyEmail={companyEmail}
-                companyAddress={companyAddress}
-                companyLicence={companyLicence}
-              />
+          <TabsContent value="preview" className="space-y-4">
+            {/* Quick Watermark Floating Control Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border border-blue-200/80 bg-white/90 shadow-xl shadow-blue-500/5 backdrop-blur-xl print:hidden">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                  <span className="p-1 rounded-md bg-amber-500 text-white">✨</span>
+                  <span>Watermark Preset:</span>
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { label: "🏔️ Mountain", url: "/images/afghan_mountain_blueprint_bg.jpg", opacity: 0.22 },
+                    { label: "🚚 Truck Fleet", url: "/images/afghan_cargo_fleet_pass.jpg", opacity: 0.22 },
+                    { label: "🚢 Ocean Ship", url: "/images/maritime_port_cargo_ship.jpg", opacity: 0.20 },
+                    { label: "✈️ Air Plane", url: "/images/sky_freight_cargo_plane.jpg", opacity: 0.22 },
+                    { label: "📐 Truck Blueprint", url: "/images/overland_transit_blueprint.svg", opacity: 0.18 },
+                    { label: "🌊 Ship Blueprint", url: "/images/maritime_shipping_blueprint.svg", opacity: 0.18 },
+                    { label: "📄 Clean", url: "", opacity: 0 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl(preset.url)
+                        setBgOpacity(preset.opacity)
+                      }}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                        bgImageUrl === preset.url
+                          ? "bg-amber-500 text-slate-950 shadow-xs ring-2 ring-amber-400/40"
+                          : "bg-slate-100 text-slate-700 hover:bg-amber-100 hover:text-amber-900"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Opacity Slider */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-600">Opacity:</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="0.80"
+                  step="0.02"
+                  value={bgOpacity}
+                  onChange={(e) => setBgOpacity(parseFloat(e.target.value))}
+                  className="w-28 sm:w-36 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                />
+                <span className="text-xs font-black font-mono text-amber-700 w-8">
+                  {Math.round(bgOpacity * 100)}%
+                </span>
+                
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setIsPrintDialogOpen(true)}
+                  className="h-8 rounded-xl bg-linear-to-r from-blue-600 to-cyan-500 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 hover:scale-105 transition-all ml-2"
+                >
+                  <Printer className="h-3.5 w-3.5 mr-1" />
+                  Print / Save PDF
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto max-w-full flex justify-center rounded-2xl sm:rounded-[30px] border border-white/80 bg-linear-to-br from-white/70 via-blue-50/45 to-cyan-50/30 p-1 sm:p-6 shadow-2xl shadow-blue-200/45 backdrop-blur-2xl ring-1 ring-blue-100/60 print:hidden">
+              <div className="w-full max-w-[210mm] min-w-[210mm] transform-gpu transition-all origin-top scale-[0.50] xs:scale-[0.62] sm:scale-[0.85] md:scale-100 mb-[-120mm] xs:mb-[-90mm] sm:mb-[-25mm] md:mb-0">
+                <A4Preview
+                  bolNumber={bolNumber}
+                  issueDate={issueDate}
+                  persianDate={persianDate}
+                  persianDateNumeric={persianDateNumeric}
+                  formData={formData}
+                  logoUrl={logoUrl}
+                  companyName={companyName}
+                  companyNamePersian={companyNamePersian}
+                  companySubtitle={companySubtitle}
+                  companyPhone={companyPhone}
+                  companyEmail={companyEmail}
+                  companyAddress={companyAddress}
+                  companyLicence={companyLicence}
+                  backgroundImageUrl={bgImageUrl}
+                  backgroundOpacity={bgOpacity}
+                />
+              </div>
             </div>
           </TabsContent>
 
-          {savedDocumentsPanel && (
-            <TabsContent value="saved-documents">
-              <section className="min-h-0 rounded-[30px] border border-white/70 bg-white/45 p-3 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl print:hidden">
-                {savedDocumentsPanel}
-              </section>
-            </TabsContent>
-          )}
+          <TabsContent value="saved-documents">
+            <section className="min-h-0 rounded-[30px] border border-white/70 bg-white/45 p-3 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl print:hidden">
+              {savedDocumentsPanel || (
+                <SavedDocuments
+                  onLoadDocument={(id, targetTab) => {
+                    loadDocument(id)
+                    setActiveTab(targetTab || "form")
+                  }}
+                />
+              )}
+            </section>
+          </TabsContent>
 
-          {accountLedgerPanel && (
-            <TabsContent value="account">
-              <section className="min-h-0 w-full overflow-hidden rounded-[30px] border border-white/70 bg-white/45 p-1 sm:p-2 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl print:hidden">
-                {accountLedgerPanel}
-              </section>
-            </TabsContent>
-          )}
+          <TabsContent value="account">
+            <section className="min-h-0 w-full overflow-hidden rounded-[30px] border border-white/70 bg-white/45 p-1 sm:p-2 shadow-2xl shadow-blue-200/40 backdrop-blur-2xl print:hidden">
+              {accountLedgerPanel || <LedgerView />}
+            </section>
+          </TabsContent>
 
           {/* PDF Settings Tab */}
           <TabsContent value="pdf-settings">
@@ -3761,6 +4442,208 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       <p className="text-xs text-amber-600 mt-2">Save document first to enable cloud storage</p>
                     )}
                   </div>
+                </div>
+
+                {/* Document Mountain Scenery & Watermark Background Controls */}
+                <div className="p-4 rounded-2xl bg-linear-to-br from-amber-50/90 via-sky-50/50 to-white border border-amber-200 shadow-sm">
+                  <h3 className="font-extrabold text-slate-900 mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="h-4.5 w-4.5 text-amber-600" />
+                      Document Mountain Background & Scenery Watermark
+                    </span>
+                    <span className="text-xs font-bold text-amber-800 font-[vazirmatn]">پس‌زمینه کوهستانی و واترمارک</span>
+                  </h3>
+                  <p className="text-xs text-slate-600 mb-4">
+                    Select a high-resolution mountain scenery image to apply as an elegant, subtle watermark background across your Bill of Lading document.
+                  </p>
+
+                  {/* Preset Background Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl("/images/afghan_mountain_blueprint_bg.jpg")
+                        setBgOpacity(0.22)
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        bgImageUrl === "/images/afghan_mountain_blueprint_bg.jpg"
+                          ? "border-amber-500 bg-amber-50/80 shadow-md ring-2 ring-amber-400/40"
+                          : "border-slate-200 bg-white hover:border-amber-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-slate-900">🏔️ Hindu Kush Mountain</span>
+                        {bgImageUrl === "/images/afghan_mountain_blueprint_bg.jpg" && (
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500">Snow Peaks & Blue Technical Vector Grid</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl("/images/afghan_cargo_fleet_pass.jpg")
+                        setBgOpacity(0.22)
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        bgImageUrl === "/images/afghan_cargo_fleet_pass.jpg"
+                          ? "border-orange-500 bg-orange-50/80 shadow-md ring-2 ring-orange-400/40"
+                          : "border-slate-200 bg-white hover:border-orange-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-slate-900">🚚 Truck Fleet Pass</span>
+                        {bgImageUrl === "/images/afghan_cargo_fleet_pass.jpg" && (
+                          <span className="w-2 h-2 rounded-full bg-orange-500" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500">Afghan Cargo Truck Fleet in Mountain Pass</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl("/images/maritime_port_cargo_ship.jpg")
+                        setBgOpacity(0.20)
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        bgImageUrl === "/images/maritime_port_cargo_ship.jpg"
+                          ? "border-cyan-500 bg-cyan-50/80 shadow-md ring-2 ring-cyan-400/40"
+                          : "border-slate-200 bg-white hover:border-cyan-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-slate-900">🚢 Ocean Cargo Vessel</span>
+                        {bgImageUrl === "/images/maritime_port_cargo_ship.jpg" && (
+                          <span className="w-2 h-2 rounded-full bg-cyan-500" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500">Container Cargo Ship & Sea Port Terminal</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl("/images/sky_freight_cargo_plane.jpg")
+                        setBgOpacity(0.22)
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        bgImageUrl === "/images/sky_freight_cargo_plane.jpg"
+                          ? "border-sky-500 bg-sky-50/80 shadow-md ring-2 ring-sky-400/40"
+                          : "border-slate-200 bg-white hover:border-sky-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-slate-900">✈️ Air Freight Aircraft</span>
+                        {bgImageUrl === "/images/sky_freight_cargo_plane.jpg" && (
+                          <span className="w-2 h-2 rounded-full bg-sky-500" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500">Commercial Cargo Plane Above Sunset Clouds</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl("/images/overland_transit_blueprint.svg")
+                        setBgOpacity(0.18)
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        bgImageUrl === "/images/overland_transit_blueprint.svg"
+                          ? "border-indigo-500 bg-indigo-50/80 shadow-md ring-2 ring-indigo-400/40"
+                          : "border-slate-200 bg-white hover:border-indigo-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-slate-900">📐 Truck Vector Blueprint</span>
+                        {bgImageUrl === "/images/overland_transit_blueprint.svg" && (
+                          <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500">Heavy Transit Semi-Trailer Technical Drawing</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl("/images/maritime_shipping_blueprint.svg")
+                        setBgOpacity(0.18)
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        bgImageUrl === "/images/maritime_shipping_blueprint.svg"
+                          ? "border-teal-500 bg-teal-50/80 shadow-md ring-2 ring-teal-400/40"
+                          : "border-slate-200 bg-white hover:border-teal-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-slate-900">🌊 Ship Vector Blueprint</span>
+                        {bgImageUrl === "/images/maritime_shipping_blueprint.svg" && (
+                          <span className="w-2 h-2 rounded-full bg-teal-500" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500">Ocean Container Cargo Vessel Grid Schematic</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl("/images/air_cargo_blueprint.svg")
+                        setBgOpacity(0.18)
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        bgImageUrl === "/images/air_cargo_blueprint.svg"
+                          ? "border-blue-500 bg-blue-50/80 shadow-md ring-2 ring-blue-400/40"
+                          : "border-slate-200 bg-white hover:border-blue-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-slate-900">🛩️ Flight Route Blueprint</span>
+                        {bgImageUrl === "/images/air_cargo_blueprint.svg" && (
+                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500">International Aviation Flight Path Grid</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBgImageUrl("")
+                        setBgOpacity(0)
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        !bgImageUrl
+                          ? "border-slate-700 bg-slate-100 shadow-md"
+                          : "border-slate-200 bg-white hover:border-slate-400"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-slate-900">📄 Clean Canvas (No Picture)</span>
+                        {!bgImageUrl && <span className="w-2 h-2 rounded-full bg-slate-700" />}
+                      </div>
+                      <span className="text-[10px] text-slate-500">Standard Light Gradient Paper</span>
+                    </button>
+                  </div>
+
+                  {/* Opacity Slider */}
+                  {bgImageUrl && (
+                    <div className="flex items-center gap-4 bg-white/80 p-3 rounded-xl border border-slate-200">
+                      <label className="text-xs font-bold text-slate-700 shrink-0">Watermark Opacity:</label>
+                      <input
+                        type="range"
+                        min="0.05"
+                        max="0.55"
+                        step="0.01"
+                        value={bgOpacity}
+                        onChange={(e) => setBgOpacity(parseFloat(e.target.value))}
+                        className="flex-1 accent-amber-600 cursor-pointer"
+                      />
+                      <span className="text-xs font-mono font-bold text-amber-900 w-12 text-right">
+                        {Math.round(bgOpacity * 100)}%
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* PDF Info */}
@@ -4081,6 +4964,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                 companyAddress={companyAddress}
                 companyLicence={companyLicence}
                 includeColorStrip={activePrintOptions.includeColorStrip}
+                backgroundImageUrl={bgImageUrl}
+                backgroundOpacity={bgOpacity}
               />
             </PrintSafeBOL>
           </div>
@@ -4090,7 +4975,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
         <div
           data-pdf-export="true"
           aria-hidden="true"
-          className="fixed top-0 -left-625 w-[210mm] overflow-visible pointer-events-none z-[-1] print:hidden"
+          className="fixed top-0 left-0 w-[210mm] min-h-[297mm] opacity-0 pointer-events-none z-[-9999] overflow-hidden print:hidden"
         >
           <A4Preview
             bolNumber={bolNumber}
@@ -4106,6 +4991,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             companyEmail={companyEmail}
             companyAddress={companyAddress}
             companyLicence={companyLicence}
+            backgroundImageUrl={bgImageUrl}
+            backgroundOpacity={bgOpacity}
             pdfExport
           />
         </div>

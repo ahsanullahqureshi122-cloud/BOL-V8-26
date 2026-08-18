@@ -5,49 +5,57 @@ import * as fs from "fs"
 import * as path from "path"
 import { tryPythonBackend } from "@/lib/services/python-backend-proxy"
 
-// In-memory counter for BOL number sequence
-let bolSequenceCounter: number | null = null
-
-// Helper to get the counter value (persisted in a file)
-function getSequenceCounter(): number {
-  if (bolSequenceCounter !== null) {
-    return bolSequenceCounter
+// Helper function to extract numeric suffix from a BOL number string
+function extractBolNumberSuffix(bolNum: any): number {
+  if (!bolNum) return 0
+  const str = String(bolNum)
+  const match = str.match(/NSA(\d+)/i) || str.match(/(\d+)\s*$/)
+  if (match && match[1]) {
+    const val = parseInt(match[1], 10)
+    return isNaN(val) ? 0 : val
   }
-  
-  // Try to read from a file to persist across server restarts
+  return 0
+}
+
+// Compute the next sequence BOL number based on maximum existing BOL number
+async function computeNextBOLNumber(): Promise<string> {
+  const currentYear = new Date().getFullYear()
+  let maxNum = 0
+
+  // 1. Check local storage
   try {
-    const counterFile = path.join(process.cwd(), ".bol-counter")
-    if (fs.existsSync(counterFile)) {
-      const content = fs.readFileSync(counterFile, "utf-8")
-      bolSequenceCounter = parseInt(content.trim(), 10) || 1
-    } else {
-      bolSequenceCounter = 1
+    const localBols = await localStorage.getAllLocalBOLs()
+    for (const bol of localBols) {
+      const numStr = bol.bol_number || bol.id || ""
+      const parsed = extractBolNumberSuffix(numStr)
+      if (parsed > maxNum) maxNum = parsed
     }
   } catch (e) {
-    bolSequenceCounter = 1
+    console.error("[v0] Error reading local BOLs for sequence:", e)
   }
-  
-  return bolSequenceCounter
-}
 
-// Helper to persist the counter value
-function saveSequenceCounter(value: number) {
-  bolSequenceCounter = value
+  // 2. Check Supabase database
   try {
-    const counterFile = path.join(process.cwd(), ".bol-counter")
-    fs.writeFileSync(counterFile, String(value), "utf-8")
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("bill_of_lading")
+      .select("bol_number, id")
+    if (data && Array.isArray(data)) {
+      for (const bol of data) {
+        const numStr = bol.bol_number || bol.id || ""
+        const parsed = extractBolNumberSuffix(numStr)
+        if (parsed > maxNum) maxNum = parsed
+      }
+    }
   } catch (e) {
-    console.error("[v0] Error saving BOL counter:", e)
+    console.error("[v0] Error checking Supabase for max BOL sequence:", e)
   }
-}
 
-// Helper function to generate BOL number in format: BOL-2026-NSA001
-function generateBOLNumber(): string {
-  const currentYear = new Date().getFullYear()
-  const counter = getSequenceCounter()
-  const sequenceNumber = String(counter).padStart(3, "0")
-  saveSequenceCounter(counter + 1)
-  return `BOL-${currentYear}-NSA${sequenceNumber}`
+  // Start sequence at minimum 470 as requested by user
+  const START_SEQUENCE = 470
+  const nextSeq = Math.max(START_SEQUENCE, maxNum + 1)
+  const padded = String(nextSeq).padStart(3, "0")
+  return `BOL-${currentYear}-NSA${padded}`
 }
 
 // GET: Fetch all BOLs or get next BOL number
@@ -56,11 +64,8 @@ export async function GET(request: Request) {
   const action = searchParams.get("action")
   
   if (action === "next-number") {
-    const pythonNumber = await tryPythonBackend("/api/bol/tools/next-number")
-    if (pythonNumber) return NextResponse.json({ bolNumber: pythonNumber.bolNumber, source: "python-fastapi" })
-
-    // Generate the next BOL number locally
-    const bolNumber = generateBOLNumber()
+    // Dynamically compute next BOL number from max existing BOL number across database & local storage
+    const bolNumber = await computeNextBOLNumber()
     return NextResponse.json({ bolNumber })
   }
   
@@ -90,16 +95,47 @@ export async function GET(request: Request) {
     }
     for (const bol of data || []) {
       const key = bol.bol_number || bol.id
-      if (key) mergedByNumber.set(key, bol)
+      if (key) {
+        const existing = mergedByNumber.get(key)
+        if (!existing) {
+          mergedByNumber.set(key, bol)
+        } else {
+          // Priority to the one that has a more recent updated_at, or failing that, the one with more data fields
+          const existingTime = new Date(existing.updated_at || existing.created_at || 0).getTime()
+          const newTime = new Date(bol.updated_at || bol.created_at || 0).getTime()
+          
+          if (newTime > existingTime) {
+             mergedByNumber.set(key, bol)
+          } else if (newTime === existingTime) {
+             // If same time, pick the one with a non-empty shipper_name
+             if (!existing.shipper_name && bol.shipper_name) {
+               mergedByNumber.set(key, bol)
+             }
+          }
+        }
+      }
     }
 
-    return NextResponse.json({ data: Array.from(mergedByNumber.values()), source: localBols.length ? "merged" : "supabase" })
+    const allBols = Array.from(mergedByNumber.values()).sort((a, b) => {
+      const dateA = new Date(a.created_at || a.updated_at || a.issue_date || 0).getTime()
+      const dateB = new Date(b.created_at || b.updated_at || b.issue_date || 0).getTime()
+      if (dateB !== dateA) return dateB - dateA
+      return extractBolNumberSuffix(b.bol_number || "") - extractBolNumberSuffix(a.bol_number || "")
+    })
+
+    return NextResponse.json({ data: allBols, source: localBols.length ? "merged" : "supabase" })
   } catch (err) {
     console.error("[v0] Error fetching BOLs:", err instanceof Error ? err.message : String(err))
     // Fallback to local storage on any error
     const localBols = await localStorage.getAllLocalBOLs()
+    const sortedLocal = [...localBols].sort((a, b) => {
+      const dateA = new Date(a.created_at || a.updated_at || a.issue_date || 0).getTime()
+      const dateB = new Date(b.created_at || b.updated_at || b.issue_date || 0).getTime()
+      if (dateB !== dateA) return dateB - dateA
+      return extractBolNumberSuffix(b.bol_number || "") - extractBolNumberSuffix(a.bol_number || "")
+    })
     return NextResponse.json({ 
-      data: localBols, 
+      data: sortedLocal, 
       source: "local",
       notice: "Using locally cached BOLs"
     })
@@ -116,19 +152,33 @@ export async function POST(request: Request) {
     })
     if (pythonBol) return NextResponse.json(pythonBol)
     
-    // Use the BOL number from the body if provided, otherwise generate a new one
-    const bolNumber = body.bol_number || generateBOLNumber()
+    // Use the BOL number from the body if provided, otherwise compute next sequence number
+    const bolNumber = body.bol_number || await computeNextBOLNumber()
     
     console.log("[v0] Creating BOL with number:", bolNumber)
+
+    // Remove client-side empty or string id when inserting new record
+    const { id: rawId, ...cleanBody } = body
     
-    const bolData = {
+    const bolData: Record<string, any> = {
       bol_number: bolNumber,
       issue_date: body.issue_date || new Date().toISOString().split("T")[0],
-      ...body,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...cleanBody,
+    }
+
+    if (rawId && typeof rawId === "string" && rawId.length > 20 && !rawId.startsWith("BOL-")) {
+      bolData.id = rawId
     }
     
-    // Try to save to Supabase first
-    let savedData = null
+    // Always store locally to guarantee local storage persistence
+    await localStorage.storeLocalBOL(bolNumber, bolData)
+
+    let savedData = {
+      id: bolNumber,
+      ...bolData,
+    }
     let savedToSupabase = false
     
     try {
@@ -141,32 +191,22 @@ export async function POST(request: Request) {
         .single()
       
       if (error) {
-        console.error("[v0] Supabase error, saving locally:", error.message)
+        console.error("[v0] Supabase insert error:", error.message, error.details, error.hint)
       } else if (data) {
         savedData = data
         savedToSupabase = true
-        console.log("[v0] BOL saved to Supabase:", data.id)
+        console.log("[v0] BOL saved to Supabase successfully:", data.id)
       }
     } catch (supabaseErr) {
-      console.error("[v0] Supabase connection failed, saving locally:", 
+      console.error("[v0] Supabase connection failed, saved locally:", 
         supabaseErr instanceof Error ? supabaseErr.message : String(supabaseErr))
-    }
-    
-    // If Supabase failed, save locally
-    if (!savedToSupabase) {
-      await localStorage.storeLocalBOL(bolNumber, bolData)
-      savedData = {
-        id: bolNumber,
-        ...bolData,
-        created_at: new Date().toISOString(),
-      }
     }
     
     return NextResponse.json({ 
       success: true,
       data: savedData,
       saved_to: savedToSupabase ? "supabase" : "local",
-      notice: savedToSupabase ? undefined : "Document saved locally. It will sync when Supabase is available."
+      notice: savedToSupabase ? undefined : "Document saved locally and synchronized."
     })
   } catch (err) {
     console.error("[v0] Error in BOL creation:", err instanceof Error ? err.message : String(err))

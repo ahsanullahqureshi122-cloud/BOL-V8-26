@@ -5,7 +5,7 @@
   "ledgerRecords": {
     "asadullah niamatullah habibi ltd": [
       {
-        "id": "69bcced8-45df-4a52-bd95-54b5e977a71b",
+        "id": "643708a6-08ac-4242-b732-0514b199015d",
         "date": "2026-06-01",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "006",
@@ -22,7 +22,7 @@
         "pdfFile": ""
       },
       {
-        "id": "d9fa3cf4-3844-40d8-a494-78f641e712ad",
+        "id": "bd6ebc29-96b9-4861-82f4-1674b3fe5d52",
         "date": "2025-09-04",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "005",
@@ -39,7 +39,7 @@
         "pdfFile": ""
       },
       {
-        "id": "732d3482-829b-40cf-a986-0375e5396b11",
+        "id": "24775db1-1ae5-4dc9-a24f-38df6196e6e1",
         "date": "2026-06-02",
         "description": "ASADULLAH NIAMATULLAH HABIBI LTD",
         "invoiceNo": "007",
@@ -58,7 +58,7 @@
     ],
     "pahlawan noori ltd": [
       {
-        "id": "cb010967-3b61-4040-83b1-bcd8e6994be4",
+        "id": "ef6617df-4cec-462d-b0cf-ee61de50db40",
         "date": "2026-05-25",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "009",
@@ -75,7 +75,7 @@
         "pdfFile": ""
       },
       {
-        "id": "d4ff7cc1-2e91-48f9-9dbd-b72e49fedc2d",
+        "id": "8677171b-5800-43d5-9f84-d5e502e1eb38",
         "date": "2026-05-19",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "008",
@@ -92,7 +92,7 @@
         "pdfFile": ""
       },
       {
-        "id": "e121cae5-4499-41da-85a8-c15c82ef60ce",
+        "id": "99e3b3e3-4732-42d9-9995-948c778a1dc0",
         "date": "2026-06-04",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "010",
@@ -109,7 +109,7 @@
         "pdfFile": ""
       },
       {
-        "id": "994351da-4f72-449b-9e4c-0e3c15360717",
+        "id": "57d5d8e9-ff02-4be3-81ec-56ab679ba2f5",
         "date": "2026-02-17",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "006",
@@ -126,7 +126,7 @@
         "pdfFile": ""
       },
       {
-        "id": "4645b56d-1716-476c-ab11-0a6361274fb9",
+        "id": "5b031e97-a4af-474c-b6e0-97a6520ad41a",
         "date": "2026-06-07",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "005",
@@ -143,7 +143,7 @@
         "pdfFile": ""
       },
       {
-        "id": "dfe8645f-b7e3-4d66-bfcb-ab05d20819bf",
+        "id": "d4ae3378-67e8-4138-b1af-90d178be5c8d",
         "date": "2026-02-23",
         "description": "PAHLAWAN NOORI LTD",
         "invoiceNo": "007",
@@ -162,7 +162,7 @@
     ],
     "rahmat nazar ltd": [
       {
-        "id": "0b5cf21a-fd41-4cc7-b021-dba1a5e41335",
+        "id": "bb11493c-b19e-435f-a94b-a0d8534962eb",
         "date": "2025-12-07",
         "description": "RAHMAT NAZAR LTD",
         "invoiceNo": "149",
@@ -179,7 +179,7 @@
         "pdfFile": ""
       },
       {
-        "id": "71e81be2-0443-493c-a876-9be42fbd8232",
+        "id": "fa464db3-f2f7-4666-96b3-39f9eb6e3717",
         "date": "2025-09-20",
         "description": "RAHMAT NAZAR LTD",
         "invoiceNo": "067",
@@ -198,7 +198,7 @@
     ],
     "omar shahi ltd": [
       {
-        "id": "e12b06e7-81f4-4a5d-b04e-d00bd4caaf3c",
+        "id": "5fa6e899-482b-4e15-8011-2cc9999a5d75",
         "date": "2025-12-31",
         "description": "OMAR SHAHI LTD",
         "invoiceNo": "114",
@@ -215,7 +215,7 @@
         "pdfFile": ""
       },
       {
-        "id": "bbcc3200-8707-4cfd-a8a7-5c3f20a14431",
+        "id": "739534aa-c5bb-47ea-ad69-9808e1f1d203",
         "date": "2025-09-13",
         "description": "OMAR SHAHI LTD",
         "invoiceNo": "045",
@@ -234,7 +234,7 @@
     ],
     "najib asad ltd": [
       {
-        "id": "429faf54-a66a-40e0-9190-72f42c25c467",
+        "id": "6118637e-0d1d-43db-ae37-820ae4a7b474",
         "date": "2026-05-23",
         "description": "NAJIB ASAD LTD",
         "invoiceNo": "012",
@@ -253,7 +253,7 @@
     ],
     "wasela ltd": [
       {
-        "id": "3aa7dc5b-012d-48f6-a736-645d1fe23836",
+        "id": "f7dda88f-21fc-402e-9509-4dcadc9c5986",
         "date": "2026-06-07",
         "description": "WASELA LTD",
         "invoiceNo": "015",
@@ -272,7 +272,7 @@
     ],
     "najeb amin ltd": [
       {
-        "id": "96d9a02a-6df8-424a-980d-b804c065e880",
+        "id": "4bc11957-549f-4bb7-8ac6-671d34ba3a8c",
         "date": "2026-08-05",
         "description": "NAJEB AMIN LTD",
         "invoiceNo": "INV-080",
@@ -289,7 +289,7 @@
         "pdfFile": ""
       },
       {
-        "id": "85a3f6a9-47de-4d3a-a208-238d79072f47",
+        "id": "9216a6cb-35b1-4f30-830c-f0680dcfb743",
         "date": "2026-08-05",
         "description": "NAJEB AMIN LTD",
         "invoiceNo": "INV-081",
@@ -306,7 +306,7 @@
         "pdfFile": ""
       },
       {
-        "id": "6a9ca969-c294-4397-8e3a-913a7da76645",
+        "id": "42b4c84f-5cdd-42f8-be92-51fceba9947c",
         "date": "2026-08-05",
         "description": "NAJEB AMIN LTD",
         "invoiceNo": "INV-082",
@@ -323,7 +323,7 @@
         "pdfFile": ""
       },
       {
-        "id": "fad8434d-d14c-4bb4-bb4b-b5161907992f",
+        "id": "07f51c5d-9040-488c-a4c3-a367f66fc782",
         "date": "2026-08-05",
         "description": "NAJEB AMIN LTD",
         "invoiceNo": "INV-084",
@@ -340,30 +340,13 @@
         "pdfFile": ""
       },
       {
-        "id": "3e9a31ef-a538-47b0-9a57-95f4e1e63a6f",
+        "id": "028bd738-1e2b-4bb3-ae4e-8a6d4f7c7b99",
         "date": "2026-08-06",
         "description": "NAJEB AMIN LTD",
-        "invoiceNo": "086",
-        "shipDate": "2026-08-06",
-        "bolNo": "BOL-2026-NSA465",
-        "truckNo": "",
-        "containerNo": "د کندهار څخه تر ترکیې مرسین بندرپورې ساده  د مرسین څخه تر نواشیوا پوری یخچالی کانټینر",
-        "containerType": "",
-        "consignee": "RCA EXIM PRIVATE LIMITED",
-        "quantity": "1389-CTNS",
-        "driverRent": "",
-        "debit": "",
-        "credit": "",
-        "pdfFile": ""
-      },
-      {
-        "id": "347542d9-0ebb-43a8-8318-cef8c334ac8d",
-        "date": "2026-08-06",
-        "description": "NAJEB AMIN LTD",
-        "invoiceNo": "INV-087",
+        "invoiceNo": "INV-088",
         "shipDate": "2026-08-06",
         "bolNo": "BOL-2026-NSA466",
-        "truckNo": "",
+        "truckNo": "74934 هرات",
         "containerNo": "",
         "containerType": "",
         "consignee": "MANIK TRADERS",
@@ -374,7 +357,7 @@
         "pdfFile": ""
       },
       {
-        "id": "4ca28140-c3c8-4b2c-bcaa-f8b2942f913f",
+        "id": "eb44f237-3848-452a-b505-c0845a21a8b3",
         "date": "2026-08-06",
         "description": "NAJEB AMIN LTD",
         "invoiceNo": "INV-088",
@@ -391,7 +374,7 @@
         "pdfFile": ""
       },
       {
-        "id": "a1f2cc85-5f65-401c-9c74-35f25425d607",
+        "id": "78515083-f996-4175-ac3c-c3fdb4422a95",
         "date": "2026-08-06",
         "description": "NAJEB AMIN LTD",
         "invoiceNo": "INV-090",
@@ -406,8 +389,42 @@
         "debit": "",
         "credit": "",
         "pdfFile": ""
+      },
+      {
+        "id": "d26d85bb-55d8-4e36-94c1-9c169d267606",
+        "date": "2026-08-06",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "INV-089",
+        "shipDate": "2026-08-06",
+        "bolNo": "BOL-2026-NSA469",
+        "truckNo": "",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "SAMARTH TRADING COMPANY",
+        "quantity": "1328-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
+      },
+      {
+        "id": "2fa8edf4-b5c6-4191-8281-aa68bb6ae815",
+        "date": "2026-08-06",
+        "description": "NAJEB AMIN LTD",
+        "invoiceNo": "086",
+        "shipDate": "2026-08-06",
+        "bolNo": "BOL-2026-NSA465",
+        "truckNo": "95445 کابل",
+        "containerNo": "",
+        "containerType": "",
+        "consignee": "RCA EXIM PRIVATE LIMITED",
+        "quantity": "1389-CTNS",
+        "driverRent": "",
+        "debit": "",
+        "credit": "",
+        "pdfFile": ""
       }
     ]
   },
-  "updated_at": "2026-08-06T08:27:36.070Z"
+  "updated_at": "2026-08-06T12:45:01.475Z"
 }

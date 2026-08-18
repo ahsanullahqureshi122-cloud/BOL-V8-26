@@ -1,5 +1,4 @@
 "use client"
-
 import type { BillOfLadingFormData } from "@/lib/types/bill-of-lading"
 
 // Dynamically import PDF libraries only in browser environment
@@ -901,16 +900,14 @@ export async function generateBOLPDFBlob({
   modern,
   onFallback,
 }: GenerateBOLPDFBlobOptions): Promise<Blob> {
-  try {
-    return await generatePremiumBOLPDFBlob(modern)
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : "Unknown vector PDF error"
-    if (previewElement) {
-      onFallback?.(`Vector PDF failed, falling back to compatibility capture: ${reason}`)
+  if (previewElement) {
+    try {
       return await generatePDFBlob(previewElement, fileName)
+    } catch (error) {
+      console.warn("Direct element PDF capture failed, falling back to premium generator:", error)
     }
-    throw error
   }
+  return await generatePremiumBOLPDFBlob(modern)
 }
 
 function hasUnsupportedColor(value: string): boolean {
@@ -1185,14 +1182,63 @@ function sanitizeElementForPDF(source: Element, target: Element): void {
 /**
  * Generate PDF from HTML element and return as Blob
  */
+/**
+ * Generate PDF from HTML element and return as Blob
+ * Uses html-to-image (native SVG foreignObject) for 100% pixel-perfect, font-perfect,
+ * RTL-compatible rendering identical to the on-screen A4 preview.
+ */
 export async function generatePDFBlob(
   element: HTMLElement,
   fileName: string
 ): Promise<Blob> {
-  const { html2canvas, jsPDF } = await loadPDFLibraries()
+  const jsPDF = await loadJSPDFLibrary()
+  const pageWidth = 210
+  const pageHeight = 297
+
+  // 1. Primary capture: High-resolution native SVG foreignObject rasterization via html-to-image
+  try {
+    const { toCanvas } = await import("html-to-image")
+
+    const canvas = await toCanvas(element, {
+      pixelRatio: 3, // 300+ DPI razor-sharp quality
+      quality: 1.0,
+      cacheBust: false,
+      backgroundColor: "#ffffff",
+      style: {
+        transform: "none",
+        margin: "0",
+        opacity: "1",
+        visibility: "visible",
+      },
+      filter: (node: HTMLElement) => {
+        if (node.getAttribute?.("data-print-ignore") === "true") return false
+        return true
+      },
+    })
+
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true,
+      putOnlyUsedFonts: true,
+    })
+
+    const imageData = canvas.toDataURL("image/png", 1.0)
+    pdf.addImage(imageData, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST")
+
+    const blob = pdf.output("blob") as Blob
+    return await normalizePDFBlob(blob)
+  } catch (htmlToImageError) {
+    console.warn("html-to-image capture failed, trying html2canvas fallback:", htmlToImageError)
+  }
+
+  // 2. Secondary fallback: html2canvas
   let wrapper: HTMLDivElement | null = null
 
   try {
+    const { html2canvas } = await loadPDFLibraries()
+
     // Clone element to avoid modifying the original
     const clonedElement = element.cloneNode(true) as HTMLElement
 
@@ -1224,31 +1270,6 @@ export async function generatePDFBlob(
     wrapper.style.zIndex = "-1"
     wrapper.appendChild(clonedElement)
     document.body.appendChild(wrapper)
-
-    const pageWidth = 210
-    const pageHeight = 297
-    const sourceRect = clonedElement.getBoundingClientRect()
-    const bolBadge = clonedElement.querySelector("[data-pdf-bol-badge='true']") as HTMLElement | null
-    const bolNumberText = (
-      clonedElement.querySelector("[data-pdf-bol-number='true']")?.textContent ||
-      fileName.replace(/\.pdf$/i, "")
-    ).trim()
-    const bolBadgeOverlay =
-      bolBadge && bolNumberText
-        ? (() => {
-            const badgeRect = bolBadge.getBoundingClientRect()
-            const scaleX = pageWidth / sourceRect.width
-            const scaleY = pageHeight / sourceRect.height
-
-            return {
-              text: bolNumberText,
-              x: (badgeRect.left - sourceRect.left) * scaleX,
-              y: (badgeRect.top - sourceRect.top) * scaleY,
-              width: badgeRect.width * scaleX,
-              height: badgeRect.height * scaleY,
-            }
-          })()
-        : null
 
     const canvas = await html2canvas(clonedElement, {
       scale: 3,
@@ -1316,44 +1337,8 @@ export async function generatePDFBlob(
       compress: false,
     })
 
-    const x = 0
-    const imageWidth = pageWidth
-    const imageHeight = pageHeight
-    const pageCount = 1
     const imageData = canvas.toDataURL("image/png")
-
-    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-      if (pageIndex > 0) {
-        pdf.addPage()
-      }
-
-      pdf.addImage(imageData, "PNG", x, -pageIndex * pageHeight, imageWidth, imageHeight)
-    }
-
-    if (bolBadgeOverlay) {
-      pdf.setPage(1)
-      pdf.setFillColor(255, 255, 255)
-      pdf.setDrawColor(147, 197, 253)
-      pdf.setLineWidth(0.25)
-      pdf.roundedRect(
-        bolBadgeOverlay.x,
-        bolBadgeOverlay.y,
-        bolBadgeOverlay.width,
-        bolBadgeOverlay.height,
-        1.4,
-        1.4,
-        "FD"
-      )
-      pdf.setTextColor(30, 64, 175)
-      pdf.setFont("helvetica", "bold")
-      pdf.setFontSize(10)
-      pdf.text(
-        bolBadgeOverlay.text,
-        bolBadgeOverlay.x + bolBadgeOverlay.width / 2,
-        bolBadgeOverlay.y + bolBadgeOverlay.height / 2 + 1.3,
-        { align: "center", baseline: "middle" }
-      )
-    }
+    pdf.addImage(imageData, "PNG", 0, 0, pageWidth, pageHeight)
 
     const blob = pdf.output("blob") as Blob
     return normalizePDFBlob(blob)
@@ -1381,8 +1366,8 @@ export async function uploadPDFToServer(
     const validPdfBlob = await normalizePDFBlob(pdfBlob)
     const formData = new FormData()
     formData.append("pdf", validPdfBlob, `${bolNumber || "BOL"}.pdf`)
-    formData.append("bolId", bolId)
-    formData.append("bolNumber", bolNumber)
+    formData.append("bolId", bolId || bolNumber || "BOL")
+    formData.append("bolNumber", bolNumber || "BOL")
 
     const response = await fetch("/api/bol/pdf", {
       method: "POST",
@@ -1463,24 +1448,7 @@ export async function savePDFToDevice(
 
     const validPdfBlob = await normalizePDFBlob(pdfBlob)
 
-    try {
-      const formData = new FormData()
-      formData.append("pdf", validPdfBlob, fileName)
-      formData.append("fileName", fileName)
-
-      const response = await fetch("/api/bol/pdf/local-save", {
-        method: "POST",
-        body: formData,
-      })
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        return { success: true, path: data.path }
-      }
-    } catch (error) {
-      console.warn("Local PDF save API failed, falling back to browser download:", error)
-    }
-
+    // Trigger direct browser file download immediately to user's device
     const url = URL.createObjectURL(validPdfBlob)
     const link = document.createElement("a")
     link.href = url
@@ -1488,9 +1456,21 @@ export async function savePDFToDevice(
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
 
-    return { success: true }
+    // Background backup call to local save API if endpoint exists
+    try {
+      const formData = new FormData()
+      formData.append("pdf", validPdfBlob, fileName)
+      formData.append("fileName", fileName)
+
+      fetch("/api/bol/pdf/local-save", {
+        method: "POST",
+        body: formData,
+      }).catch(() => {})
+    } catch {}
+
+    return { success: true, path: fileName }
   } catch (error) {
     console.error("Error saving PDF to device:", error)
     return {

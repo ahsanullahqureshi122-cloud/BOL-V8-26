@@ -1,8 +1,6 @@
-import { format, parseISO } from "date-fns-jalali"
-
 /**
  * Persian (Jalali/Shamsi) Calendar Converter
- * Converts Gregorian dates to Persian calendar format
+ * Converts Gregorian dates to Persian calendar format accurately
  */
 
 const PERSIAN_MONTHS = [
@@ -88,7 +86,7 @@ export function gregorianToPersian(gy: number, gm: number, gd: number): PersianD
 export function toPersianDate(dateString: string): PersianDate | null {
   if (!dateString) return null
   
-  const parts = dateString.split("-")
+  const parts = String(dateString).split("T")[0].split("-")
   if (parts.length !== 3) return null
   
   const year = parseInt(parts[0], 10)
@@ -100,50 +98,43 @@ export function toPersianDate(dateString: string): PersianDate | null {
   return gregorianToPersian(year, month, day)
 }
 
+const PERSIAN_NUMERALS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"]
+
+export function toPersianNumeral(num: number | string, padding: number = 0): string {
+  const str = num.toString().padStart(padding, "0")
+  return str
+    .split("")
+    .map((digit) => (/\d/.test(digit) ? PERSIAN_NUMERALS[parseInt(digit, 10)] : digit))
+    .join("")
+}
+
 /**
- * Format Persian date as string in Persian numerals
+ * Format Persian date as string in Persian numerals (e.g. "۱۹ مرداد ۱۴۰۵")
  */
 export function formatPersianDateWithMonthName(persianDate: PersianDate): string {
-  const persianNumerals = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"]
-  
-  const toPersianNumeral = (num: number): string => {
-    return num
-      .toString()
-      .split("")
-      .map((digit) => persianNumerals[parseInt(digit, 10)])
-      .join("")
-  }
-  
   const day = toPersianNumeral(persianDate.day)
-  const month = PERSIAN_MONTHS[persianDate.month - 1]
+  const month = PERSIAN_MONTHS[persianDate.month - 1] || ""
   const year = toPersianNumeral(persianDate.year)
   
   return `${day} ${month} ${year}`
 }
 
 /**
- * Format Persian date as numeric string (YYYY/MM/DD) in Persian numerals
+ * Format Persian date as numeric string (YYYY/MM/DD) in Persian numerals (e.g. "۱۴۰۵/۰۵/۱۹")
  */
 export function formatPersianDateNumeric(persianDate: PersianDate): string {
-  const persianNumerals = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"]
-  
-  const toPersianNumeral = (num: number, padding: number = 0): string => {
-    const str = num.toString().padStart(padding, "0")
-    return str
-      .split("")
-      .map((digit) => persianNumerals[parseInt(digit, 10)])
-      .join("")
-  }
-  
-  return `${toPersianNumeral(persianDate.year)}/${toPersianNumeral(persianDate.month, 2)}/${toPersianNumeral(persianDate.day, 2)}`
+  const y = toPersianNumeral(persianDate.year)
+  const m = toPersianNumeral(persianDate.month, 2)
+  const d = toPersianNumeral(persianDate.day, 2)
+  return `${y}/${m}/${d}`
 }
 
 /**
- * Format Persian date in English transliteration
+ * Format Persian date in English transliteration (e.g. "19 Mordad 1405")
  */
 export function formatPersianDateEnglish(persianDate: PersianDate): string {
   const day = persianDate.day
-  const month = PERSIAN_MONTHS_EN[persianDate.month - 1]
+  const month = PERSIAN_MONTHS_EN[persianDate.month - 1] || ""
   const year = persianDate.year
   
   return `${day} ${month} ${year}`
@@ -171,25 +162,25 @@ export function getDualDates(dateString: string): {
   }
 }
 
-const PERSIAN_NUMERALS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"]
-
-const toPersianDigits = (value: string): string => {
-  return value.replace(/\d/g, (digit) => PERSIAN_NUMERALS[Number(digit)])
-}
-
 export function formatPersianDateFromDate(dateInput: Date | string): string | null {
   if (!dateInput) return null
 
-  let date: Date
-  if (typeof dateInput === "string") {
-    date = parseISO(dateInput)
-    if (Number.isNaN(date.getTime())) return null
+  let dateStr: string
+  if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) return null
+    const yyyy = dateInput.getFullYear()
+    const mm = String(dateInput.getMonth() + 1).padStart(2, "0")
+    const dd = String(dateInput.getDate()).padStart(2, "0")
+    dateStr = `${yyyy}-${mm}-${dd}`
   } else {
-    date = dateInput
+    dateStr = String(dateInput).split("T")[0]
   }
 
-  const formatted = format(date, "yyyy/MM/dd")
-  return toPersianDigits(formatted)
+  const pd = toPersianDate(dateStr)
+  if (!pd) return null
+
+  return formatPersianDateNumeric(pd)
 }
 
 export const formatPersianDate = formatPersianDateFromDate
+

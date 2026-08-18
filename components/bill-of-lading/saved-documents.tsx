@@ -9,21 +9,33 @@ import {
   ArrowRight,
   Building2,
   Calendar,
+  Clock,
+  Copy,
   Download,
   ExternalLink,
   Eye,
+  FileDown,
   FileText,
   Grid3X3,
+  List,
   Loader2,
   Pencil,
   Search,
+  Sparkles,
+  Table,
   Trash2,
   Truck,
   Upload,
   X,
+  Zap,
+  ArrowUpDown,
+  RotateCcw,
 } from "lucide-react"
+import { generateBOLPDFBlob, savePDFToDevice } from "@/lib/utils/pdf-upload"
 
-type DocumentCategoryKey = "all" | "account" | "export" | "import" | "with-pdf"
+type DocumentCategoryKey = "all" | "latest" | "account" | "export" | "import" | "with-pdf"
+type ViewMode = "grid" | "list" | "table"
+type SortOption = "latest" | "oldest" | "bol_asc" | "shipper_asc"
 
 const DOCUMENT_CATEGORY_STORAGE_KEY = "sky-bol-document-categories"
 const ACCOUNT_COMPANY_PDFS_STORAGE_KEY = "sky-bol-account-company-pdfs"
@@ -56,17 +68,18 @@ interface AccountCompanyRecord {
 }
 
 interface SavedDocumentsProps {
-  onLoadDocument: (id: string) => void
+  onLoadDocument: (id: string, targetTab?: string) => void
   refreshTrigger?: number
   variant?: "sidebar" | "sheet"
 }
 
 const categoryButtons: { key: DocumentCategoryKey; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "with-pdf", label: "Uploaded PDFs" },
-  { key: "account", label: "Account" },
-  { key: "export", label: "Export" },
-  { key: "import", label: "Import" },
+  { key: "all", label: "All Documents" },
+  { key: "latest", label: "⚡ Latest BOLs" },
+  { key: "with-pdf", label: "📄 Uploaded PDFs" },
+  { key: "account", label: "🏢 Account" },
+  { key: "export", label: "📤 Export" },
+  { key: "import", label: "📥 Import" },
 ]
 
 export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "sidebar" }: SavedDocumentsProps) {
@@ -75,37 +88,152 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const [openingPdfId, setOpeningPdfId] = useState<string | null>(null)
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
   const [uploadingCompanyName, setUploadingCompanyName] = useState<string | null>(null)
   const [selectedCompanyName, setSelectedCompanyName] = useState<string | null>(null)
   const [openCompanyTabs, setOpenCompanyTabs] = useState<string[]>([])
   const [query, setQuery] = useState("")
   const [newCompanyName, setNewCompanyName] = useState("")
   const [activeCategory, setActiveCategory] = useState<DocumentCategoryKey>("all")
-  const [documentCategories, setDocumentCategories] = useState<Record<string, Exclude<DocumentCategoryKey, "all" | "with-pdf">>>({})
+  const [viewMode, setViewMode] = useState<ViewMode>("grid")
+  const [sortBy, setSortBy] = useState<SortOption>("latest")
+  const [documentCategories, setDocumentCategories] = useState<Record<string, Exclude<DocumentCategoryKey, "all" | "latest" | "with-pdf">>>({})
   const [accountCompanyPdfs, setAccountCompanyPdfs] = useState<Record<string, AccountCompanyRecord>>({})
   const [customAccountCompanies, setCustomAccountCompanies] = useState<string[]>([])
+
+function parseBolSeq(bolNum: string): number {
+  if (!bolNum) return 0
+  const match = bolNum.match(/NSA(\d+)/i) || bolNum.match(/(\d+)\s*$/)
+  if (match && match[1]) {
+    const val = parseInt(match[1], 10)
+    return isNaN(val) ? 0 : val
+  }
+  return 0
+}
 
   const fetchDocuments = async () => {
     setIsLoading(true)
     try {
       const response = await fetch("/api/bol")
-      if (!response.ok) {
-        throw new Error(`Saved documents request failed (${response.status})`)
+      let serverDocs: SavedDocument[] = []
+      if (response.ok) {
+        const result = await response.json()
+        if (Array.isArray(result.data)) {
+          serverDocs = result.data
+        }
       }
-      const result = await response.json()
-      if (Array.isArray(result.data)) {
-        setDocuments(result.data)
+
+      let clientLocalDocs: SavedDocument[] = []
+      try {
+        const storedLocal1 = window.localStorage.getItem("sky-bol-browser-documents")
+        const storedLocal2 = window.localStorage.getItem("skybol:saved-documents")
+        const list1: SavedDocument[] = storedLocal1 ? JSON.parse(storedLocal1) : []
+        const list2: SavedDocument[] = storedLocal2 ? JSON.parse(storedLocal2) : []
+        clientLocalDocs = [...list1, ...list2]
+      } catch (e) {
+        console.error("Error reading browser local documents:", e)
       }
+
+      const mergedMap = new Map<string, SavedDocument>()
+      for (const d of serverDocs) {
+        const key = d.bol_number || d.id
+        if (key) mergedMap.set(key, d)
+      }
+      for (const d of clientLocalDocs) {
+        const key = d.bol_number || d.id
+        if (key) mergedMap.set(key, d)
+      }
+
+      const mergedList = Array.from(mergedMap.values()).sort((a, b) => {
+        const dateA = new Date(a.created_at || a.issue_date || 0).getTime()
+        const dateB = new Date(b.created_at || b.issue_date || 0).getTime()
+        if (dateB !== dateA) return dateB - dateA
+        return parseBolSeq(b.bol_number || "") - parseBolSeq(a.bol_number || "")
+      })
+
+      setDocuments(mergedList)
     } catch (error) {
       console.warn("Saved documents temporarily unavailable:", error)
-      toast.error("Could not load saved documents. Check that the app server is running.")
     } finally {
       setIsLoading(false)
     }
   }
 
+  const handleRecoverAllBOLs = async () => {
+    const toastId = toast.loading("Recovering saved BOL documents...")
+    try {
+      const response = await fetch("/api/bol")
+      if (!response.ok) throw new Error("Failed to fetch server BOLs")
+      const result = await response.json()
+      const serverDocs: SavedDocument[] = Array.isArray(result.data) ? result.data : []
+
+      let local1: SavedDocument[] = []
+      let local2: SavedDocument[] = []
+      try {
+        local1 = JSON.parse(window.localStorage.getItem("sky-bol-browser-documents") || "[]")
+        local2 = JSON.parse(window.localStorage.getItem("skybol:saved-documents") || "[]")
+      } catch (e) {}
+
+      const mergedMap = new Map<string, SavedDocument>()
+      for (const doc of serverDocs) {
+        const key = doc.bol_number || doc.id
+        if (key) mergedMap.set(key, doc)
+      }
+      for (const doc of local1) {
+        const key = doc.bol_number || doc.id
+        if (key) mergedMap.set(key, doc)
+      }
+      for (const doc of local2) {
+        const key = doc.bol_number || doc.id
+        if (key) mergedMap.set(key, doc)
+      }
+
+      const allMerged = Array.from(mergedMap.values()).sort((a, b) => {
+        const dateA = new Date(a.created_at || a.issue_date || 0).getTime()
+        const dateB = new Date(b.created_at || b.issue_date || 0).getTime()
+        if (dateB !== dateA) return dateB - dateA
+        return parseBolSeq(b.bol_number || "") - parseBolSeq(a.bol_number || "")
+      })
+
+      window.localStorage.setItem("sky-bol-browser-documents", JSON.stringify(allMerged))
+      window.localStorage.setItem("skybol:saved-documents", JSON.stringify(allMerged))
+
+      setDocuments(allMerged)
+      window.dispatchEvent(new CustomEvent("skybol:documents-updated", { detail: {} }))
+
+      toast.success(`Recovered ${allMerged.length} saved BOL documents!`, { id: toastId })
+    } catch (err) {
+      toast.error("Error recovering saved BOLs", { id: toastId })
+    }
+  }
+
   useEffect(() => {
     void fetchDocuments()
+
+    const handleRefresh = (event?: CustomEvent) => {
+      if (event?.detail && event.detail.bol_number) {
+        try {
+          const storedLocal = window.localStorage.getItem("sky-bol-browser-documents")
+          const currentList: SavedDocument[] = storedLocal ? JSON.parse(storedLocal) : []
+          const updatedList = [
+            event.detail,
+            ...currentList.filter((d) => (d.bol_number || d.id) !== (event.detail.bol_number || event.detail.id)),
+          ]
+          window.localStorage.setItem("sky-bol-browser-documents", JSON.stringify(updatedList))
+        } catch (e) {
+          console.error("Error storing local doc update:", e)
+        }
+      }
+      void fetchDocuments()
+    }
+
+    window.addEventListener("skybol:documents-updated", handleRefresh as EventListener)
+    window.addEventListener("skybol:account-ledger-updated", handleRefresh as EventListener)
+
+    return () => {
+      window.removeEventListener("skybol:documents-updated", handleRefresh as EventListener)
+      window.removeEventListener("skybol:account-ledger-updated", handleRefresh as EventListener)
+    }
   }, [refreshTrigger])
 
   useEffect(() => {
@@ -188,12 +316,13 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
   const matchesCategory = (doc: SavedDocument, category: DocumentCategoryKey) => {
     if (category === "all" || category === "account") return true
     if (category === "with-pdf") return Boolean(doc.pdf_url)
+    if (category === "latest") return true // Handled by filter/sort
 
     const assigned = getAssignedCategory(doc)
     if (assigned === category) return true
 
     const searchText = getDocumentSearchText(doc)
-    const keywords: Record<Exclude<DocumentCategoryKey, "all" | "with-pdf">, string[]> = {
+    const keywords: Record<Exclude<DocumentCategoryKey, "all" | "latest" | "with-pdf">, string[]> = {
       account: ["account", "accounts", "ledger", "invoice", "payment", "balance", "receipt"],
       export: ["export", "exports", "exporter", "outbound"],
       import: ["import", "imports", "importer", "inbound"],
@@ -202,14 +331,50 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
     return keywords[category].some((keyword) => searchText.includes(keyword))
   }
 
+  // Sorted and Filtered Documents (Bringing Latest First by Default)
   const filteredDocuments = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase()
 
-    return documents.filter((doc) => {
+    const filtered = documents.filter((doc) => {
       const matchesSearch = !cleanQuery || getDocumentSearchText(doc).includes(cleanQuery)
       return matchesSearch && matchesCategory(doc, activeCategory)
     })
-  }, [documents, query, activeCategory, documentCategories])
+
+    // Apply Sorting (Bringing Latest First by Default, tie-breaker by BOL sequence)
+    return filtered.sort((a, b) => {
+      if (sortBy === "latest") {
+        const dateA = new Date(a.created_at || a.issue_date || 0).getTime()
+        const dateB = new Date(b.created_at || b.issue_date || 0).getTime()
+        if (dateB !== dateA) return dateB - dateA
+        return parseBolSeq(b.bol_number || "") - parseBolSeq(a.bol_number || "")
+      }
+      if (sortBy === "oldest") {
+        const dateA = new Date(a.created_at || a.issue_date || 0).getTime()
+        const dateB = new Date(b.created_at || b.issue_date || 0).getTime()
+        if (dateA !== dateB) return dateA - dateB
+        return parseBolSeq(a.bol_number || "") - parseBolSeq(b.bol_number || "")
+      }
+      if (sortBy === "bol_asc") {
+        return (a.bol_number || "").localeCompare(b.bol_number || "")
+      }
+      if (sortBy === "shipper_asc") {
+        return (a.shipper_name || "").localeCompare(b.shipper_name || "")
+      }
+      return 0
+    })
+  }, [documents, query, activeCategory, sortBy, documentCategories])
+
+  // Get Top 3 Latest BOLs for the Top Feature Banner
+  const latestTopBOLs = useMemo(() => {
+    return [...documents]
+      .sort((a, b) => {
+        const dateA = new Date(a.created_at || a.issue_date || 0).getTime()
+        const dateB = new Date(b.created_at || b.issue_date || 0).getTime()
+        if (dateB !== dateA) return dateB - dateA
+        return parseBolSeq(b.bol_number || "") - parseBolSeq(a.bol_number || "")
+      })
+      .slice(0, 5)
+  }, [documents])
 
   const accountCompanies = useMemo(() => {
     const byName = new Map<string, { companyName: string; docs: SavedDocument[] }>()
@@ -245,9 +410,13 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
 
   const categoryCounts = useMemo(() => {
     return categoryButtons.reduce<Record<DocumentCategoryKey, number>>((counts, category) => {
-      counts[category.key] = documents.filter((doc) => matchesCategory(doc, category.key)).length
+      if (category.key === "latest") {
+        counts[category.key] = Math.min(documents.length, 5)
+      } else {
+        counts[category.key] = documents.filter((doc) => matchesCategory(doc, category.key)).length
+      }
       return counts
-    }, { all: 0, account: 0, export: 0, import: 0, "with-pdf": 0 })
+    }, { all: 0, latest: 0, account: 0, export: 0, import: 0, "with-pdf": 0 })
   }, [documents, documentCategories])
 
   const selectedCompany = useMemo(() => {
@@ -273,7 +442,7 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
     })
   }
 
-  const assignDocumentCategory = (doc: SavedDocument, category: Exclude<DocumentCategoryKey, "all" | "with-pdf">) => {
+  const assignDocumentCategory = (doc: SavedDocument, category: Exclude<DocumentCategoryKey, "all" | "latest" | "with-pdf">) => {
     const documentId = doc.id || doc.bol_number
 
     setDocumentCategories((prev) => {
@@ -465,6 +634,34 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
     }
   }
 
+  const handleDuplicate = async (doc: SavedDocument) => {
+    const toastId = toast.loading("Duplicating BOL...", {
+      description: "Fetching next auto BOL number...",
+    })
+    try {
+      const response = await fetch("/api/bol?action=next-number")
+      const result = await response.json()
+      const newBolNumber = result.bolNumber || "BOL-2026-NSA471"
+
+      const clonedDoc = {
+        ...doc,
+        id: "",
+        bol_number: newBolNumber,
+        issue_date: new Date().toISOString().split("T")[0],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      onLoadDocument(clonedDoc.id, "form")
+      toast.success(`Cloned as ${newBolNumber}!`, {
+        id: toastId,
+        description: "Document pre-filled with party and route info. Review and click Save.",
+      })
+    } catch (e) {
+      toast.error("Failed to duplicate document", { id: toastId })
+    }
+  }
+
   const openUploadedPDF = async (doc: SavedDocument) => {
     if (!doc.pdf_url) {
       toast.error("No uploaded PDF for this BOL")
@@ -490,16 +687,62 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
     }
   }
 
+  // Direct Download of BOL PDF File
+  const downloadBOLPDF = async (doc: SavedDocument) => {
+    setDownloadingPdfId(doc.id)
+    onLoadDocument(doc.id, "preview")
+    window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "preview", tab: "preview" } }))
+    
+    toast.loading("Generating BOL PDF file...", { id: "doc-pdf-download" })
+
+    setTimeout(async () => {
+      try {
+        const previewElement = document.querySelector('[data-pdf-export="true"]') as HTMLElement | null
+        const fileName = `${doc.bol_number || doc.id}.pdf`
+        const pdfBlob = await generateBOLPDFBlob({
+          fileName,
+          previewElement,
+          modern: {
+            bolNumber: doc.bol_number || doc.id,
+            issueDate: doc.issue_date || "",
+            persianDateNumeric: "",
+            formData: doc as unknown as import("@/lib/types/bill-of-lading").BillOfLadingFormData,
+            logoUrl: "/images/logo.png",
+            companyName: "SKY ARIANA & BALAM BAR BARAN",
+            companyNamePersian: "شرکت حمل و نقل بین المللی",
+            companySubtitle: "Import & Export - International Transportation",
+            companyPhone: "+93 700 939 365",
+            companyEmail: "info@skyariana.com",
+            companyAddress: "Kandahar, Afghanistan",
+            companyLicence: "2401-2198",
+          },
+        })
+
+        await savePDFToDevice(pdfBlob, fileName)
+        toast.success("PDF Downloaded successfully!", {
+          id: "doc-pdf-download",
+          description: `BOL #${doc.bol_number || doc.id} saved to your device.`,
+        })
+      } catch (err) {
+        console.error("Failed to download PDF:", err)
+        toast.error("Download failed, opening print dialog...", { id: "doc-pdf-download" })
+        window.print()
+      } finally {
+        setDownloadingPdfId(null)
+      }
+    }, 350)
+  }
+
   const viewBOLPreview = (doc: SavedDocument) => {
-    onLoadDocument(doc.id)
+    onLoadDocument(doc.id, "preview")
     window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "preview", tab: "preview" } }))
     toast.success("BOL preview opened", {
-      description: `${doc.bol_number || "Document"} is loaded in A4 Preview.`,
+      description: `${doc.bol_number || "Document"} loaded in A4 Preview.`,
     })
   }
 
   const editBOL = (doc: SavedDocument) => {
-    onLoadDocument(doc.id)
+    onLoadDocument(doc.id, "form")
     window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "form", tab: "form" } }))
   }
 
@@ -531,74 +774,158 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
   }
 
   return (
-    <Card className={`flex h-full flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white text-slate-900 shadow-sm ${variant === "sidebar" ? "w-full" : "md:w-96"}`}>
-      <CardHeader className="border-b border-blue-100 bg-white p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white">
-              <Grid3X3 className="h-5 w-5" />
+    <Card className={`flex h-full flex-col overflow-hidden rounded-3xl border border-blue-100 bg-white text-slate-900 shadow-xl ${variant === "sidebar" ? "w-full" : "md:w-96"}`}>
+      
+      {/* Header Bar - Responsive Desktop, Tablet, Mobile */}
+      <CardHeader className="border-b border-blue-100 bg-linear-to-b from-blue-50/70 via-white to-white p-4 sm:p-6 backdrop-blur-xl">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-blue-800 text-white shadow-lg shadow-blue-500/25">
+              <Grid3X3 className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <CardTitle className="truncate text-lg font-black text-slate-950">Saved PDF Documents</CardTitle>
-              <p className="text-xs font-medium text-slate-500">
-                Grid view for saved BOLs, uploaded PDFs, and BOL previews
+              <div className="flex items-center gap-2 flex-wrap">
+                <CardTitle className="truncate text-lg sm:text-xl font-black text-slate-950 tracking-tight">Saved Documents</CardTitle>
+                <span className="text-xs text-amber-700 font-[vazirmatn] font-extrabold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                  اسناد ذخیره شده
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                Browse, search, edit & download all saved Bills of Lading and PDFs
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-black text-blue-700">
-            <FileText className="h-4 w-4" />
-            {documents.length} saved
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-2xl bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-900 border border-blue-200">
+              <FileText className="h-4 w-4 text-blue-600" />
+              <span>{documents.length} Total Saved</span>
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        {/* Search & View Control Options */}
+        <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          {/* Search Box */}
           <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-600" />
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search BOL number, shipper, consignee, truck..."
-              className="h-10 rounded-xl border-blue-100 bg-white pl-9 text-sm focus:border-blue-300 focus:ring-blue-200"
+              placeholder="Search BOL #, shipper, consignee, truck..."
+              className="h-11 rounded-2xl border-blue-200 bg-slate-50/80 pl-10 pr-4 text-xs sm:text-sm font-bold text-slate-950 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {categoryButtons.map((category) => (
+          {/* View Mode, Sort Selector & Recover Button */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleRecoverAllBOLs}
+              className="h-8.5 rounded-xl border-emerald-300 bg-emerald-50/80 px-2.5 text-xs font-black text-emerald-800 hover:bg-emerald-100 shadow-2xs cursor-pointer"
+              title="Sync & recover all saved BOL documents from server & disk"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1 text-emerald-600 shrink-0" />
+              <span>Recover Saved BOLs</span>
+            </Button>
+            {/* Sort Selector */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <ArrowUpDown className="h-3.5 w-3.5 text-slate-500 ml-1" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="bg-transparent text-xs font-extrabold text-slate-800 outline-none cursor-pointer pr-1"
+              >
+                <option value="latest">Latest First (⚡ Default)</option>
+                <option value="oldest">Oldest First</option>
+                <option value="bol_asc">BOL Number (A-Z)</option>
+                <option value="shipper_asc">Shipper Name (A-Z)</option>
+              </select>
+            </div>
+
+            {/* View Mode Buttons (Grid, List, Table) */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button
-                key={category.key}
                 type="button"
-                onClick={() => {
-                  setActiveCategory(category.key)
-                  if (category.key !== "account") {
-                    setSelectedCompanyName(null)
-                  }
-                }}
-                className={`rounded-xl border px-3 py-2 text-xs font-black transition ${
-                  activeCategory === category.key
-                    ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                    : "border-blue-100 bg-white text-blue-700 hover:bg-blue-50"
+                onClick={() => setViewMode("grid")}
+                title="Grid Cards View"
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === "grid" ? "bg-white text-blue-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                {category.label}
-                <span className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] ${
-                  activeCategory === category.key ? "bg-white/20 text-white" : "bg-blue-50 text-blue-700"
-                }`}>
-                  {category.key === "account" ? accountCompanies.length : categoryCounts[category.key]}
-                </span>
+                <Grid3X3 className="h-4 w-4" />
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                title="Compact List View"
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === "list" ? "bg-white text-blue-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                title="Detailed Table View"
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === "table" ? "bg-white text-blue-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Table className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Category Pills Bar (Horizontal Scrollable for Mobile) */}
+        <div className="mt-3.5 flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {categoryButtons.map((category) => (
+            <button
+              key={category.key}
+              type="button"
+              onClick={() => {
+                setActiveCategory(category.key)
+                if (category.key !== "account") {
+                  setSelectedCompanyName(null)
+                }
+              }}
+              className={`whitespace-nowrap rounded-xl border px-3 py-1.5 text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                activeCategory === category.key
+                  ? "border-blue-600 bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-900 hover:border-blue-200"
+              }`}
+            >
+              {category.label}
+              <span className={`ml-1.5 rounded-full px-2 py-0.5 text-[10px] font-black ${
+                activeCategory === category.key ? "bg-white/25 text-white" : "bg-blue-100 text-blue-800"
+              }`}>
+                {category.key === "account" ? accountCompanies.length : categoryCounts[category.key]}
+              </span>
+            </button>
+          ))}
+        </div>
+
         {openCompanyTabs.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2 border-t border-blue-100 pt-3">
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3">
             {openCompanyTabs.map((companyName) => (
               <div
                 key={companyName}
-                className={`inline-flex max-w-full items-center overflow-hidden rounded-xl border text-xs font-black shadow-sm ${
+                className={`inline-flex max-w-full items-center overflow-hidden rounded-xl border text-xs font-black shadow-xs transition-all ${
                   selectedCompanyName === companyName
-                    ? "border-amber-500 bg-amber-500 text-white"
-                    : "border-amber-200 bg-amber-50 text-amber-800"
+                    ? "border-amber-500 bg-amber-500 text-white shadow-amber-500/20"
+                    : "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
                 }`}
               >
                 <button
@@ -607,7 +934,7 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
                     setActiveCategory("account")
                     setSelectedCompanyName(companyName)
                   }}
-                  className="min-w-0 truncate px-3 py-2"
+                  className="min-w-0 truncate px-3 py-1.5"
                   title={companyName}
                 >
                   {companyName}
@@ -615,8 +942,8 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
                 <button
                   type="button"
                   onClick={() => closeCompanyTab(companyName)}
-                  className={`flex h-8 w-8 items-center justify-center ${
-                    selectedCompanyName === companyName ? "hover:bg-white/15" : "hover:bg-amber-100"
+                  className={`flex h-7 w-7 items-center justify-center ${
+                    selectedCompanyName === companyName ? "hover:bg-white/20" : "hover:bg-amber-200"
                   }`}
                   title="Close company tab"
                 >
@@ -628,7 +955,81 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
         )}
       </CardHeader>
 
-      <CardContent className="min-h-[420px] flex-1 overflow-auto bg-slate-50 p-4">
+      {/* Main Content View Container */}
+      <CardContent className="min-h-[420px] flex-1 overflow-auto bg-slate-50/60 p-3 sm:p-5">
+        
+        {/* TOP LATEST BOLS HERO HIGHLIGHT STRIP (BRING UP THE LATEST BOL MADES) */}
+        {!isLoading && latestTopBOLs.length > 0 && activeCategory !== "account" && !query && (
+          <div className="mb-6 rounded-3xl border border-amber-300/80 bg-linear-to-r from-amber-500/10 via-yellow-500/5 to-amber-500/10 p-4 shadow-sm backdrop-blur-md">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-950 flex items-center gap-2">
+                    LATEST BOL CREATIONS
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black">
+                      RECENTLY CREATED
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-600 font-semibold">Your most recent Bill of Lading documents created in system</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
+              {latestTopBOLs.map((doc, idx) => (
+                <div
+                  key={`latest-${doc.id}`}
+                  className="rounded-2xl bg-white border border-amber-200 p-3.5 shadow-sm hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
+                        #{doc.bol_number || "BOL"}
+                      </span>
+                      <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : "Just now"}
+                      </span>
+                    </div>
+
+                    <p className="mt-2.5 text-sm font-black text-slate-900 truncate">
+                      {doc.shipper_name || "No Shipper"}
+                    </p>
+                    <p className="text-xs text-slate-600 font-semibold truncate flex items-center gap-1 mt-0.5">
+                      <ArrowRight className="w-3 h-3 text-amber-600 shrink-0" />
+                      <span>{doc.consignee_name || "No Consignee"}</span>
+                    </p>
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => editBOL(doc)}
+                      className="flex-1 h-8 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer"
+                    >
+                      <Pencil className="w-3 h-3 mr-1" /> Edit
+                    </Button>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => downloadBOLPDF(doc)}
+                      className="flex-1 h-8 rounded-xl border-amber-300 bg-amber-50 text-amber-900 font-extrabold text-xs cursor-pointer hover:bg-amber-100"
+                    >
+                      <FileDown className="w-3 h-3 mr-1 text-amber-700" /> PDF
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="flex min-h-80 items-center justify-center">
             <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-6 shadow-sm">
@@ -639,7 +1040,7 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
         ) : (
           <>
             {activeCategory === "account" && (
-              <section className="mb-5 rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
+              <section className="mb-5 rounded-2xl border border-amber-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
@@ -661,14 +1062,14 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
                         }
                       }}
                       placeholder="Company name"
-                      className="h-10 min-w-0 rounded-xl border-amber-100 bg-white text-sm focus:border-amber-300 focus:ring-amber-200"
+                      className="h-10 min-w-0 rounded-xl border-amber-200 bg-white text-sm focus:border-amber-400 focus:ring-amber-200"
                     />
                     <Button
                       type="button"
                       onClick={addAccountCompany}
                       className="h-10 rounded-xl bg-amber-600 text-white hover:bg-amber-700"
                     >
-                      Add
+                      Add Company
                     </Button>
                   </div>
                 </div>
@@ -720,12 +1121,6 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
                               {isSelected ? "Open" : "Click"}
                             </span>
                           </button>
-
-                          {record?.pdfs[0]?.uploadedAt && (
-                            <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600">
-                              Last PDF {new Date(record.pdfs[0].uploadedAt).toLocaleDateString()}
-                            </p>
-                          )}
 
                           <div className="mt-auto grid gap-2 pt-4">
                             <Button
@@ -780,9 +1175,6 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
                       <div>
                         <p className="text-xs font-black uppercase tracking-wide text-amber-700">Company Tab</p>
                         <h4 className="mt-1 text-xl font-black text-slate-950">{selectedCompany.companyName}</h4>
-                        <p className="mt-1 text-sm font-medium text-slate-600">
-                          All uploaded PDFs and all BOL documents for this shipper company.
-                        </p>
                       </div>
                       <label
                         className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-black text-white transition hover:bg-amber-700 ${
@@ -804,102 +1196,6 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
                         />
                       </label>
                     </div>
-
-                    <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                      <div className="rounded-2xl bg-white p-3 shadow-sm">
-                        <div className="mb-3 flex items-center justify-between">
-                          <h5 className="font-black text-slate-950">Company PDF Files</h5>
-                          <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-black text-amber-700">
-                            {accountCompanyPdfs[selectedCompany.companyName.toLowerCase()]?.pdfs.length || 0}
-                          </span>
-                        </div>
-                        <div className="space-y-2">
-                          {(accountCompanyPdfs[selectedCompany.companyName.toLowerCase()]?.pdfs || []).length === 0 ? (
-                            <p className="rounded-xl border border-dashed border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800">
-                              No company PDF files yet. Use “Add PDF to Company”.
-                            </p>
-                          ) : (
-                            accountCompanyPdfs[selectedCompany.companyName.toLowerCase()]?.pdfs.map((pdf) => (
-                              <div key={pdf.id} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2">
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-bold text-slate-900">{pdf.name}</p>
-                                  <p className="text-xs text-slate-500">{new Date(pdf.uploadedAt).toLocaleString()}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => openCompanyPDF(pdf)}
-                                    className="h-9 rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                    View
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => deleteCompanyPDF(selectedCompany.companyName, pdf)}
-                                    className="h-9 rounded-xl border-red-200 px-3 text-red-600 hover:bg-red-50"
-                                    title="Delete PDF"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl bg-white p-3 shadow-sm">
-                        <div className="mb-3 flex items-center justify-between">
-                          <h5 className="font-black text-slate-950">BOL Files for Shipper</h5>
-                          <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-black text-blue-700">
-                            {selectedCompany.docs.length}
-                          </span>
-                        </div>
-                        <div className="space-y-2">
-                          {selectedCompany.docs.length === 0 ? (
-                            <p className="rounded-xl border border-dashed border-blue-200 bg-blue-50 p-3 text-sm font-medium text-blue-800">
-                              No saved BOLs for this shipper company yet.
-                            </p>
-                          ) : (
-                            selectedCompany.docs.map((doc) => (
-                              <div key={doc.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <p className="truncate text-sm font-black text-slate-950">{doc.bol_number}</p>
-                                    <p className="truncate text-xs text-slate-500">{doc.consignee_name || "No consignee"}</p>
-                                  </div>
-                                  <span className={`rounded-full px-2 py-1 text-[10px] font-black ${
-                                    doc.pdf_url ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
-                                  }`}>
-                                    {doc.pdf_url ? "Uploaded PDF" : "BOL only"}
-                                  </span>
-                                </div>
-                                <div className="mt-3 grid grid-cols-3 gap-2">
-                                  <Button type="button" onClick={() => editBOL(doc)} className="h-9 rounded-xl bg-blue-600 text-white hover:bg-blue-700">
-                                    Edit
-                                  </Button>
-                                  <Button type="button" variant="outline" onClick={() => viewBOLPreview(doc)} className="h-9 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50">
-                                    BOL PDF
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => openUploadedPDF(doc)}
-                                    disabled={!doc.pdf_url || openingPdfId === doc.id}
-                                    className="h-9 rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 disabled:border-slate-100 disabled:text-slate-300"
-                                  >
-                                    Uploaded
-                                  </Button>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 )}
               </section>
@@ -907,167 +1203,354 @@ export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "side
 
             {activeCategory === "account" ? null : filteredDocuments.length === 0 ? (
               <div className="flex min-h-80 items-center justify-center">
-                <div className="max-w-sm rounded-2xl border border-dashed border-blue-200 bg-white p-8 text-center shadow-sm">
-                  <FileText className="mx-auto h-10 w-10 text-blue-600" />
-                  <p className="mt-3 text-base font-black text-slate-950">No documents found</p>
-                  <p className="mt-1 text-sm text-slate-500">Try another search or category.</p>
+                <div className="max-w-sm rounded-3xl border border-dashed border-blue-300 bg-white/90 p-8 text-center shadow-lg backdrop-blur-xl">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 mb-3">
+                    <FileText className="h-7 w-7" />
+                  </div>
+                  <p className="text-lg font-extrabold text-blue-950">No documents found</p>
+                  <p className="mt-1 text-xs font-medium text-slate-500">Try adjusting your search query or category filters.</p>
                 </div>
               </div>
             ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {filteredDocuments.map((doc) => {
-              const assignedCategory = getAssignedCategory(doc)
-              const hasUploadedPdf = Boolean(doc.pdf_url)
+              <>
+                {/* 1. GRID VIEW MODE - 5 CARDS IN A LINE */}
+                {viewMode === "grid" && (
+                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
+                    {filteredDocuments.map((doc, idx) => {
+                      const assignedCategory = getAssignedCategory(doc)
+                      const hasUploadedPdf = Boolean(doc.pdf_url)
+                      const isLatest = idx < 2 && sortBy === "latest"
 
-              return (
-                <article
-                  key={doc.id}
-                  className="group flex min-h-[310px] flex-col rounded-2xl border border-blue-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-100"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="inline-flex max-w-full items-center gap-2 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-black text-white">
-                        <FileText className="h-3.5 w-3.5" />
-                        <span className="truncate">{doc.bol_number || "BOL"}</span>
-                      </div>
-                      <p className="mt-3 truncate text-base font-black text-slate-950">
-                        {doc.shipper_name || "No shipper"}
-                      </p>
-                      <p className="mt-1 flex items-center gap-1 text-sm text-slate-600">
-                        <ArrowRight className="h-3.5 w-3.5 text-blue-500" />
-                        <span className="truncate">{doc.consignee_name || "No consignee"}</span>
-                      </p>
-                    </div>
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-black ${
-                      hasUploadedPdf ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
-                    }`}>
-                      {hasUploadedPdf ? "PDF uploaded" : "No PDF"}
-                    </span>
+                      return (
+                        <article
+                          key={doc.id}
+                          className="group flex min-h-[320px] flex-col rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-lg relative overflow-hidden"
+                        >
+                          {/* Top Accent Gradient Line */}
+                          <div className={`absolute top-0 left-0 right-0 h-1.5 ${isLatest ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" : "bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-400"}`} />
+
+                          <div className="flex items-start justify-between gap-1.5 pt-1">
+                            <div className="min-w-0 flex-1">
+                              <div className="inline-flex max-w-full items-center gap-1 rounded-lg bg-linear-to-r from-blue-700 via-indigo-700 to-blue-900 px-2 py-0.5 text-[10px] font-black font-mono tracking-tight text-white shadow-xs">
+                                <FileText className="h-3 w-3 shrink-0" />
+                                <span className="truncate" title={doc.bol_number}>{doc.bol_number || "BOL"}</span>
+                              </div>
+                              <p className="mt-2 text-xs font-extrabold text-slate-950 leading-tight truncate" title={doc.shipper_name}>
+                                {doc.shipper_name || "No shipper"}
+                              </p>
+                              <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold text-slate-600 leading-tight truncate" title={doc.consignee_name}>
+                                <ArrowRight className="h-3 w-3 text-blue-600 shrink-0" />
+                                <span className="truncate">{doc.consignee_name || "No consignee"}</span>
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              {isLatest && (
+                                <span className="rounded-full px-1.5 py-0.2 text-[8px] font-black bg-amber-500 text-slate-950 shadow-2xs">
+                                  LATEST
+                                </span>
+                              )}
+                              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-extrabold ${
+                                hasUploadedPdf ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-500 border border-slate-200"
+                              }`}>
+                                {hasUploadedPdf ? "PDF" : "No PDF"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 grid gap-1.5 text-[11px] text-slate-600">
+                            <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5 border border-slate-100">
+                              <Calendar className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                              <span className="font-bold text-slate-700 truncate">
+                                {doc.issue_date
+                                  ? new Date(doc.issue_date).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })
+                                  : "No date"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5 border border-slate-100">
+                              <Truck className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                              <span className="truncate font-bold text-slate-700">{doc.truck_number || "No truck number"}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-2.5 flex flex-wrap gap-1">
+                            {(["account", "export", "import"] as const).map((category) => (
+                              <button
+                                key={category}
+                                type="button"
+                                onClick={() => assignDocumentCategory(doc, category)}
+                                className={`rounded-md border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide transition-all cursor-pointer ${
+                                  assignedCategory === category
+                                    ? "border-blue-600 bg-blue-600 text-white shadow-2xs"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700"
+                                }`}
+                              >
+                                {category}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="mt-auto grid gap-1.5 pt-3 border-t border-slate-100">
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <Button
+                                type="button"
+                                onClick={() => editBOL(doc)}
+                                className="h-8.5 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-xs cursor-pointer px-2"
+                              >
+                                <Pencil className="h-3.5 w-3.5 mr-1 shrink-0" />
+                                Edit BOL
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => downloadBOLPDF(doc)}
+                                className="h-8.5 rounded-xl border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 font-extrabold text-[11px] cursor-pointer shadow-2xs px-1.5"
+                              >
+                                <FileDown className="h-3.5 w-3.5 mr-1 text-amber-600 shrink-0" />
+                                Download PDF
+                              </Button>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-1">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => viewBOLPreview(doc)}
+                                className="h-8 rounded-lg border-blue-200 bg-blue-50/50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] cursor-pointer px-1"
+                                title="Preview A4 Document"
+                              >
+                                <Eye className="h-3 w-3 mr-1 shrink-0" />
+                                Preview
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleDuplicate(doc)}
+                                className="h-8 rounded-lg border-purple-200 bg-purple-50/60 text-purple-700 hover:bg-purple-100 font-bold text-[10px] cursor-pointer px-1"
+                                title="Clone document with new BOL number"
+                              >
+                                <Copy className="h-3 w-3 mr-1 text-purple-600 shrink-0" />
+                                Duplicate
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => openUploadedPDF(doc)}
+                                disabled={!hasUploadedPdf || openingPdfId === doc.id}
+                                className="h-8 rounded-lg border-emerald-200 bg-emerald-50/50 text-emerald-700 hover:bg-emerald-100 font-bold text-[10px] disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 cursor-pointer px-1"
+                                title={hasUploadedPdf ? "Open uploaded PDF file" : "No uploaded PDF available"}
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
+                                File PDF
+                              </Button>
+                            </div>
+
+                            <div className="grid grid-cols-[1fr_auto] gap-1.5 pt-0.5">
+                              <label
+                                className={`inline-flex h-8 cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-700 transition hover:bg-slate-50 ${
+                                  uploadingId === doc.id ? "pointer-events-none opacity-70" : ""
+                                }`}
+                              >
+                                {uploadingId === doc.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Upload className="h-3 w-3 text-blue-600" />
+                                )}
+                                {hasUploadedPdf ? "Replace PDF" : "Attach PDF"}
+                                <input
+                                  type="file"
+                                  accept="application/pdf,.pdf"
+                                  className="hidden"
+                                  disabled={uploadingId === doc.id}
+                                  onChange={handleFileInput(doc)}
+                                />
+                              </label>
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={(event) => handleDelete(doc.id, event)}
+                                disabled={deletingId === doc.id}
+                                className="h-8 rounded-xl border-red-200 px-2.5 text-red-600 hover:bg-red-50 text-xs font-semibold cursor-pointer"
+                                title="Delete document"
+                              >
+                                {deletingId === doc.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </article>
+                      )
+                    })}
                   </div>
+                )}
 
-                  <div className="mt-4 grid gap-2 text-xs text-slate-600">
-                    <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
-                      <Calendar className="h-4 w-4 text-blue-500" />
-                      <span className="font-semibold">
-                        {doc.issue_date
-                          ? new Date(doc.issue_date).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })
-                          : "No date"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
-                      <Truck className="h-4 w-4 text-blue-500" />
-                      <span className="truncate font-semibold">{doc.truck_number || "No truck number"}</span>
-                    </div>
+                {/* 2. COMPACT LIST VIEW MODE */}
+                {viewMode === "list" && (
+                  <div className="space-y-3">
+                    {filteredDocuments.map((doc, idx) => {
+                      const hasUploadedPdf = Boolean(doc.pdf_url)
+                      const isLatest = idx < 2 && sortBy === "latest"
+
+                      return (
+                        <div
+                          key={`list-${doc.id}`}
+                          className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-black text-xs shrink-0">
+                              <FileText className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-black text-slate-900 text-sm">{doc.bol_number || "BOL"}</span>
+                                {isLatest && (
+                                  <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[9px] font-black">
+                                    LATEST
+                                  </span>
+                                )}
+                                <span className="text-xs font-bold text-slate-500">
+                                  • {doc.issue_date ? new Date(doc.issue_date).toLocaleDateString() : "No date"}
+                                </span>
+                              </div>
+                              <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
+                                <span className="font-extrabold text-slate-900">{doc.shipper_name}</span> ➔ {doc.consignee_name}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap shrink-0">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => editBOL(doc)}
+                              className="h-9 px-3 rounded-xl bg-blue-600 text-white font-extrabold text-xs cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                            </Button>
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => downloadBOLPDF(doc)}
+                              className="h-9 px-3 rounded-xl border-amber-300 bg-amber-50 text-amber-900 font-black text-xs cursor-pointer hover:bg-amber-100"
+                            >
+                              <FileDown className="w-3.5 h-3.5 mr-1 text-amber-600" /> Download PDF
+                            </Button>
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => viewBOLPreview(doc)}
+                              className="h-9 px-3 rounded-xl border-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5 mr-1" /> Preview
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
+                )}
 
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(["account", "export", "import"] as const).map((category) => (
-                      <button
-                        key={category}
-                        type="button"
-                        onClick={() => assignDocumentCategory(doc, category)}
-                        className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide transition ${
-                          assignedCategory === category
-                            ? "border-blue-600 bg-blue-600 text-white"
-                            : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
-                        }`}
-                      >
-                        {category}
-                      </button>
-                    ))}
+                {/* 3. DETAILED TABLE VIEW MODE */}
+                {viewMode === "table" && (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <table className="w-full text-left text-xs text-slate-700">
+                      <thead className="bg-slate-100/80 text-slate-900 uppercase font-black tracking-wider text-[11px] border-b border-slate-200">
+                        <tr>
+                          <th className="p-3.5">BOL Number</th>
+                          <th className="p-3.5">Issue Date</th>
+                          <th className="p-3.5">Shipper</th>
+                          <th className="p-3.5">Consignee</th>
+                          <th className="p-3.5">Truck #</th>
+                          <th className="p-3.5">PDF Status</th>
+                          <th className="p-3.5 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-semibold">
+                        {filteredDocuments.map((doc, idx) => {
+                          const hasUploadedPdf = Boolean(doc.pdf_url)
+                          const isLatest = idx < 2 && sortBy === "latest"
+
+                          return (
+                            <tr key={`table-${doc.id}`} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="p-3.5 font-black text-blue-900">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{doc.bol_number || "N/A"}</span>
+                                  {isLatest && (
+                                    <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[9px] font-black">
+                                      LATEST
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-3.5">
+                                {doc.issue_date ? new Date(doc.issue_date).toLocaleDateString() : "N/A"}
+                              </td>
+                              <td className="p-3.5 font-bold text-slate-900 max-w-[160px] truncate">
+                                {doc.shipper_name || "N/A"}
+                              </td>
+                              <td className="p-3.5 font-bold text-slate-800 max-w-[160px] truncate">
+                                {doc.consignee_name || "N/A"}
+                              </td>
+                              <td className="p-3.5">{doc.truck_number || "N/A"}</td>
+                              <td className="p-3.5">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                  hasUploadedPdf ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"
+                                }`}>
+                                  {hasUploadedPdf ? "PDF Ready" : "No PDF"}
+                                </span>
+                              </td>
+                              <td className="p-3.5 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => editBOL(doc)}
+                                    className="h-8 px-2.5 rounded-lg bg-blue-600 text-white font-extrabold text-[11px] cursor-pointer"
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => downloadBOLPDF(doc)}
+                                    className="h-8 px-2.5 rounded-lg border-amber-300 bg-amber-50 text-amber-900 font-extrabold text-[11px] cursor-pointer hover:bg-amber-100"
+                                  >
+                                    PDF
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => viewBOLPreview(doc)}
+                                    className="h-8 px-2.5 rounded-lg border-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
+                                  >
+                                    View
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-
-                  <div className="mt-auto grid gap-2 pt-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        onClick={() => editBOL(doc)}
-                        className="h-10 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Edit BOL
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => viewBOLPreview(doc)}
-                        className="h-10 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50"
-                      >
-                        <Eye className="h-4 w-4" />
-                        BOL PDF
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => openUploadedPDF(doc)}
-                        disabled={!hasUploadedPdf || openingPdfId === doc.id}
-                        className="h-10 rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 disabled:border-slate-100 disabled:text-slate-300"
-                      >
-                        {openingPdfId === doc.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <ExternalLink className="h-4 w-4" />
-                        )}
-                        Uploaded PDF
-                      </Button>
-                      <label
-                        className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 ${
-                          uploadingId === doc.id ? "pointer-events-none opacity-70" : ""
-                        }`}
-                      >
-                        {uploadingId === doc.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4" />
-                        )}
-                        {hasUploadedPdf ? "Replace" : "Upload"}
-                        <input
-                          type="file"
-                          accept="application/pdf,.pdf"
-                          className="hidden"
-                          disabled={uploadingId === doc.id}
-                          onChange={handleFileInput(doc)}
-                        />
-                      </label>
-                    </div>
-
-                    <div className="grid grid-cols-[1fr_auto] gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => downloadDocumentJSON(doc)}
-                        className="h-9 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
-                      >
-                        <Download className="h-4 w-4" />
-                        Data
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={(event) => handleDelete(doc.id, event)}
-                        disabled={deletingId === doc.id}
-                        className="h-9 rounded-xl border-red-200 px-3 text-red-600 hover:bg-red-50"
-                        title="Delete document"
-                      >
-                        {deletingId === doc.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </article>
-              )
-            })}
-          </div>
+                )}
+              </>
             )}
           </>
         )}

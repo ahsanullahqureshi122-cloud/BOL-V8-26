@@ -43,6 +43,8 @@ interface A4PreviewProps {
   exportTarget?: boolean
   pdfExport?: boolean
   includeColorStrip?: boolean
+  backgroundImageUrl?: string
+  backgroundOpacity?: number
 }
 
 type DetailItem = {
@@ -85,17 +87,21 @@ const a4ShellStyle = {
 
 const blueBarStyle = {
   background: "linear-gradient(90deg, #1d4ed8 0%, #2563eb 58%, #0891b2 100%)",
+  WebkitPrintColorAdjust: "exact",
+  printColorAdjust: "exact",
 } satisfies CSSProperties
 
 const darkHeaderStyle = {
   background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
+  WebkitPrintColorAdjust: "exact",
+  printColorAdjust: "exact",
 } satisfies CSSProperties
 
 const headerGridStyle = {
   display: "grid",
-  gridTemplateColumns: "30mm 1fr 40mm",
+  gridTemplateColumns: "36mm 1fr 68mm",
   alignItems: "center",
-  columnGap: "4mm",
+  columnGap: "3mm",
 } satisfies CSSProperties
 
 const logoFrameStyle = {
@@ -154,6 +160,30 @@ function cleanText(value?: string | null) {
     .trim()
 }
 
+function cleanCargoDescriptionText(text?: string | null): string {
+  if (!text) return ""
+
+  const lines = text.split("\n")
+  const cleanedLines = lines.map((line) => {
+    const parts = line.split(/[│|]/)
+    const validParts = parts
+      .map((part) => part.trim())
+      .filter((part) => {
+        if (!part) return false
+        if (part.includes(":")) {
+          const colonIdx = part.indexOf(":")
+          const val = part.slice(colonIdx + 1).trim()
+          if (!val) return false
+        }
+        return true
+      })
+
+    return validParts.join(" │ ")
+  })
+
+  return cleanedLines.filter(Boolean).join("\n")
+}
+
 function hasValue(value?: string | null) {
   return cleanText(value).length > 0
 }
@@ -170,7 +200,75 @@ function containsArabic(value: string) {
   return /[\u0600-\u06FF]/.test(value)
 }
 
-function textDirection(value: string) {
+function DocumentQRCode({ value, size = 52 }: { value: string; size?: number }) {
+  const grid = 21
+  const modules: boolean[][] = Array.from({ length: grid }, () => Array(grid).fill(false))
+
+  const addFinder = (r: number, c: number) => {
+    for (let i = 0; i < 7; i++) {
+      for (let j = 0; j < 7; j++) {
+        if (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
+          modules[r + i][c + j] = true
+        }
+      }
+    }
+  }
+
+  addFinder(0, 0)
+  addFinder(0, 14)
+  addFinder(14, 0)
+
+  let hash = 0
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash << 5) - hash + value.charCodeAt(i)
+    hash |= 0
+  }
+
+  for (let r = 0; r < grid; r++) {
+    for (let c = 0; c < grid; c++) {
+      const isFinder = (r < 7 && c < 7) || (r < 7 && c >= 14) || (r >= 14 && c < 7)
+      if (!isFinder) {
+        const bit = ((hash ^ (r * 31 + c * 17)) & 1) === 1
+        modules[r][c] = bit
+      }
+    }
+  }
+
+  const cellSize = size / grid
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className="bg-white p-1 border-2 border-blue-900 rounded-md shadow-xs shrink-0 print:border-blue-900 print:bg-white"
+      style={{
+        shapeRendering: "crispEdges",
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact",
+      }}
+    >
+      <rect width={size} height={size} fill="#ffffff" style={{ fill: "#ffffff !important" }} />
+      {modules.map((row, r) =>
+        row.map((cell, c) =>
+          cell ? (
+            <rect
+              key={`${r}-${c}`}
+              x={c * cellSize}
+              y={r * cellSize}
+              width={cellSize}
+              height={cellSize}
+              fill="#000000"
+              style={{ fill: "#000000 !important" }}
+            />
+          ) : null
+        )
+      )}
+    </svg>
+  )
+}
+
+function textDirection(value?: string | null) {
   const text = cleanText(value)
   const hasArabic = /[\u0600-\u06FF]/.test(text)
   const hasLatin = /[A-Za-z]/.test(text)
@@ -182,12 +280,61 @@ function hasRTLText(value?: string | null) {
   return /[\u0600-\u06FF]/.test(text) && !/[A-Za-z]/.test(text)
 }
 
+function renderLineContent(line: string, forceLTR = false) {
+  const clean = line.trim()
+  if (!clean) return null
+
+  // Ensure slashes have space around them so they don't stick to words or scramble BiDi text
+  const spacedLine = clean.replace(/([^\s])\/([^\s])/g, "$1 / $2")
+
+  // Check if line contains a colon separating name/label and numbers (e.g. "حاجی معلم صاحب : 1737009970")
+  if (spacedLine.includes(":")) {
+    const parts = spacedLine.split(":")
+    if (parts.length === 2 && /\d+/.test(parts[1])) {
+      const labelPart = parts[0].trim()
+      const numberPart = parts[1].trim()
+      const isLabelPersian = /[\u0600-\u06FF]/.test(labelPart)
+
+      return (
+        <span className={`inline-flex items-center gap-1.5 flex-wrap font-bold leading-normal ${forceLTR ? "text-left" : ""}`} dir="ltr">
+          <span
+            className={isLabelPersian ? "persian-text bol-persian-text font-[vazirmatn] text-slate-900 font-extrabold" : "text-slate-900 font-bold"}
+            dir={forceLTR ? "ltr" : isLabelPersian ? "rtl" : "ltr"}
+            style={{ unicodeBidi: "isolate" }}
+          >
+            {labelPart}:
+          </span>
+          <span className="font-mono font-black text-blue-950 tracking-wider text-[9.5pt]" dir="ltr" style={{ unicodeBidi: "isolate" }}>
+            {numberPart}
+          </span>
+        </span>
+      )
+    }
+  }
+
+  const lineDir = textDirection(spacedLine)
+  const isPersian = lineDir === "rtl" || /[\u0600-\u06FF]/.test(spacedLine)
+  const isPersianDigitsOnly = /^[\u06F0-\u06F9\/\-\s:]+$/.test(spacedLine)
+
+  return (
+    <span
+      className={`block ${isPersian ? "persian-text bol-persian-text font-[vazirmatn]" : "font-sans"} ${isPersianDigitsOnly ? "persian-digits" : ""} leading-snug ${forceLTR ? "text-left" : ""}`}
+      dir={forceLTR ? "ltr" : isPersianDigitsOnly ? "ltr" : lineDir}
+      style={{ textAlign: forceLTR ? "left" : "inherit", unicodeBidi: "plaintext" }}
+    >
+      {spacedLine}
+    </span>
+  )
+}
+
 function TextLines({
   value,
   className,
+  forceLTR = false,
 }: {
   value?: string | null
   className?: string
+  forceLTR?: boolean
 }) {
   const lines = cleanText(value).split("\n").filter(Boolean)
 
@@ -195,31 +342,20 @@ function TextLines({
 
   return (
     <span
-      className={`block min-w-0 max-w-full ${className || ""}`}
+      className={`block min-w-0 max-w-full ${className || ""} ${forceLTR ? "text-left" : ""}`}
+      dir={forceLTR ? "ltr" : undefined}
       style={{
         overflowWrap: "anywhere",
         unicodeBidi: "plaintext",
-        textAlign: "inherit",
+        textAlign: forceLTR ? "left" : "inherit",
         wordBreak: "break-word",
       }}
     >
-      {lines.map((line, index) => {
-        const lineDir = textDirection(line)
-        // Detect if line is composed only of Persian digits and date separators like / or -
-        const isPersianDigitsOnly = /^[\u06F0-\u06F9\/\-\s:]+$/.test(line.trim())
-        const isPersianLine = lineDir === "rtl" || /[\u0600-\u06FF]/.test(line)
-        const renderDir = isPersianDigitsOnly ? "ltr" : lineDir
-
-        return (
-          <span
-            key={`${line}-${index}`}
-            className={`block ${isPersianLine ? "persian-text bol-persian-text font-[vazirmatn]" : ""} ${isPersianDigitsOnly ? "persian-digits" : ""}`}
-            dir={renderDir}
-          >
-            {line}
-          </span>
-        )
-      })}
+      {lines.map((line, index) => (
+        <span key={`${line}-${index}`} className="block text-left">
+          {renderLineContent(line, forceLTR)}
+        </span>
+      ))}
     </span>
   )
 }
@@ -248,9 +384,7 @@ function Section({
       dir="ltr"
       data-print-section={printKey || title}
       {...(pdfMode ? { 'data-no-break': true } : {})}
-      className={`overflow-hidden rounded-xl border ${pdfMode ? '' : 'shadow-md shadow-blue-100/70'} ${
-        glass ? "border-white/80 bg-white/60 backdrop-blur-lg" : "border-blue-100 bg-white"
-      }`}
+      className={`overflow-hidden rounded-xl border ${pdfMode ? 'border-blue-200/90 bg-white' : 'shadow-md shadow-blue-100/70 border-blue-200/80 bg-white/92 backdrop-blur-xs'}`}
     >
       <div className="flex items-center justify-between px-2.5 py-1.5 text-white" style={blueBarStyle}>
           <div className="flex items-center gap-2">
@@ -271,6 +405,67 @@ function Section({
   )
 }
 
+function renderFormattedLabel(label: string, forceLTR = false) {
+  if (!label) return null
+
+  if (label.includes("/")) {
+    const parts = label.split("/")
+    const englishPart = parts[0].trim()
+    const persianPart = parts.slice(1).join("/").trim()
+
+    return (
+      <div className={`flex flex-col space-y-[1px] ${forceLTR ? "text-left" : ""}`} dir="ltr">
+        <span className="block text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight text-left">
+          {englishPart}
+        </span>
+        {persianPart && (
+          <span className={`block persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight ${forceLTR ? "text-left" : ""}`} dir={forceLTR ? "ltr" : "rtl"}>
+            {persianPart}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  if (label.includes("\n")) {
+    const lines = label.split("\n")
+    return (
+      <div className={`flex flex-col space-y-[1px] ${forceLTR ? "text-left" : ""}`} dir="ltr">
+        {lines.map((line, idx) => {
+          const isPersian = /[\u0600-\u06FF]/.test(line)
+          return (
+            <span
+              key={idx}
+              className={`block ${
+                isPersian
+                  ? "persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600"
+                  : "text-[6.5pt] font-black uppercase tracking-wider text-blue-700"
+              } leading-tight ${forceLTR ? "text-left" : ""}`}
+              dir={forceLTR ? "ltr" : isPersian ? "rtl" : "ltr"}
+            >
+              {line.trim()}
+            </span>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const isPersianOnly = /[\u0600-\u06FF]/.test(label) && !/[A-Za-z]/.test(label)
+  return (
+    <div
+      className={`block ${
+        isPersianOnly
+          ? "persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600"
+          : "text-[6.5pt] font-black uppercase tracking-wider text-blue-700"
+      } leading-tight ${forceLTR ? "text-left" : ""}`}
+      dir={forceLTR ? "ltr" : isPersianOnly ? "rtl" : "ltr"}
+    >
+      {label}
+    </div>
+  )
+}
+
 function DetailCard({
   label,
   value,
@@ -282,13 +477,13 @@ function DetailCard({
   highlight = false,
   highlightColor,
   className,
-}: DetailItem & { glass?: boolean; pdfMode?: boolean; compact?: boolean; className?: string }) {
+  center = false,
+}: DetailItem & { glass?: boolean; pdfMode?: boolean; compact?: boolean; className?: string; center?: boolean }) {
   if (!hasValue(value)) return null
   const labelDirection = textDirection(label)
   const valueDirection = textDirection(value || "")
   const rightAligned = rtl ?? (labelDirection === "rtl" || valueDirection === "rtl")
-  const isMostlyLTR = labelDirection === "ltr"
-  const isDriverLabel = /driver name|نام راننده/i.test(label)
+  const forceLTR = rtl === false || !rightAligned
   const isShipmentInfoCard = className?.includes("shipment-info-card")
   const theme = (highlightColor || '').toLowerCase()
   const isRedHighlight = theme === "red"
@@ -297,10 +492,9 @@ function DetailCard({
 
   return (
     <div
-      dir={rightAligned ? "rtl" : "ltr"}
+      dir={forceLTR ? "ltr" : rightAligned ? "rtl" : "ltr"}
       {...(pdfMode ? { 'data-no-break': true } : {})}
-        className={`min-h-[8mm] rounded-lg border px-1.5 py-1.5 ${pdfMode ? '' : 'shadow-sm shadow-blue-100/60'} ${
-        // choose glass styles: red, blue, green highlights, or default glass
+        className={`min-h-[8mm] rounded-lg border px-2 py-1.5 ${pdfMode ? '' : 'shadow-sm shadow-blue-100/60'} ${
         glass
           ? isRedHighlight
             ? "border-red-200/60 bg-red-50/30 backdrop-blur-2xl"
@@ -309,22 +503,23 @@ function DetailCard({
             : isGreenHighlight
             ? "border-green-200/60 bg-green-50/30 backdrop-blur-2xl"
             : (highlight ? "border-blue-200/60 bg-sky-50/40 backdrop-blur-2xl" : "border-white/80 bg-white/60 backdrop-blur-md")
-          : "border-blue-100 bg-white"
-      } ${rightAligned ? "text-right" : "text-left"} break-word ${className || ""}`}
-      style={{ ...(pdfMode ? { background: '#fff' } : undefined), unicodeBidi: 'plaintext' }}
+          : isRedHighlight
+          ? "border-red-200 bg-red-50/60"
+          : isBlueHighlight
+          ? "border-blue-200 bg-sky-50/60"
+          : isGreenHighlight
+          ? "border-green-200 bg-green-50/60"
+          : pdfMode ? "border-blue-100 bg-white" : "border-blue-100/80 bg-white/95 backdrop-blur-xs"
+      } ${center ? "text-center" : forceLTR ? "text-left" : rightAligned ? "text-right" : "text-left"} break-word ${className || ""}`}
+      style={{ unicodeBidi: 'plaintext', textAlign: forceLTR ? 'left' : rightAligned ? 'right' : 'left' }}
     >
-      <p
-        className={`${isDriverLabel ? "text-[7.2pt]" : isShipmentInfoCard ? "text-[7.2pt]" : (compact ? "text-[6.8pt]" : "text-[7.2pt]")} ${isDriverLabel ? "font-extrabold" : "font-black"} tracking-wide text-blue-700 ${isMostlyLTR ? "uppercase" : ""} ${
-          (labelDirection === "rtl" || /[\u0600-\u06FF]/.test(label)) ? "persian-text bol-persian-text font-[vazirmatn]" : ""
-        }`}
-        dir={rightAligned ? "rtl" : "ltr"}
-        style={{ unicodeBidi: "plaintext", color: "#1d4ed8" }}
-      >
-        {label}
-      </p>
+      <div className={`${center ? "text-center" : "text-left"} mb-1`}>
+        {renderFormattedLabel(label, forceLTR)}
+      </div>
       <TextLines
         value={cleanText(value)}
-        className={`${important ? (compact ? "text-[10.5pt]" : isShipmentInfoCard ? "text-[9.5pt]" : "text-[10.0pt]") : (compact ? "text-[10.5pt]" : "text-[9.5pt]")} font-bold leading-tight ${isRedHighlight ? "text-red-700" : isBlueHighlight ? "text-blue-800" : isGreenHighlight ? "text-green-700" : (highlight ? "text-red-600" : (important ? "text-blue-950" : "text-slate-600"))}`}
+        forceLTR={forceLTR}
+        className={`${center ? "text-center " : forceLTR ? "text-left " : ""}${important ? (compact ? "text-[10.5pt]" : isShipmentInfoCard ? "text-[9.5pt]" : "text-[10.0pt]") : (compact ? "text-[10.5pt]" : "text-[9.5pt]")} font-extrabold leading-tight ${isRedHighlight ? "text-red-600" : isBlueHighlight ? "text-blue-800" : isGreenHighlight ? "text-green-700" : (highlight ? "text-red-600" : (important ? "text-blue-950" : "text-slate-600"))}`}
       />
     </div>
   )
@@ -370,10 +565,12 @@ function PartyCard({
       <div className="party-card-body">
         <TextLines value={name} className="party-card-name" />
         <div className="party-card-info-list">
-          <div className="party-card-info-row">
-            <MapPin className="party-card-info-icon" />
-            <TextLines value={address} className="party-card-info-text" />
-          </div>
+          {hasValue(address) && (
+            <div className="party-card-info-row">
+              <MapPin className="party-card-info-icon" />
+              <TextLines value={address} className="party-card-info-text" />
+            </div>
+          )}
           {hasValue(contact) && (
             <div className="party-card-info-row">
               <Phone className="party-card-info-icon" />
@@ -575,26 +772,36 @@ function countryCodeToEmoji(countryCode?: string) {
 
 function getRouteCountryMeta(location?: string, locationPersian?: string) {
   const source = String(location || locationPersian || "").trim()
-  if (!source) return { emoji: "", label: "" }
+  if (!source) return { emoji: "🌍", code: "", label: "" }
 
   const codeMatch = source.match(/,\s*([A-Za-z]{2})$/)
   const normalized = source.toLowerCase()
 
   const countryMatch = codeMatch?.[1]?.toUpperCase() ||
-    (normalized.includes("afghanistan") || normalized.includes("kandahar") || normalized.includes("nimroz") || normalized.includes("milak") || normalized.includes("dougharoun") ? "AF" :
-    normalized.includes("iran") || normalized.includes("bandar abbas") || normalized.includes("tehran") ? "IR" :
+    (normalized.includes("afghanistan") || normalized.includes("kandahar") || normalized.includes("nimroz") || normalized.includes("milak") || normalized.includes("herat") || normalized.includes("kabul") ? "AF" :
+    normalized.includes("iran") || normalized.includes("bandar abbas") || normalized.includes("dougharoun") || normalized.includes("tehran") || normalized.includes("chabahar") ? "IR" :
     normalized.includes("india") || normalized.includes("nhava") || normalized.includes("sheva") || normalized.includes("mumbai") || normalized.includes("delhi") ? "IN" :
     normalized.includes("dubai") || normalized.includes("emirates") || normalized.includes("uae") ? "AE" :
-    normalized.includes("pakistan") || normalized.includes("quetta") || normalized.includes("chaman") ? "PK" :
-    normalized.includes("china") || normalized.includes("beijing") || normalized.includes("shanghai") || normalized.includes("qingdao") ? "CN" :
-    normalized.includes("turkey") || normalized.includes("istanbul") || normalized.includes("ankara") ? "TR" :
-    normalized.includes("russia") || normalized.includes("moscow") || normalized.includes("saint petersburg") || normalized.includes("st petersburg") ? "RU" :
-    normalized.includes("usa") || normalized.includes("us") || normalized.includes("united states") || normalized.includes("america") ? "US" :
-    normalized.includes("canada") ? "CA" :
-    normalized.includes("united kingdom") || normalized.includes("gb") || normalized.includes("britain") || normalized.includes("england") ? "GB" :
+    normalized.includes("pakistan") || normalized.includes("quetta") || normalized.includes("chaman") || normalized.includes("karachi") ? "PK" :
+    normalized.includes("china") || normalized.includes("beijing") || normalized.includes("shanghai") || normalized.includes("qingdao") || normalized.includes("ningbo") ? "CN" :
+    normalized.includes("turkey") || normalized.includes("mersin") || normalized.includes("istanbul") || normalized.includes("ankara") ? "TR" :
+    normalized.includes("russia") || normalized.includes("moscow") || normalized.includes("saint petersburg") ? "RU" :
     "")
 
-  const emoji = countryCodeToEmoji(countryMatch)
+  const emojiMap: Record<string, string> = {
+    AF: "🇦🇫",
+    IR: "🇮🇷",
+    IN: "🇮🇳",
+    AE: "🇦🇪",
+    PK: "🇵🇰",
+    CN: "🇨🇳",
+    TR: "🇹🇷",
+    RU: "🇷🇺",
+    US: "🇺🇸",
+    CA: "🇨🇦",
+    GB: "🇬🇧",
+  }
+
   const labelMap: Record<string, string> = {
     AF: "Afghanistan",
     IR: "Iran",
@@ -609,10 +816,21 @@ function getRouteCountryMeta(location?: string, locationPersian?: string) {
     GB: "UK",
   }
 
+  const code = countryMatch || ""
+  const emoji = emojiMap[code] || countryCodeToEmoji(code) || "🌍"
+  const label = labelMap[code] || code || ""
+
   return {
     emoji,
-    label: emoji ? labelMap[countryMatch] ?? countryMatch : "",
+    code,
+    label,
   }
+}
+
+function formatCityName(location?: string | null): string {
+  const text = cleanText(location)
+  if (!text) return ""
+  return text.replace(/,\s*[A-Za-z]{2,3}$/i, "").trim()
 }
 
 function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData["routes"]; glass?: boolean }) {
@@ -625,7 +843,17 @@ function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData
   }
 
   return (
-    <div className={`route-timeline-container ${glass ? "glass-card" : ""}`} aria-label="Route and transportation path timeline">
+    <div
+      className={`route-timeline-container ${glass ? "glass-card" : ""}`}
+      style={{
+        background: "linear-gradient(145deg, #ffffff, #eff6ff)",
+        border: "1px solid #bfdbfe",
+        borderRadius: "16px",
+        padding: "10px 12px",
+        boxShadow: "0 4px 16px rgba(37, 99, 235, 0.05)",
+      }}
+      aria-label="Route and transportation path timeline"
+    >
       {/* World Map Background */}
       <svg
         viewBox="0 0 1200 400"
@@ -641,24 +869,27 @@ function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData
             </feComponentTransfer>
           </filter>
         </defs>
-        {/* Simplified world map shapes (light gray) */}
-        <g fill="#d4e4f7" opacity="0.4" filter="url(#map-shadow)">
-          {/* Africa outline (simplified) */}
+        {/* Simplified world map shapes */}
+        <g fill="#93c5fd" opacity="0.3" filter="url(#map-shadow)">
           <path d="M 400 100 Q 420 80 440 100 Q 450 140 440 180 Q 420 200 400 180 Q 390 140 400 100 Z" />
-          {/* Americas outline (simplified) */}
           <path d="M 100 80 Q 80 120 100 160 Q 120 180 140 160 Q 130 120 100 80 Z" />
-          {/* Asia outline (simplified) */}
           <path d="M 600 60 Q 750 50 850 80 Q 850 140 750 160 Q 650 150 600 120 Z" />
-          {/* Europe outline (simplified) */}
           <path d="M 380 40 Q 420 30 460 50 Q 450 80 400 90 Q 370 70 380 40 Z" />
         </g>
       </svg>
 
       {/* Connection Line */}
-      <div className="route-timeline-connector" aria-hidden="true" />
+      <div
+        className="route-timeline-connector"
+        style={{
+          background: "linear-gradient(90deg, transparent 0%, rgba(37,99,235,0.3) 18%, rgba(37,99,235,0.7) 50%, rgba(37,99,235,0.3) 82%, transparent 100%)",
+          height: "2px"
+        }}
+        aria-hidden="true"
+      />
 
       {/* Route Cards Container */}
-      <div className="route-timeline-cards" role="list">
+      <div className="route-timeline-cards flex items-center justify-between gap-1" role="list">
         {routes.map((route, index) => {
           const mode = route.transportMode || "truck"
           const fallback = routeFallbackLabels(route.location)
@@ -666,90 +897,112 @@ function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData
           const pashtoLabel = fallback.pashto || persianLabel
           const showPashtoLabel = hasValue(pashtoLabel) && cleanText(pashtoLabel) !== cleanText(persianLabel)
           const isSelected = selectedRouteId === route.id
-          const countryMeta = isSelected ? getRouteCountryMeta(route.location, route.locationPersian) : { emoji: "", label: "" }
-          const routeMeta = getRouteTransportMeta(mode)
+          const countryMeta = getRouteCountryMeta(route.location, route.locationPersian)
           const isLastRoute = index === routes.length - 1
+          const isOrigin = index === 0
+          const computedStopLabel = isOrigin ? "ORIGIN" : isLastRoute ? "DESTINATION" : `STOP ${index}`
 
           return (
-            <div key={route.id || `${route.location}-${index}`} className="route-timeline-item" role="listitem">
-              <button
-                type="button"
-                className={`route-timeline-card${isSelected ? " selected" : ""}`}
+            <div key={route.id || `${route.location}-${index}`} className="route-timeline-item flex items-center flex-1 min-w-0" role="listitem">
+              <div
+                className={`route-timeline-card transition-all duration-200 w-full text-center relative overflow-hidden ${
+                  isOrigin
+                    ? "border-2 border-emerald-500/90 bg-linear-to-b from-emerald-50/40 via-white to-emerald-50/10 shadow-xs shadow-emerald-100"
+                    : isLastRoute
+                    ? "border-2 border-indigo-500/90 bg-linear-to-b from-indigo-50/40 via-white to-indigo-50/10 shadow-xs shadow-indigo-100"
+                    : "border border-blue-300/80 bg-linear-to-b from-slate-50/40 via-white to-blue-50/20 shadow-2xs shadow-blue-100"
+                } ${isSelected ? "ring-2 ring-blue-500 scale-[1.02]" : ""}`}
                 onClick={() => handleRouteSelect(route.id)}
-                style={{ "--route-transport-color": routeMeta.color } as CSSProperties}
+                style={{
+                  borderRadius: "10px",
+                  padding: "4px 3px 5px",
+                }}
               >
-                <div className="route-timeline-path-icon" aria-hidden="true">
-                  <TransportIcon mode={mode} size={34} />
+                {/* Top Accent Strip */}
+                <div className={`h-1 w-full absolute top-0 left-0 right-0 ${
+                  isOrigin ? 'bg-linear-to-r from-emerald-500 to-teal-500' : isLastRoute ? 'bg-linear-to-r from-indigo-500 to-blue-600' : 'bg-linear-to-r from-blue-400 to-sky-500'
+                }`} />
+
+                {/* Header Row: Stop Badge & Country Flag */}
+                <div className="flex items-center justify-center gap-1 mt-0.5 mb-0.5 flex-nowrap overflow-hidden">
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-[6pt] font-black tracking-tight uppercase border shadow-2xs whitespace-nowrap shrink-0 ${
+                    isOrigin
+                      ? "bg-emerald-600 text-white border-emerald-700"
+                      : isLastRoute
+                      ? "bg-indigo-600 text-white border-indigo-700"
+                      : "bg-blue-600 text-white border-blue-700"
+                  }`}>
+                    {computedStopLabel}
+                  </span>
+                  {countryMeta.label && (
+                    <span className="inline-flex items-center gap-0.5 text-[5.6pt] font-extrabold text-slate-800 uppercase tracking-tight bg-slate-100 px-1 py-0.2 rounded-full border border-slate-200 whitespace-nowrap overflow-hidden text-ellipsis max-w-[85px] shrink-0">
+                      <span className="text-[7pt] leading-none shrink-0">{countryMeta.emoji}</span>
+                      <span className="truncate">{countryMeta.label}</span>
+                    </span>
+                  )}
                 </div>
 
-                {/* Card Content */}
-                <div className="route-timeline-content">
-                  <div className="route-timeline-label">
-                    {route.stopLabel || routeModeLabel(mode)}
-                  </div>
-                  {countryMeta.emoji ? (
-                    <div className="route-timeline-flag-wrapper" aria-label={`Country flag ${countryMeta.label}`}>
-                      <div className="route-timeline-flag" aria-hidden="true">
-                        {countryMeta.emoji}
-                      </div>
-                      {countryMeta.label ? (
-                        <span className="route-timeline-flag-label">{countryMeta.label}</span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  <div className="route-timeline-location">
-                    {cleanText(route.location)}
+                {/* City Name English & Persian */}
+                <div className="space-y-0 text-center px-0.5">
+                  <div className="text-[8.2pt] font-black text-slate-950 leading-tight truncate">
+                    {formatCityName(route.location)}
                   </div>
                   {hasValue(persianLabel) && (
-                    <div className="route-timeline-location-local" dir="rtl">
+                    <div className="text-[6.8pt] font-bold text-blue-900 font-[vazirmatn] leading-tight truncate" dir="rtl">
                       {persianLabel}
                     </div>
                   )}
                   {showPashtoLabel && (
-                    <div className="route-timeline-location-local" dir="rtl">
+                    <div className="text-[6.5pt] font-semibold text-slate-600 font-[vazirmatn] leading-tight truncate" dir="rtl">
                       {pashtoLabel}
-                    </div>
-                  )}
-                  <div className="route-timeline-mode">
-                    <span className="route-timeline-mode-icon" aria-hidden="true">
-                      <TransportIcon mode={mode} size={15} />
-                    </span>
-                    {routeModeLabel(mode)}
-                  </div>
-
-                  {/* Truck Specification & Customs Seal Badges inside Route Card */}
-                  {(route.plateNumber || route.chassisNumber || route.trailerMan || route.customsSealRequired) && (
-                    <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 space-y-1 text-left w-full">
-                      {route.plateNumber && (
-                        <div className="inline-flex items-center gap-1 bg-blue-100/90 text-blue-950 font-mono font-black text-[7.5pt] px-1.5 py-0.5 rounded border border-blue-200">
-                          <span>پلیټ:</span>
-                          <span>{route.plateNumber}</span>
-                        </div>
-                      )}
-                      {route.chassisNumber && (
-                        <div className="text-[7.5pt] font-extrabold text-slate-800">
-                          <span className="text-slate-500">شاسی:</span> {route.chassisNumber}
-                        </div>
-                      )}
-                      {route.trailerMan && (
-                        <div className="text-[7.5pt] font-extrabold text-slate-800 truncate" dir="rtl font-[vazirmatn]">
-                          <span className="text-slate-500">ټیلر مان:</span> {route.trailerMan}
-                        </div>
-                      )}
-                      {route.customsSealRequired && (
-                        <div className="mt-0.5 bg-amber-100 text-amber-950 font-black text-[7.5pt] px-1.5 py-0.5 rounded border border-amber-300 flex items-center gap-1" dir="rtl font-[vazirmatn]">
-                          <span>📍 په ګمرک کې سیل غواړي</span>
-                          {route.customsSealNote ? <span className="font-semibold text-amber-800">({route.customsSealNote})</span> : null}
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
 
-              </button>
+                {/* Bottom Row: Mode Pill */}
+                <div className="mt-0.5">
+                  <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.2 rounded-full text-[5.8pt] font-black uppercase tracking-wide bg-blue-100/90 text-blue-900 border border-blue-300 shadow-2xs whitespace-nowrap">
+                    <TransportIcon mode={mode} size={9} />
+                    <span>{routeModeLabel(mode)}</span>
+                  </span>
+                </div>
+
+                {/* Truck Specifications & Customs Seal Badges */}
+                {(route.plateNumber || route.chassisNumber || route.trailerMan || route.customsSealRequired) && (
+                  <div className="mt-1 pt-1 border-t border-slate-200/80 space-y-0.5 text-left w-full">
+                    {route.plateNumber && (
+                      <div className="inline-flex items-center gap-1 bg-blue-100/90 text-blue-950 font-mono font-black text-[7pt] px-1 py-0.2 rounded border border-blue-200">
+                        <span>پلیټ:</span>
+                        <span>{route.plateNumber}</span>
+                      </div>
+                    )}
+                    {route.chassisNumber && (
+                      <div className="text-[7pt] font-extrabold text-slate-800">
+                        <span className="text-slate-500">شاسی:</span> {route.chassisNumber}
+                      </div>
+                    )}
+                    {route.trailerMan && (
+                      <div className="text-[7pt] font-extrabold text-slate-800" dir="rtl font-[vazirmatn]">
+                        <span className="text-slate-500">ټیلر مان:</span> {route.trailerMan}
+                      </div>
+                    )}
+                    {route.customsSealRequired && (
+                      <div className="mt-0.5 bg-amber-100 text-amber-950 font-black text-[7pt] px-1 py-0.2 rounded border border-amber-300 flex items-center gap-1" dir="rtl font-[vazirmatn]">
+                        <span>📍 ګمرک سیل</span>
+                        {route.customsSealNote ? <span className="font-semibold text-amber-800">({route.customsSealNote})</span> : null}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Connecting Arrow Circle */}
               {!isLastRoute && (
-                <div className="route-timeline-arrow" aria-hidden="true">
-                  <ArrowRight className="route-timeline-arrow-icon" />
+                <div
+                  className="route-timeline-arrow mx-1 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-white border border-blue-300 shadow-xs text-blue-600"
+                  aria-hidden="true"
+                >
+                  <ArrowRight className="w-3 h-3 text-blue-600" />
                 </div>
               )}
             </div>
@@ -776,6 +1029,8 @@ export function A4Preview({
   exportTarget = false,
   pdfExport = false,
   includeColorStrip = true,
+  backgroundImageUrl = "/images/mountain_logistics_bg.jpg",
+  backgroundOpacity = 0.08,
 }: A4PreviewProps) {
   const pdfMode = exportTarget || pdfExport
   const companyTitle = cleanText(companyName) || "SKY ARIANA & BALAM BAR BARAN"
@@ -799,8 +1054,8 @@ export function A4Preview({
   ])
 
   const contactItems: DetailItem[] = [
-    { label: formData.notes_1_label || "Contact Phone", value: formData.notes_1, important: true, rtl: true, highlight: true, highlightColor: formData.notes_1_theme || "red" },
-    { label: formData.notes_2_label || "Exporter Information", value: formData.notes_2, important: true, rtl: true, highlight: true, highlightColor: formData.notes_2_theme || "red" },
+    { label: formData.notes_1_label || "Contact Phone", value: formData.notes_1, important: true, highlight: true, highlightColor: formData.notes_1_theme || "blue" },
+    { label: formData.notes_2_label || "Border Representative / نماینده مرزی", value: formData.notes_2, important: true, highlight: true, highlightColor: formData.notes_2_theme || "blue" },
   ]
 
   const driverNameVal = formData.driver_name || ""
@@ -810,35 +1065,55 @@ export function A4Preview({
   const combinedDateVal = [issueDate, persianDateNumeric].filter(Boolean).join("\n")
 
   const shipmentItems: DetailItem[] = [
-    { label: "Truck Number / شماره کامیون", value: formData.truck_number, important: true, highlight: true },
-    { label: "Driver Name / نام راننده", value: driverFullInfo, important: true, highlight: true },
-    { label: "Driver Contact / تماس راننده", value: formData.driver_contact, highlight: true },
-    { label: "Driver Rent / کرایه راننده", value: formData.driver_rent, highlight: true },
-    { label: "Date / تاریخ / شمسی", value: combinedDateVal, important: true },
-  ]
+    { label: "Issue Date / تاریخ صدور", value: combinedDateVal, important: true, highlightColor: "red" },
+    { label: "BOL Number / شماره بارنامه", value: formData.bol_number, important: true, highlightColor: "red" },
+    { label: "Truck Number / شماره کامیون", value: formData.truck_number, important: true, highlightColor: "red" },
+    { label: "Driver Name / نام راننده", value: driverFullInfo, important: true, highlightColor: "red" },
+    { label: "Driver Contact / تماس راننده", value: formData.driver_contact, highlightColor: "red" },
+    { label: "Driver Rent / کرایه راننده", value: formData.driver_rent, highlightColor: "red" },
+  ].filter((item) => hasValue(item.value))
 
   const cargoSummaryItems: DetailItem[] = [
-    { label: `Container No. / ${labels.containerNoFa}`, value: formData.container_numbers, important: true },
-    { label: `Seal No. / ${labels.sealNoFa}`, value: formData.seal_numbers, important: true },
-    { label: `No. of Packages / ${labels.packagesFa}`, value: formData.number_of_packages, important: true },
-    { label: `KGS per Carton / ${labels.kgsPerCartonFa}`, value: formData.kgs_per_carton, important: true },
-    { label: `Gross Weight per Carton KGS / ${labels.grossPerCartonFa}`, value: formData.gross_weight_per_carton, important: true },
-    { label: `Rate per KGS / ${labels.rateFa}`, value: formData.rate_per_kgs, important: true },
-    { label: `Goods Value / ${labels.goodsValueFa}`, value: formData.goods_value, important: true },
-    { label: `Net Weight / ${labels.netWeightFa}`, value: formData.net_weight, important: true },
-    { label: `Gross Weight / ${labels.grossWeightFa}`, value: formData.gross_weight, important: true },
-    { label: `Measurement / ${labels.measurementFa}`, value: formData.measurement },
-  ]
+    { label: `Container No.\n${labels.containerNoFa}`, value: formData.container_numbers, important: true },
+    { label: `Seal No.\n${labels.sealNoFa}`, value: formData.seal_numbers, important: true },
+    { label: `No. of Packages\n${labels.packagesFa}`, value: formData.number_of_packages, important: true },
+    { label: `Net & Gross Wt / CTN\nوزن خالص و ناخالص فی کارتن`, value: [formData.kgs_per_carton, formData.gross_weight_per_carton].filter(Boolean).join(" | "), important: true },
+    { label: `Rate & Goods Value\nنرخ و ارزش کالا`, value: [formData.rate_per_kgs, formData.goods_value].filter(Boolean).join(" | "), important: true },
+    { label: `Gross & Net Weight\n${labels.grossWeightFa} و ${labels.netWeightFa}`, value: [formData.gross_weight, formData.net_weight].filter(Boolean).join(" | "), important: true },
+    { label: `Measurement\n${labels.measurementFa}`, value: formData.measurement },
+  ].filter((item) => hasValue(item.value))
+
+  const cleanedCargoDesc = cleanCargoDescriptionText(formData.cargo_description)
+  const hasExporter = [formData.shipper_name, formData.shipper_address, formData.shipper_contact, formData.shipper_email].some(hasValue)
+  const hasNotify = [formData.notify_party, formData.notify_party_address].some(hasValue)
 
   return (
     <div
       data-bol-a4="true"
       data-pdf-export={pdfMode ? "true" : undefined}
       data-color-strip={includeColorStrip ? "true" : "false"}
-      className="mx-auto flex min-h-[297mm] w-[210mm] max-w-[210mm] flex-col overflow-hidden text-slate-950 shadow-2xl shadow-blue-200/50 ring-1 ring-blue-100 print:m-0 print:h-[297mm] print:min-h-0 print:w-[210mm] print:max-w-none print:shadow-none"
+      className="mx-auto flex min-h-[297mm] w-[210mm] max-w-[210mm] flex-col overflow-hidden text-slate-950 shadow-2xl shadow-blue-200/50 ring-1 ring-blue-100 print:m-0 print:p-0 print:h-[297mm] print:min-h-[297mm] print:w-[210mm] print:max-w-none print:shadow-none print:ring-0 relative"
       style={pdfMode ? { ...a4ShellStyle, width: "210mm", minHeight: "297mm", height: "297mm", overflow: "hidden" } : a4ShellStyle}
     >
-      <div data-bol-page="true" className="relative flex h-full flex-col p-[3mm] print:p-[1.5mm] gap-[2mm] print:gap-[1mm] print:overflow-visible">
+      <div data-bol-page="true" className="relative flex h-full flex-col p-[3mm] print:p-[3mm] gap-[2mm] print:gap-[1.5mm] print:overflow-visible">
+        {/* Technical Blueprint & Mountain Scenery Background Overlay */}
+        {backgroundImageUrl && (
+          <div
+            data-bol-watermark="true"
+            className="absolute inset-0 pointer-events-none z-0 overflow-hidden rounded-2xl transition-all duration-300"
+            style={{
+              backgroundImage: `url('${backgroundImageUrl}')`,
+              backgroundSize: "cover",
+              backgroundPosition: "center center",
+              backgroundRepeat: "no-repeat",
+              opacity: pdfMode ? Math.min(0.20, backgroundOpacity) : backgroundOpacity,
+              filter: "contrast(1.05) brightness(1.02)",
+              WebkitPrintColorAdjust: "exact",
+              printColorAdjust: "exact",
+            }}
+            aria-hidden="true"
+          />
+        )}
         <header
           data-bol-header="true"
           className={`overflow-hidden rounded-2xl border shrink-0 ${
@@ -863,11 +1138,11 @@ export function A4Preview({
             </div>
 
             <div className="bol-company-block min-w-0 px-1 text-center">
-              <h1 className={`bol-company-name english-text font-black uppercase tracking-tight text-blue-950 ${pdfMode ? "text-[15.4pt]" : "text-[16.6pt]"}`}>
+              <h1 className="bol-company-name english-text text-[16.6pt] font-black uppercase tracking-tight text-blue-950">
                 {companyTitle}
               </h1>
-              <p className={`english-text mt-0.5 font-bold text-slate-600 ${pdfMode ? "text-[8.8pt]" : "text-[6.8pt]"}`}>{companyTagline}</p>
-              <p className={`persian-text bol-persian-text mt-0.5 font-[vazirmatn] font-black leading-tight text-blue-800 ${pdfMode ? "text-[10.5pt]" : "text-[9.5pt]"}`} dir="rtl">
+              <p className="english-text text-[6.8pt] mt-0.5 font-bold text-slate-600">{companyTagline}</p>
+              <p className="persian-text bol-persian-text text-[9.5pt] mt-0.5 font-[vazirmatn] font-black leading-tight text-blue-800" dir="rtl">
                 {companyPersian}
               </p>
             </div>
@@ -884,14 +1159,17 @@ export function A4Preview({
                   {labels.billOfLadingFa}
                 </p>
               </div>
-              <div data-pdf-bol-badge="true" className="bol-number-box flex min-h-8 items-center justify-center bg-white px-2 py-1.5">
+              <div data-pdf-bol-badge="true" className="bol-number-box flex min-h-12 items-center justify-between gap-2 bg-white px-2.5 py-1 border-t border-blue-100">
                 <span
                   data-pdf-bol-number="true"
-                  className="bol-number-text block w-full text-center font-mono text-[9.6pt] font-black leading-tight text-blue-900"
+                  className="bol-number-text block flex-1 text-center font-mono text-[9.5pt] font-black leading-none text-blue-950 tracking-tight whitespace-nowrap overflow-visible"
                   style={{ color: "#1e3a8a", fontFamily: "Arial, Helvetica, sans-serif" }}
                 >
                   {bolNumber}
                 </span>
+                <div className="shrink-0 flex items-center justify-center p-1 bg-white border-2 border-blue-900 rounded-lg shadow-2xs">
+                  <DocumentQRCode value={bolNumber || "SKY-BOL"} size={40} />
+                </div>
               </div>
             </div>
           </div>
@@ -901,32 +1179,103 @@ export function A4Preview({
           data-bol-content="true"
           className={`mt-0 flex min-h-0 flex-1 flex-col gap-[3mm] print:gap-[2mm] ${pdfMode ? "overflow-visible" : "overflow-y-auto"}`}
         >
-          <Section title="Shipment Information" subtitle={labels.shipmentInfoFa} icon={<CalendarDays className="h-6 w-6" />} glass={!pdfMode} printKey="shipment" pdfMode={pdfMode} titleClassName="text-[10.2pt]">
-            <div className="grid grid-cols-5 gap-1.5">
-              {shipmentItems.map((item) => (
-                <DetailCard key={item.label} {...item} glass={!pdfMode} pdfMode={pdfMode} className="shipment-info-card" />
-              ))}
-            </div>
-          </Section>
+          {shipmentItems.length > 0 && (
+            <Section title="Shipment Information" subtitle={labels.shipmentInfoFa} icon={<CalendarDays className="h-6 w-6" />} glass={!pdfMode} printKey="shipment" pdfMode={pdfMode} titleClassName="text-[10.2pt]">
+              <div className={`grid gap-1.5 print:gap-1.5 ${
+                shipmentItems.length >= 6 ? "grid-cols-3 sm:grid-cols-6 print:grid-cols-6" :
+                shipmentItems.length === 5 ? "grid-cols-5 print:grid-cols-5" :
+                shipmentItems.length === 4 ? "grid-cols-4 print:grid-cols-4" :
+                shipmentItems.length === 3 ? "grid-cols-3 print:grid-cols-3" :
+                shipmentItems.length === 2 ? "grid-cols-2 print:grid-cols-2" : "grid-cols-1 print:grid-cols-1"
+              }`} dir="ltr">
+                {shipmentItems.map((item) => (
+                  <DetailCard key={item.label} {...item} rtl={false} glass={!pdfMode} pdfMode={pdfMode} compact className="shipment-info-card text-left" />
+                ))}
+              </div>
+            </Section>
+          )}
 
           <Section title="Exporter Contacts" subtitle={labels.exporterContactsFa} icon={<Phone className="h-6 w-6" />} glass={!pdfMode} printKey="contacts" pdfMode={pdfMode}>
-            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-              {contactItems.map((item) => (
-                <DetailCard key={item.label} {...item} glass={!pdfMode} pdfMode={pdfMode} compact className="exporter-contact-detail-card" />
-              ))}
-            </div>
-            <div className="mt-0 grid grid-cols-1 gap-0 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 print:gap-0 print:mt-0">
-              <PartyCard
-                title="Exporter Information"
-                subtitle={labels.exporterInfoFa}
-                icon={<Building2 className="h-6 w-6" />}
-                name={formData.shipper_name}
-                address={formData.shipper_address}
-                contact={formData.shipper_contact}
-                email={formData.shipper_email}
-                glass={!pdfMode}
-                pdfMode={pdfMode}
-              />
+            {contactItems.length > 0 && (
+              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2" dir="ltr">
+                {contactItems.map((item) => (
+                  <DetailCard key={item.label} {...item} rtl={false} glass={!pdfMode} pdfMode={pdfMode} compact className="exporter-contact-detail-card text-left" />
+                ))}
+              </div>
+            )}
+            <div className="mt-0 grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-2 print:grid-cols-2 print:gap-1.5 print:mt-0" dir="ltr">
+              {/* COMBINED EXPORTER & NOTIFY PARTY CARD (HIDE BLANK ONES CLEANLY) */}
+              {(hasExporter || hasNotify) && (
+                <div
+                  {...(pdfMode ? { 'data-no-break': true } : {})}
+                  className={`party-card ${!pdfMode ? 'party-card-glass' : 'party-card-solid'} ${pdfMode ? 'party-card-pdf' : ''}`}
+                  dir="ltr"
+                >
+                <div className="flex flex-col divide-y divide-blue-100/80" dir="ltr">
+                    {/* EXPORTER INFORMATION */}
+                    {hasExporter && (
+                      <div dir="ltr" className="text-left">
+                        <div className={`party-card-header ${!pdfMode ? 'party-card-header-glass' : 'party-card-header-solid'}`} dir="ltr">
+                          <span className="party-card-icon"><Building2 className="h-5 w-5" /></span>
+                          <div className="party-card-header-text text-left" dir="ltr">
+                            <h4 className="party-card-title text-left" dir="ltr">Exporter Info</h4>
+                            <p className="party-card-subtitle text-left" dir="ltr">{labels.exporterInfoFa}</p>
+                          </div>
+                        </div>
+                        <div className="party-card-body text-left" dir="ltr">
+                          <TextLines value={formData.shipper_name} className="party-card-name text-left" />
+                          <div className="party-card-info-list text-left" dir="ltr">
+                            {hasValue(formData.shipper_address) && (
+                              <div className="party-card-info-row text-left" dir="ltr">
+                                <MapPin className="party-card-info-icon" />
+                                <TextLines value={formData.shipper_address} className="party-card-info-text text-left" />
+                              </div>
+                            )}
+                            {hasValue(formData.shipper_contact) && (
+                              <div className="party-card-info-row text-left" dir="ltr">
+                                <Phone className="party-card-info-icon" />
+                                <TextLines value={formData.shipper_contact} className="party-card-info-text text-left" />
+                              </div>
+                            )}
+                            {hasValue(formData.shipper_email) && (
+                              <div className="party-card-info-row text-left" dir="ltr">
+                                <Mail className="party-card-info-icon" />
+                                <TextLines value={formData.shipper_email} className="party-card-info-text text-left" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* NOTIFY PARTY */}
+                    {hasNotify && (
+                      <div>
+                        <div className={`party-card-header ${!pdfMode ? 'party-card-header-glass' : 'party-card-header-solid'}`}>
+                          <span className="party-card-icon"><Mail className="h-5 w-5" /></span>
+                          <div className="party-card-header-text">
+                            <h4 className="party-card-title">Notify Party</h4>
+                            <p className="party-card-subtitle" dir="rtl">{labels.notifyPartyFa}</p>
+                          </div>
+                        </div>
+                        <div className="party-card-body">
+                          <TextLines value={formData.notify_party} className="party-card-name" />
+                          <div className="party-card-info-list">
+                            {hasValue(formData.notify_party_address) && (
+                              <div className="party-card-info-row">
+                                <MapPin className="party-card-info-icon" />
+                                <TextLines value={formData.notify_party_address} className="party-card-info-text" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* CONSIGNEE INFORMATION CARD */}
               <PartyCard
                 title="Consignee Information"
                 subtitle={labels.consigneeInfoFa}
@@ -938,106 +1287,54 @@ export function A4Preview({
                 glass={!pdfMode}
                 pdfMode={pdfMode}
               />
-              <PartyCard
-                title="Notify Party"
-                subtitle={labels.notifyPartyFa}
-                icon={<Mail className="h-6 w-6" />}
-                name={formData.notify_party}
-                address={formData.notify_party_address}
-                contact={undefined}
-                email={undefined}
-                glass={!pdfMode}
-                pdfMode={pdfMode}
-              />
             </div>
           </Section>
 
           <Section title="Route / Transportation Path" subtitle={labels.routeFa} icon={<Route className="h-6 w-6" />} glass={!pdfMode} printKey="route" pdfMode={pdfMode}>
             <RouteTimeline routes={formData.routes} glass={!pdfMode} />
-            
-            {/* Dedicated Truck Details & Customs Seal Summary Bar */}
-            {formData.routes.some(r => r.plateNumber || r.chassisNumber || r.trailerMan || r.customsSealRequired) && (
-              <div className="mt-2 rounded-xl border border-blue-200 bg-linear-to-r from-blue-50/90 via-white to-amber-50/70 p-2 shadow-xs text-xs font-bold text-slate-900">
-                <div className="flex items-center justify-between border-b border-blue-200/60 pb-1 mb-1.5 text-[8.5pt] font-black text-blue-950">
-                  <div className="flex items-center gap-1.5">
-                    <Truck className="h-3.5 w-3.5 text-blue-700" />
-                    <span>Truck Transportation Specifications / مشخصات حمل موتر و ګمرک</span>
+          </Section>
+
+          {(cargoSummaryItems.length > 0 || hasValue(cleanedCargoDesc)) && (
+            <Section title="Cargo Description" subtitle={labels.cargoDescFa} icon={<Package className="h-6 w-6" />} glass={!pdfMode} printKey="cargo" pdfMode={pdfMode} titleClassName="text-[10.2pt]">
+              {cargoSummaryItems.length > 0 && (
+                <div className="grid grid-cols-4 gap-1 break-word" style={{ gridAutoRows: 'minmax(32px, auto)' }}>
+                  {cargoSummaryItems.map((item) => (
+                    <DetailCard key={item.label} {...item} glass={!pdfMode} pdfMode={pdfMode} compact center />
+                  ))}
+                </div>
+              )}
+              {hasValue(cleanedCargoDesc) && (
+                <div
+                  className={`mt-1.5 rounded-xl border p-2 shadow-inner ${
+                    pdfMode ? "border-blue-100 bg-white" : "border-white/80 bg-white/65 backdrop-blur-md"
+                  }`}
+                >
+                  <div className="mb-1 flex items-center gap-1.5 text-blue-800">
+                    <FileText className="h-4.5 w-4.5" />
+                    <p className="text-[9.5pt] font-black leading-tight">
+                      Description of Goods / <span className="persian-text bol-persian-text" dir="rtl">{labels.goodsDescriptionFa}</span>
+                    </p>
                   </div>
-                  <span className="font-[vazirmatn] text-amber-800 text-[8pt]" dir="rtl">جزئیات پلیټ، شاسی و سیل ګمرک</span>
+                  <TextLines
+                    value={cleanedCargoDesc}
+                    className="text-[10.2pt] font-bold leading-[1.25] text-slate-950"
+                  />
                 </div>
-
-                <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-                  {formData.routes.map((r, i) => {
-                    if (!r.plateNumber && !r.chassisNumber && !r.trailerMan && !r.customsSealRequired) return null
-                    return (
-                      <div key={r.id || i} className="rounded-lg border border-blue-100 bg-white p-1.5 space-y-0.5">
-                        <div className="flex items-center justify-between text-[7.5pt] font-black text-blue-900 border-b border-slate-100 pb-0.5">
-                          <span>Stop #{i + 1}: {r.location || `Stop ${i+1}`}</span>
-                          {r.transportMode && <span className="uppercase text-[7pt] bg-blue-100 px-1 rounded text-blue-900">{r.transportMode}</span>}
-                        </div>
-                        {r.plateNumber && (
-                          <div className="text-[7.5pt] font-bold text-slate-800">
-                            <span className="text-slate-500">Plate / پلیټ:</span> <span className="font-mono font-black text-blue-950">{r.plateNumber}</span>
-                          </div>
-                        )}
-                        {r.chassisNumber && (
-                          <div className="text-[7.5pt] font-bold text-slate-800">
-                            <span className="text-slate-500">Chassis / شاسی:</span> <span className="font-mono">{r.chassisNumber}</span>
-                          </div>
-                        )}
-                        {r.trailerMan && (
-                          <div className="text-[7.5pt] font-bold text-slate-800 font-[vazirmatn]" dir="rtl">
-                            <span className="text-slate-500">Trailer Man / ټیلر مان:</span> <span className="font-black text-slate-900">{r.trailerMan}</span>
-                          </div>
-                        )}
-                        {r.customsSealRequired && (
-                          <div className="mt-0.5 rounded bg-amber-100 p-1 text-[7.5pt] font-black text-amber-950 font-[vazirmatn]" dir="rtl">
-                            📍 په ګمرک کې سیل غواړي {r.customsSealNote ? `- ${r.customsSealNote}` : ""}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </Section>
-
-          <Section title="Cargo Description" subtitle={labels.cargoDescFa} icon={<Package className="h-6 w-6" />} glass={!pdfMode} printKey="cargo" pdfMode={pdfMode} titleClassName="text-[10.2pt]">
-            <div className="grid grid-cols-5 gap-1 break-word" style={{ gridAutoRows: 'minmax(32px, auto)' }}>
-              {cargoSummaryItems.map((item) => (
-                <DetailCard key={item.label} {...item} glass={!pdfMode} pdfMode={pdfMode} compact />
-              ))}
-            </div>
-            <div
-              className={`mt-1.5 rounded-xl border p-2 shadow-inner ${
-                pdfMode ? "border-blue-100 bg-white" : "border-white/80 bg-white/65 backdrop-blur-md"
-              }`}
-            >
-              <div className="mb-1 flex items-center gap-1.5 text-blue-800">
-                <FileText className="h-4.5 w-4.5" />
-                <p className="text-[9.5pt] font-black leading-tight">
-                  Description of Goods / <span className="persian-text bol-persian-text" dir="rtl">{labels.goodsDescriptionFa}</span>
-                </p>
-              </div>
-              <TextLines
-                value={formData.cargo_description}
-                className="text-[10.2pt] font-bold leading-[1.25] text-slate-950"
-              />
-            </div>
-          </Section>
+              )}
+            </Section>
+          )}
 
           <div data-no-break className="mt-auto flex justify-center pt-0.5 flex-shrink-0">
             <div
-              className={`w-full max-w-[100mm] rounded-xl border border-dashed p-2 text-center shadow-md shadow-blue-100/70 print:shadow-none ${
+              className={`w-full max-w-[55mm] rounded-lg border border-dashed p-1 text-center shadow-xs print:shadow-none ${
                 pdfMode ? "border-blue-300 bg-white" : "border-white/80 bg-white/65 backdrop-blur-md"
               }`}
             >
-              <div className="flex h-10 items-center justify-center rounded-lg bg-blue-50 text-[7pt] italic text-blue-500">
+              <div className="flex h-5 items-center justify-center rounded bg-blue-50/90 text-[5.8pt] font-medium italic text-blue-600">
                 Stamp / <span className="persian-text bol-persian-text" dir="rtl">{labels.stampFa}</span>
               </div>
-              <p className="mt-1 text-[12.2pt] font-black text-blue-950">Company Stamp & Sign</p>
-              <p className="persian-text bol-persian-text font-[vazirmatn] text-[12.2pt] font-bold text-slate-500" dir="rtl">
+              <p className="mt-0.5 text-[8.5pt] font-black text-blue-950 leading-tight">Company Stamp & Sign</p>
+              <p className="persian-text bol-persian-text font-[vazirmatn] text-[8pt] font-bold text-slate-500 leading-tight" dir="rtl">
                 {labels.companyStampSignFa}
               </p>
             </div>

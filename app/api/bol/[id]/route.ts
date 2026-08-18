@@ -15,7 +15,7 @@ export async function GET(
     const { data, error } = await supabase
       .from("bill_of_lading")
       .select("*")
-      .eq("id", id)
+      .or(`id.eq.${id},bol_number.eq.${id}`)
       .single()
     
     if (error) {
@@ -50,42 +50,59 @@ export async function PUT(
   try {
     const body = await request.json()
     
-    let savedData = null
+    // Always update local storage as well
+    await localStorage.updateLocalBOL(id, body)
+
+    let savedData = {
+      id,
+      ...body,
+      updated_at: new Date().toISOString(),
+    }
     let savedToSupabase = false
     
     try {
       const supabase = await createClient()
-      
-      const { data, error } = await supabase
+
+      // Try updating by UUID or by bol_number
+      let { data, error } = await supabase
         .from("bill_of_lading")
         .update({
           ...body,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", id)
+        .or(`id.eq.${id},bol_number.eq.${id}`)
         .select()
-        .single()
-      
+        .maybeSingle()
+
+      // If no row existed to update in Supabase, insert it as a new record
+      if (!data && (!error || error.code === "PGRST116")) {
+        const { id: rawId, ...cleanBody } = body
+        const insertPayload = {
+          bol_number: body.bol_number || id,
+          issue_date: body.issue_date || new Date().toISOString().split("T")[0],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          ...cleanBody,
+        }
+        const insertRes = await supabase
+          .from("bill_of_lading")
+          .insert(insertPayload)
+          .select()
+          .single()
+        data = insertRes.data
+        error = insertRes.error
+      }
+
       if (error) {
-        console.error("[v0] Error updating BOL in Supabase:", error.message)
+        console.error("[v0] Error updating/upserting BOL in Supabase:", error.message)
       } else if (data) {
         savedData = data
         savedToSupabase = true
-        console.log("[v0] BOL updated in Supabase:", id)
+        console.log("[v0] BOL updated/upserted in Supabase:", data.id)
       }
     } catch (supabaseErr) {
       console.error("[v0] Supabase connection failed, updating locally:", 
         supabaseErr instanceof Error ? supabaseErr.message : String(supabaseErr))
-    }
-    
-    // If Supabase failed, update locally
-    if (!savedToSupabase) {
-      await localStorage.updateLocalBOL(id, body)
-      savedData = {
-        id,
-        ...body,
-        updated_at: new Date().toISOString(),
-      }
     }
     
     return NextResponse.json({ 

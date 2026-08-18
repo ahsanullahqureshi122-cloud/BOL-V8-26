@@ -109,30 +109,17 @@ const invoicesFile = path.join(process.cwd(), ".local-invoices.json")
 const accountsFile = path.join(process.cwd(), ".local-accounts.json")
 const invoiceCounterFile = path.join(process.cwd(), ".invoice-counter")
 
-async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
-  try {
-    if (!fs.existsSync(filePath)) return fallback
-    return JSON.parse(await fs.promises.readFile(filePath, "utf-8")) as T
-  } catch {
-    return fallback
-  }
-}
-
-async function writeJsonFile<T>(filePath: string, value: T) {
-  await fs.promises.writeFile(filePath, JSON.stringify(value, null, 2), "utf-8")
-}
+import { readJsonFile, writeJsonFile } from "./blob-db"
 
 export async function nextInvoiceNumber() {
   let counter = 1
   try {
-    if (fs.existsSync(invoiceCounterFile)) {
-      counter = Number.parseInt(await fs.promises.readFile(invoiceCounterFile, "utf-8"), 10) || 1
-    }
+    counter = await readJsonFile<number>(invoiceCounterFile, 1)
   } catch {
     counter = 1
   }
 
-  await fs.promises.writeFile(invoiceCounterFile, String(counter + 1), "utf-8")
+  await writeJsonFile<number>(invoiceCounterFile, counter + 1)
   return `INV-${new Date().getFullYear()}-${String(counter).padStart(4, "0")}`
 }
 
