@@ -1128,6 +1128,66 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     })
   }
 
+  const handleCargoFieldChange = (fieldName: string, value: string) => {
+    setFormData((prev) => {
+      const updated = { ...prev, [fieldName]: value }
+
+      const pkgCount = parseNumericValue(fieldName === "number_of_packages" ? value : updated.number_of_packages || "0")
+      const kgsPerCt = parseNumericValue(fieldName === "kgs_per_carton" ? value : updated.kgs_per_carton || "0")
+      const grossPerCt = parseNumericValue(fieldName === "gross_weight_per_carton" ? value : updated.gross_weight_per_carton || "0")
+      const rateKgs = parseNumericValue(fieldName === "rate_per_kgs" ? value : updated.rate_per_kgs || "0")
+
+      // Auto compute Net Weight if packages or kgs_per_carton changed
+      if (pkgCount && kgsPerCt && (fieldName === "number_of_packages" || fieldName === "kgs_per_carton")) {
+        updated.net_weight = `${formatWeightValue(pkgCount * kgsPerCt)} KG`
+      }
+      // Auto compute Gross Weight if packages or gross_weight_per_carton changed
+      if (pkgCount && grossPerCt && (fieldName === "number_of_packages" || fieldName === "gross_weight_per_carton")) {
+        updated.gross_weight = `${formatWeightValue(pkgCount * grossPerCt)} KG`
+      }
+
+      // Auto compute Goods Value if rate or net weight changed
+      const netVal = parseNumericValue(updated.net_weight || "0")
+      if (rateKgs && netVal && (fieldName === "rate_per_kgs" || fieldName === "number_of_packages" || fieldName === "kgs_per_carton" || fieldName === "net_weight")) {
+        updated.goods_value = formatUsdValue(rateKgs * netVal)
+      }
+
+      return updated
+    })
+  }
+
+  const insertCargoTagSnippet = (tagText: string) => {
+    setFormData((prev) => {
+      const current = (prev.cargo_description || "").trim()
+      const newDesc = current ? `${current}\n${tagText}` : tagText
+      return { ...prev, cargo_description: newDesc }
+    })
+    toast.success("Added cargo tag", { description: tagText.slice(0, 35) })
+  }
+
+  const clearCargoDescription = () => {
+    setFormData((prev) => ({ ...prev, cargo_description: "" }))
+    toast.info("Cargo description cleared", { description: "شرح کالا پاک شد" })
+  }
+
+  const clearAllCargoFields = () => {
+    setFormData((prev) => ({
+      ...prev,
+      container_numbers: "",
+      seal_numbers: "",
+      number_of_packages: "",
+      kgs_per_carton: "",
+      gross_weight_per_carton: "",
+      rate_per_kgs: "",
+      goods_value: "",
+      net_weight: "",
+      gross_weight: "",
+      measurement: "",
+      cargo_description: "",
+    }))
+    toast.info("All cargo fields cleared", { description: "تمامی مشخصات کالا پاک شد" })
+  }
+
   const NOTE_THEME_BUTTON_CLASSES: Record<string, string> = {
     red: 'bg-red-500',
     blue: 'bg-blue-500',
@@ -3511,13 +3571,13 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               </CardContent>
             </Card>
 
-            {/* 06 Cargo Details Card */}
-            <Card id="section-cargo" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
+            {/* 05 Cargo Details Card */}
+            <Card id="section-cargo" className="bg-white/80 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-slate-100 bg-linear-to-r from-purple-50/60 via-indigo-50/30 to-white">
                 <CardTitle className="text-base flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-purple-600 text-white text-[11px] font-black shadow-xs">
-                      06
+                      05
                     </span>
                     <div className="p-2 rounded-xl bg-purple-100 text-purple-700 border border-purple-200 shadow-2xs">
                       <Package className="h-4.5 w-4.5" />
@@ -3527,16 +3587,26 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       <span className="text-[11px] text-purple-700 font-medium block">Packages, Weights, Rates & Cargo Description</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Button
                       type="button"
                       size="sm"
                       onClick={handleAutoCalculateWeights}
-                      className="h-7.5 px-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10.5px] font-black shadow-xs hover:from-purple-700 hover:to-indigo-700 cursor-pointer active:scale-95"
+                      className="h-8 px-3 rounded-xl bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-black shadow-md shadow-purple-500/20 cursor-pointer active:scale-95 transition-all"
                       title="Calculate Net Weight, Gross Weight and Goods Value"
                     >
-                      <Calculator className="h-3 w-3 mr-1" />
+                      <Calculator className="h-3.5 w-3.5 mr-1" />
                       ⚡ Recalculate Totals
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearAllCargoFields}
+                      className="h-8 px-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-[10.5px] font-bold shadow-2xs"
+                      title="Clear all Cargo fields"
+                    >
+                      ✕ Clear All
                     </Button>
                     <span className="text-xs font-extrabold text-purple-900 font-[vazirmatn] bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
                       مشخصات کالا و محموله
@@ -3545,255 +3615,375 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5 pt-5 pb-6">
-                {/* Live Weights & Calculation Metrics Summary Bar */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl border border-purple-200/80 bg-linear-to-r from-purple-50/80 via-indigo-50/50 to-blue-50/80 shadow-inner">
-                  <div className="rounded-xl bg-white/80 p-2 border border-purple-100 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Packages</span>
-                    <p className="text-xs sm:text-sm font-black text-purple-950 truncate">{formData.number_of_packages || "0"}</p>
-                  </div>
-                  <div className="rounded-xl bg-white/80 p-2 border border-purple-100 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Net Weight</span>
-                    <p className="text-xs sm:text-sm font-black text-blue-950 truncate">{formData.net_weight || "0 KG"}</p>
-                  </div>
-                  <div className="rounded-xl bg-white/80 p-2 border border-purple-100 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Gross Weight</span>
-                    <p className="text-xs sm:text-sm font-black text-indigo-950 truncate">{formData.gross_weight || "0 KG"}</p>
-                  </div>
-                  <div className="rounded-xl bg-white/80 p-2 border border-purple-100 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Est. Goods Value</span>
-                    <p className="text-xs sm:text-sm font-black text-emerald-800 truncate">{formData.goods_value || "$0.00"}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
-                  {/* Container No */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
-                      <span>Container No.</span>
-                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">شماره کانتینر</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-purple-500 pointer-events-none">
-                        <Box className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="container_numbers"
-                        value={formData.container_numbers}
-                        onChange={handleInputChange}
-                        placeholder="Container numbers"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
-                      />
+                {/* Live Weights & Calculation Metrics KPI Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Total Packages */}
+                  <div className="rounded-2xl border border-purple-200/80 bg-linear-to-br from-purple-50/90 to-purple-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 flex items-center gap-1">
+                        <Package className="h-3.5 w-3.5 text-purple-600" />
+                        Total Packages
+                      </span>
+                      <span className="text-[9px] font-bold text-purple-600 bg-purple-200/70 px-1.5 py-0.2 rounded-md">
+                        بسته‌ها
+                      </span>
                     </div>
+                    <p className="text-lg sm:text-xl font-black text-purple-950 truncate tracking-tight">
+                      {formData.number_of_packages || "0"}
+                    </p>
+                    <span className="text-[10px] text-purple-700 font-medium block mt-0.5">Cartons / Units</span>
                   </div>
 
-                  {/* Seal No */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
-                      <span>Seal No.</span>
-                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">شماره پلمپ</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-purple-500 pointer-events-none">
-                        <ShieldCheck className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="seal_numbers"
-                        value={formData.seal_numbers}
-                        onChange={handleInputChange}
-                        placeholder="Seal numbers"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
-                      />
+                  {/* Total Net Weight */}
+                  <div className="rounded-2xl border border-blue-200/80 bg-linear-to-br from-blue-50/90 to-blue-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-blue-800 flex items-center gap-1">
+                        <Scale className="h-3.5 w-3.5 text-blue-600" />
+                        Total Net Weight
+                      </span>
+                      <span className="text-[9px] font-bold text-blue-600 bg-blue-200/70 px-1.5 py-0.2 rounded-md">
+                        وزن خالص
+                      </span>
                     </div>
+                    <p className="text-lg sm:text-xl font-black text-blue-950 truncate tracking-tight">
+                      {formData.net_weight || "0 KG"}
+                    </p>
+                    <span className="text-[10px] text-blue-700 font-medium block mt-0.5">Net Cargo Weight</span>
                   </div>
 
-                  {/* No. of Packages */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
-                      <span>No. of Packages</span>
-                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">تعداد بسته</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-purple-500 pointer-events-none">
-                        <Package className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="number_of_packages"
-                        value={formData.number_of_packages}
-                        onChange={handleInputChange}
-                        placeholder="Package count"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
-                      />
+                  {/* Total Gross Weight */}
+                  <div className="rounded-2xl border border-indigo-200/80 bg-linear-to-br from-indigo-50/90 to-indigo-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800 flex items-center gap-1">
+                        <Scale className="h-3.5 w-3.5 text-indigo-600" />
+                        Total Gross Weight
+                      </span>
+                      <span className="text-[9px] font-bold text-indigo-600 bg-indigo-200/70 px-1.5 py-0.2 rounded-md">
+                        وزن ناخالص
+                      </span>
                     </div>
+                    <p className="text-lg sm:text-xl font-black text-indigo-950 truncate tracking-tight">
+                      {formData.gross_weight || "0 KG"}
+                    </p>
+                    <span className="text-[10px] text-indigo-700 font-medium block mt-0.5">Gross with Packaging</span>
                   </div>
 
-                  {/* KGS / Carton */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
-                      <span>KGS / Carton</span>
-                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">کیلو فی کارتن</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-purple-500 pointer-events-none">
-                        <Scale className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="kgs_per_carton"
-                        value={formData.kgs_per_carton}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 12.5"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
-                      />
+                  {/* Estimated Goods Value */}
+                  <div className="rounded-2xl border border-emerald-200/80 bg-linear-to-br from-emerald-50/90 to-emerald-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                        <Receipt className="h-3.5 w-3.5 text-emerald-600" />
+                        Est. Goods Value
+                      </span>
+                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-200/70 px-1.5 py-0.2 rounded-md">
+                        ارزش کالا
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Gross Wt. / Carton */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
-                      <span>Gross Wt. / Carton</span>
-                      <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">وزن ناخالص کارتن</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-purple-500 pointer-events-none">
-                        <Scale className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="gross_weight_per_carton"
-                        value={formData.gross_weight_per_carton}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 13"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Rate per KGS */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-emerald-900 flex items-center justify-between gap-1">
-                      <span>Rate per KGS</span>
-                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-emerald-700">نرخ فی کیلو</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-emerald-600 pointer-events-none">
-                        <Receipt className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="rate_per_kgs"
-                        value={formData.rate_per_kgs}
-                        onChange={handleInputChange}
-                        placeholder="e.g., $1.20"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-emerald-950 bg-emerald-50/50 border-emerald-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Goods Value */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-emerald-900 flex items-center justify-between gap-1">
-                      <span>Goods Value</span>
-                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-emerald-700">ارزش کالا</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-emerald-600 pointer-events-none">
-                        <Building2 className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="goods_value"
-                        value={formData.goods_value}
-                        onChange={handleInputChange}
-                        placeholder="e.g., $10,000"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-emerald-950 bg-emerald-50/50 border-emerald-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Net Weight */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-blue-950 flex items-center justify-between gap-1">
-                      <span>Net Weight</span>
-                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-blue-700">وزن خالص</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-blue-600 pointer-events-none">
-                        <Scale className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="net_weight"
-                        value={formData.net_weight}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 4,800 KG"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-blue-950 bg-blue-50/50 border-blue-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Gross Weight */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-blue-950 flex items-center justify-between gap-1">
-                      <span>Gross Weight</span>
-                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-blue-700">وزن ناخالص</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-blue-600 pointer-events-none">
-                        <Scale className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="gross_weight"
-                        value={formData.gross_weight}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 5,000 KG"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-blue-950 bg-blue-50/50 border-blue-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Measurement */}
-                  <div>
-                    <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
-                      <span>Measurement</span>
-                      <span className="font-[vazirmatn] text-[11px] font-bold text-amber-800">حجم (CBM)</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3 text-amber-600 pointer-events-none">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <Input
-                        name="measurement"
-                        value={formData.measurement}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 25 CBM"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
-                      />
-                    </div>
+                    <p className="text-lg sm:text-xl font-black text-emerald-950 truncate tracking-tight">
+                      {formData.goods_value || "$0.00"}
+                    </p>
+                    <span className="text-[10px] text-emerald-700 font-medium block mt-0.5">Total Declared Value</span>
                   </div>
                 </div>
 
-                {/* Cargo Description Field */}
-                <div className="pt-1">
-                  <label className="mb-2 text-xs font-black text-slate-900 flex items-center justify-between gap-1">
-                    <span className="flex items-center gap-1.5">
-                      <FileText className="h-4 w-4 text-purple-600" />
-                      <span>Cargo Description / Specification Details</span>
+                {/* Field Grid - Row 1: Container, Seal & Package Quantities */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                      <Box className="h-3.5 w-3.5 text-purple-600" />
+                      1. Container & Packaging Specifications
                     </span>
-                    <span className="font-[vazirmatn] text-[11px] font-extrabold text-purple-900">شرح کامل کالا و محموله</span>
-                  </label>
+                    <span className="font-[vazirmatn] text-xs font-bold text-slate-600">مشخصات کانتینر و بسته‌بندی</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                    {/* Container No */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                        <span>Container No.</span>
+                        <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">شماره کانتینر</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-purple-500 pointer-events-none">
+                          <Box className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="container_numbers"
+                          value={formData.container_numbers}
+                          onChange={(e) => handleCargoFieldChange("container_numbers", e.target.value)}
+                          placeholder="e.g. MSCU1234567"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold uppercase text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Seal No */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                        <span>Seal No.</span>
+                        <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">شماره پلمپ</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-purple-500 pointer-events-none">
+                          <ShieldCheck className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="seal_numbers"
+                          value={formData.seal_numbers}
+                          onChange={(e) => handleCargoFieldChange("seal_numbers", e.target.value)}
+                          placeholder="e.g. SL-987654"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold uppercase text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* No. of Packages */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                        <span>No. of Packages</span>
+                        <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">تعداد بسته</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-purple-500 pointer-events-none">
+                          <Package className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="number_of_packages"
+                          value={formData.number_of_packages}
+                          onChange={(e) => handleCargoFieldChange("number_of_packages", e.target.value)}
+                          placeholder="e.g. 1,000 CTNS"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* KGS / Carton */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                        <span>Net Wt. / Carton</span>
+                        <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">کیلو فی کارتن (خالص)</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-purple-500 pointer-events-none">
+                          <Scale className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="kgs_per_carton"
+                          value={formData.kgs_per_carton}
+                          onChange={(e) => handleCargoFieldChange("kgs_per_carton", e.target.value)}
+                          placeholder="e.g., 12.5"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Gross Wt. / Carton */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                        <span>Gross Wt. / Carton</span>
+                        <span className="font-[vazirmatn] text-[11px] font-bold text-purple-800">وزن ناخالص کارتن</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-purple-500 pointer-events-none">
+                          <Scale className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="gross_weight_per_carton"
+                          value={formData.gross_weight_per_carton}
+                          onChange={(e) => handleCargoFieldChange("gross_weight_per_carton", e.target.value)}
+                          placeholder="e.g., 13.0"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Field Grid - Row 2: Rates, Weights & Valuation */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                      <Receipt className="h-3.5 w-3.5 text-emerald-600" />
+                      2. Valuation, Rates & Total Weights
+                    </span>
+                    <span className="font-[vazirmatn] text-xs font-bold text-slate-600">ارزش‌گذاری، نرخ و اوزان کل</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                    {/* Rate per KGS */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-emerald-900 flex items-center justify-between gap-1">
+                        <span>Rate per KG</span>
+                        <span className="font-[vazirmatn] text-[11px] font-extrabold text-emerald-700">نرخ فی کیلو</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-emerald-600 pointer-events-none">
+                          <Receipt className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="rate_per_kgs"
+                          value={formData.rate_per_kgs}
+                          onChange={(e) => handleCargoFieldChange("rate_per_kgs", e.target.value)}
+                          placeholder="e.g., $1.20"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-emerald-950 bg-emerald-50/40 border-emerald-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Goods Value */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-emerald-900 flex items-center justify-between gap-1">
+                        <span>Goods Value (USD)</span>
+                        <span className="font-[vazirmatn] text-[11px] font-extrabold text-emerald-700">ارزش کالا</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-emerald-600 pointer-events-none">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="goods_value"
+                          value={formData.goods_value}
+                          onChange={(e) => handleCargoFieldChange("goods_value", e.target.value)}
+                          placeholder="e.g., $10,000"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-emerald-950 bg-emerald-50/40 border-emerald-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Net Weight */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-blue-950 flex items-center justify-between gap-1">
+                        <span>Total Net Weight</span>
+                        <span className="font-[vazirmatn] text-[11px] font-extrabold text-blue-700">وزن خالص کل</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-blue-600 pointer-events-none">
+                          <Scale className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="net_weight"
+                          value={formData.net_weight}
+                          onChange={(e) => handleCargoFieldChange("net_weight", e.target.value)}
+                          placeholder="e.g., 4,800 KG"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-blue-950 bg-blue-50/40 border-blue-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Gross Weight */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-indigo-950 flex items-center justify-between gap-1">
+                        <span>Total Gross Weight</span>
+                        <span className="font-[vazirmatn] text-[11px] font-extrabold text-indigo-700">وزن ناخالص کل</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-indigo-600 pointer-events-none">
+                          <Scale className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="gross_weight"
+                          value={formData.gross_weight}
+                          onChange={(e) => handleCargoFieldChange("gross_weight", e.target.value)}
+                          placeholder="e.g., 5,000 KG"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-indigo-950 bg-indigo-50/40 border-indigo-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Measurement */}
+                    <div>
+                      <label className="mb-1.5 text-xs font-black text-slate-800 flex items-center justify-between gap-1">
+                        <span>Volume (CBM)</span>
+                        <span className="font-[vazirmatn] text-[11px] font-bold text-amber-800">حجم کانتینر</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3 text-amber-600 pointer-events-none">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <Input
+                          name="measurement"
+                          value={formData.measurement}
+                          onChange={(e) => handleCargoFieldChange("measurement", e.target.value)}
+                          placeholder="e.g., 25 CBM"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cargo Description Field & Quick Insertion Bar */}
+                <div className="space-y-2.5 pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                      <FileText className="h-4 w-4 text-purple-600" />
+                      <span>Cargo Description / Full Specifications</span>
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10.5px] font-bold text-slate-400">
+                        {formData.cargo_description ? `${formData.cargo_description.length} chars` : "Empty"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearCargoDescription}
+                        className="text-[10.5px] font-extrabold text-slate-500 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-2 py-0.5 rounded-lg border border-slate-200 transition cursor-pointer"
+                        title="Clear description text"
+                      >
+                        ✕ Clear
+                      </button>
+                      <span className="font-[vazirmatn] text-[11px] font-extrabold text-purple-900 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                        شرح کامل کالا و محموله
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quick Tag Snippets Bar */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1">
+                      <Sparkles className="h-3 w-3 text-amber-500" />
+                      Quick Tags:
+                    </span>
+                    {[
+                      { label: "+ HS Code", text: "HS CODE: " },
+                      { label: "+ Transit Date", text: `Transit Date: ${new Date().toLocaleDateString("en-CA")}` },
+                      { label: "+ Afghan TC No", text: "Afghan TC No: " },
+                      { label: "+ Invoice & Packing List", text: "Invoice & Packing List Attached" },
+                      { label: "+ Temp Controlled", text: "Storage Temp: +4°C to +8°C (Reefer)" },
+                      { label: "+ Customs Seal Verified", text: "Customs Seal Intact & Verified" },
+                      { label: "+ Fragile", text: "FRAGILE - HANDLE WITH CARE" },
+                      {
+                        label: "+ Standard BOL Template",
+                        text: "📦 CONTAINER & CARGO DETAILS | 📄 DOCUMENT & SHIPPING DETAILS\n🥦 Cargo: \n📅 Transit Date: \n📄 HS CODE: \n📄 Afghan TC No: \n📄 Invoice NO: ",
+                      },
+                    ].map((snippet) => (
+                      <button
+                        key={snippet.label}
+                        type="button"
+                        onClick={() => insertCargoTagSnippet(snippet.text)}
+                        className="rounded-lg border border-slate-200 bg-white hover:bg-purple-50 hover:border-purple-300 text-slate-700 hover:text-purple-900 px-2 py-1 text-[10.5px] font-extrabold whitespace-nowrap transition cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                      >
+                        {snippet.label}
+                      </button>
+                    ))}
+                  </div>
+
                   <Textarea
                     name="cargo_description"
                     value={formData.cargo_description}
-                    onChange={handleInputChange}
-                    placeholder="Detailed cargo description..."
+                    onChange={(e) => handleCargoFieldChange("cargo_description", e.target.value)}
+                    placeholder="Enter detailed cargo description, HS codes, packaging marks, and shipment instructions..."
                     rows={4}
-                    className="rounded-2xl p-4 text-sm font-semibold leading-relaxed text-slate-950 bg-white/60 backdrop-blur-md border border-white shadow-inner focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-inner transition-all min-h-32"
+                    className="rounded-2xl p-4 text-sm font-semibold leading-relaxed text-slate-950 bg-white border border-slate-200 shadow-inner focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all min-h-32 font-mono"
                   />
                 </div>
               </CardContent>
             </Card>
 
-            {/* 07 Truck Information Card */}
+            {/* 06 Truck Information Card */}
             <Card id="section-truck" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
-                      07
+                      06
                     </span>
                     <div className="p-2 rounded-xl bg-blue-100 text-blue-700 border border-blue-200 shadow-2xs">
                       <Truck className="h-4.5 w-4.5" />
