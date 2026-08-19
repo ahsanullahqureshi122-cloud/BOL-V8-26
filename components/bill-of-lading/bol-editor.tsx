@@ -327,8 +327,12 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   const [routeLocationSearch, setRouteLocationSearch] = useState("")
   const [savedShippers, setSavedShippers] = useState<SavedParty[]>([])
   const [selectedShipperId, setSelectedShipperId] = useState<string>("")
+  const [showShipperDropdown, setShowShipperDropdown] = useState(false)
+  const [shipperSearchQuery, setShipperSearchQuery] = useState("")
   const [savedConsignees, setSavedConsignees] = useState<SavedParty[]>([])
   const [selectedConsigneeId, setSelectedConsigneeId] = useState<string>("")
+  const [showConsigneeDropdown, setShowConsigneeDropdown] = useState(false)
+  const [consigneeSearchQuery, setConsigneeSearchQuery] = useState("")
   const [savedNotifyParties, setSavedNotifyParties] = useState<SavedParty[]>([])
   const [selectedNotifyPartyId, setSelectedNotifyPartyId] = useState<string>("")
   const [savedNotes1, setSavedNotes1] = useState<SavedNoteOption[]>([])
@@ -700,6 +704,90 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     toast.success("Saved Note 2 option deleted")
   }
 
+  const isShipperExisting = Boolean(
+    savedShippers.find(
+      (s) =>
+        s.name.trim().toLowerCase() === formData.shipper_name.trim().toLowerCase() ||
+        (selectedShipperId && s.id === selectedShipperId)
+    )
+  )
+
+  const isConsigneeExisting = Boolean(
+    savedConsignees.find(
+      (c) =>
+        c.name.trim().toLowerCase() === formData.consignee_name.trim().toLowerCase() ||
+        (selectedConsigneeId && c.id === selectedConsigneeId)
+    )
+  )
+
+  const matchingShippers = savedShippers.filter((s) => {
+    const q = (shipperSearchQuery || formData.shipper_name || "").toLowerCase().trim()
+    if (!q) return true
+    return [s.name, s.address, s.contact, s.email].filter(Boolean).some((field) => field.toLowerCase().includes(q))
+  })
+
+  const matchingConsignees = savedConsignees.filter((c) => {
+    const q = (consigneeSearchQuery || formData.consignee_name || "").toLowerCase().trim()
+    if (!q) return true
+    return [c.name, c.address, c.contact, c.email].filter(Boolean).some((field) => field.toLowerCase().includes(q))
+  })
+
+  const clearShipperFields = () => {
+    setFormData((prev) => ({
+      ...prev,
+      shipper_name: "",
+      shipper_address: "",
+      shipper_contact: "",
+      shipper_email: "",
+    }))
+    setSelectedShipperId("")
+    setShipperSearchQuery("")
+    toast.info("Shipper fields cleared", { description: "اطلاعات فرستنده پاک شد" })
+  }
+
+  const clearConsigneeFields = () => {
+    setFormData((prev) => ({
+      ...prev,
+      consignee_name: "",
+      consignee_address: "",
+      consignee_contact: "",
+      consignee_email: "",
+    }))
+    setSelectedConsigneeId("")
+    setConsigneeSearchQuery("")
+    toast.info("Consignee fields cleared", { description: "اطلاعات گیرنده پاک شد" })
+  }
+
+  const handleCopyShipperToConsignee = () => {
+    if (!formData.shipper_name.trim()) {
+      toast.error("Shipper is empty", { description: "ابتدا نام فرستنده را وارد کنید" })
+      return
+    }
+    setFormData((prev) => ({
+      ...prev,
+      consignee_name: prev.shipper_name,
+      consignee_address: prev.shipper_address,
+      consignee_contact: prev.shipper_contact,
+      consignee_email: prev.shipper_email,
+    }))
+    toast.success("Copied Shipper to Consignee", { description: "فرستنده به گیرنده کاپی شد" })
+  }
+
+  const handleCopyConsigneeToShipper = () => {
+    if (!formData.consignee_name.trim()) {
+      toast.error("Consignee is empty", { description: "ابتدا نام گیرنده را وارد کنید" })
+      return
+    }
+    setFormData((prev) => ({
+      ...prev,
+      shipper_name: prev.consignee_name,
+      shipper_address: prev.consignee_address,
+      shipper_contact: prev.consignee_contact,
+      shipper_email: prev.consignee_email,
+    }))
+    toast.success("Copied Consignee to Shipper", { description: "گیرنده به فرستنده کاپی شد" })
+  }
+
   const saveCurrentShipper = () => {
     const shipperName = formData.shipper_name.trim()
     if (!shipperName) {
@@ -710,7 +798,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     }
 
     const existingMatch = savedShippers.find(
-      (s) => s.name.trim().toLowerCase() === shipperName.toLowerCase() || (selectedShipperId && s.id === selectedShipperId && s.name.trim().toLowerCase() === shipperName.toLowerCase())
+      (s) => s.name.trim().toLowerCase() === shipperName.toLowerCase() || (selectedShipperId && s.id === selectedShipperId)
     )
 
     const currentShipper: SavedParty = {
@@ -725,12 +813,12 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     const nextShippers = [
       currentShipper,
       ...savedShippers.filter((s) => s.id !== currentShipper.id && s.name.trim().toLowerCase() !== shipperName.toLowerCase()),
-    ].slice(0, 100)
+    ].slice(0, 150)
 
     persistSavedParties(SAVED_SHIPPERS_STORAGE_KEY, nextShippers, setSavedShippers)
     setSelectedShipperId(currentShipper.id)
-    toast.success("Shipper saved successfully!", {
-      description: `${currentShipper.name} is stored in saved shippers options.`,
+    toast.success(existingMatch ? "Shipper updated in directory!" : "New shipper saved successfully!", {
+      description: `${currentShipper.name} is stored in saved shippers directory.`,
     })
   }
 
@@ -746,7 +834,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       shipper_contact: shipper.contact || "",
       shipper_email: shipper.email || "",
     }))
-    toast.success(`Loaded Shipper: ${shipper.name}`)
+    toast.success(`Loaded Shipper: ${shipper.name}`, {
+      description: shipper.address ? shipper.address.slice(0, 40) + "..." : "Shipper loaded",
+    })
   }
 
   const deleteSavedShipper = () => {
@@ -770,7 +860,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     }
 
     const existingMatch = savedConsignees.find(
-      (c) => c.name.trim().toLowerCase() === consigneeName.toLowerCase() || (selectedConsigneeId && c.id === selectedConsigneeId && c.name.trim().toLowerCase() === consigneeName.toLowerCase())
+      (c) => c.name.trim().toLowerCase() === consigneeName.toLowerCase() || (selectedConsigneeId && c.id === selectedConsigneeId)
     )
 
     const currentConsignee: SavedParty = {
@@ -785,12 +875,12 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     const nextConsignees = [
       currentConsignee,
       ...savedConsignees.filter((c) => c.id !== currentConsignee.id && c.name.trim().toLowerCase() !== consigneeName.toLowerCase()),
-    ].slice(0, 100)
+    ].slice(0, 150)
 
     persistSavedParties(SAVED_CONSIGNEES_STORAGE_KEY, nextConsignees, setSavedConsignees)
     setSelectedConsigneeId(currentConsignee.id)
-    toast.success("Consignee saved successfully!", {
-      description: `${currentConsignee.name} is stored in saved consignees options.`,
+    toast.success(existingMatch ? "Consignee updated in directory!" : "New consignee saved successfully!", {
+      description: `${currentConsignee.name} is stored in saved consignees directory.`,
     })
   }
 
@@ -806,7 +896,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
       consignee_contact: consignee.contact || "",
       consignee_email: consignee.email || "",
     }))
-    toast.success(`Loaded Consignee: ${consignee.name}`)
+    toast.success(`Loaded Consignee: ${consignee.name}`, {
+      description: consignee.address ? consignee.address.slice(0, 40) + "..." : "Consignee loaded",
+    })
   }
 
   const deleteSavedConsignee = () => {
@@ -2762,8 +2854,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             {/* Shipper & Consignee */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* 02 Shipper Card */}
-              <Card id="section-shipper" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-                <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
+              <Card id="section-shipper" className="bg-white/80 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+                <CardHeader className="pb-4 border-b border-slate-100 bg-linear-to-r from-blue-50/60 via-indigo-50/30 to-white">
                   <CardTitle className="text-base flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
@@ -2774,10 +2866,10 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       </div>
                       <div>
                         <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Shipper / Exporter</span>
-                        <span className="text-[11px] text-blue-700 font-medium block">Origin Consignor Information</span>
+                        <span className="text-[11px] text-blue-700 font-medium block">Origin Consignor Details</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Button
                         type="button"
                         variant="ghost"
@@ -2800,18 +2892,42 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         <Copy className="h-3 w-3 mr-1 text-amber-600" />
                         ➔ Notify
                       </Button>
-                      <span className="text-xs font-extrabold text-blue-900 font-[vazirmatn] bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                        فرستنده / صادرکننده
-                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopyShipperToConsignee}
+                        className="h-7.5 px-2 rounded-lg border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-800 text-[10.5px] font-bold"
+                        title="Copy Shipper to Consignee"
+                      >
+                        <Copy className="h-3 w-3 mr-1 text-emerald-600" />
+                        ➔ Consignee
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearShipperFields}
+                        className="h-7.5 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-[10.5px] font-bold"
+                        title="Clear all Shipper fields"
+                      >
+                        ✕ Clear
+                      </Button>
                     </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-5 pb-6">
-                  <div className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-3.5 shadow-2xs">
+                  {/* Saved Shippers Directory Bar */}
+                  <div className="rounded-2xl border border-blue-200/80 bg-linear-to-br from-blue-50/80 to-indigo-50/40 p-3.5 shadow-2xs">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                       <div className="flex-1">
                         <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
-                          <span>Saved Shippers</span>
+                          <span className="flex items-center gap-1.5">
+                            <span>Saved Shippers Directory</span>
+                            <span className="rounded-full bg-blue-200/80 px-2 py-0.2 text-[10px] font-black text-blue-900">
+                              {savedShippers.length}
+                            </span>
+                          </span>
                           <span className="font-[vazirmatn] text-blue-900 font-bold text-[11px]">فرستنده‌های ذخیره شده</span>
                         </label>
                         <Select
@@ -2824,15 +2940,15 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             applySavedShipper(value)
                           }}
                         >
-                          <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-white bg-white/60 backdrop-blur-md shadow-inner rounded-xl shadow-2xs">
-                            <SelectValue placeholder="Select saved shipper" />
+                          <SelectTrigger className="h-10.5 text-xs font-bold text-slate-900 border-white bg-white/80 backdrop-blur-md rounded-xl shadow-2xs">
+                            <SelectValue placeholder="Select from saved directory..." />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Select saved shipper...</SelectItem>
+                          <SelectContent className="max-h-72">
+                            <SelectItem value="none">Select from saved directory...</SelectItem>
                             {savedShippers.map((shipper, index) => (
                               <SelectItem key={`${shipper.id}-${index}`} value={shipper.id} className="text-xs py-2">
-                                <div className="flex flex-col gap-0.5 text-left max-w-[280px]">
-                                  <span className="font-bold text-slate-900 truncate">{shipper.name}</span>
+                                <div className="flex flex-col gap-0.5 text-left max-w-[320px]">
+                                  <span className="font-extrabold text-slate-900 truncate">{shipper.name}</span>
                                   {(shipper.address || shipper.contact || shipper.email) && (
                                     <span className="text-[10px] text-slate-500 font-mono truncate">
                                       {[shipper.address, shipper.contact, shipper.email].filter(Boolean).join(" • ")}
@@ -2844,23 +2960,28 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5">
                         <Button
                           type="button"
                           variant="outline"
                           onClick={saveCurrentShipper}
-                          className="h-11 border-blue-300 bg-white hover:bg-blue-50 text-blue-900 font-extrabold text-xs rounded-xl shadow-2xs"
+                          className={`h-10.5 font-black text-xs rounded-xl shadow-2xs cursor-pointer transition-all ${
+                            isShipperExisting
+                              ? "border-blue-300 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
+                              : "border-emerald-300 bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+                          }`}
+                          title={isShipperExisting ? "Update existing shipper in directory" : "Save as new shipper"}
                         >
-                          <Save className="h-3.5 w-3.5 mr-1 text-blue-700" />
-                          Save
+                          <Save className="h-3.5 w-3.5 mr-1" />
+                          {isShipperExisting ? "Update" : "Save New"}
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
                           onClick={deleteSavedShipper}
                           disabled={!selectedShipperId}
-                          className="h-11 border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-xl shadow-2xs disabled:opacity-40"
-                          title="Delete saved shipper"
+                          className="h-10.5 border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-xl shadow-2xs disabled:opacity-30"
+                          title="Delete selected saved shipper"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -2868,9 +2989,15 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                     </div>
                   </div>
 
-                  <div>
+                  {/* Shipper Name with Live Floating Autocomplete */}
+                  <div className="relative">
                     <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
-                      <span>Shipper Name</span>
+                      <span className="flex items-center gap-1.5">
+                        <span>Shipper Name / Exporter</span>
+                        {isShipperExisting && (
+                          <span className="rounded-md bg-blue-100 text-blue-800 px-1.5 py-0.2 text-[9px] font-black">In Directory</span>
+                        )}
+                      </span>
                       <span className="font-[vazirmatn] text-blue-900 font-bold text-[11px]">نام فرستنده</span>
                     </label>
                     <div className="relative flex items-center">
@@ -2880,11 +3007,66 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       <Input
                         name="shipper_name"
                         value={formData.shipper_name}
-                        onChange={handleInputChange}
-                        placeholder="Enter shipper name"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        onFocus={() => setShowShipperDropdown(true)}
+                        onChange={(e) => {
+                          handleInputChange(e)
+                          setShowShipperDropdown(true)
+                          setShipperSearchQuery(e.target.value)
+                        }}
+                        placeholder="Type to search or enter new shipper name"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                       />
                     </div>
+
+                    {/* Floating Autocomplete Suggestions */}
+                    {showShipperDropdown && matchingShippers.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full z-40 mt-1.5 max-h-72 overflow-y-auto rounded-2xl border border-blue-200 bg-white/95 p-2.5 shadow-2xl shadow-slate-900/20 backdrop-blur-xl no-scrollbar">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-1.5 px-1">
+                          <span className="text-[11px] font-black text-blue-950">
+                            Matching Saved Shippers ({matchingShippers.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowShipperDropdown(false)}
+                            className="text-xs font-bold text-slate-400 hover:text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md transition"
+                          >
+                            ✕ Close
+                          </button>
+                        </div>
+                        <div className="space-y-1">
+                          {matchingShippers.slice(0, 10).map((shipper) => (
+                            <button
+                              key={shipper.id}
+                              type="button"
+                              onClick={() => {
+                                applySavedShipper(shipper.id)
+                                setShowShipperDropdown(false)
+                              }}
+                              className="w-full flex flex-col items-start p-2 rounded-xl text-left bg-slate-50/70 hover:bg-blue-50 border border-slate-100 hover:border-blue-300 transition-all cursor-pointer group"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-xs font-black text-slate-900 group-hover:text-blue-950 truncate">
+                                  {shipper.name}
+                                </span>
+                                <span className="text-[9px] font-bold bg-blue-100 text-blue-800 rounded px-1.5 py-0.2 shrink-0 ml-1">
+                                  Select ➔
+                                </span>
+                              </div>
+                              {shipper.address && (
+                                <p className="text-[10px] text-slate-500 font-medium truncate w-full mt-0.5">
+                                  {shipper.address}
+                                </p>
+                              )}
+                              {(shipper.contact || shipper.email) && (
+                                <p className="text-[9.5px] text-slate-400 font-mono truncate w-full">
+                                  {[shipper.contact, shipper.email].filter(Boolean).join(" • ")}
+                                </p>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -2896,9 +3078,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       name="shipper_address"
                       value={formData.shipper_address}
                       onChange={handleInputChange}
-                      placeholder="Enter shipper address"
+                      placeholder="Enter shipper complete address, city, country"
                       rows={3}
-                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs min-h-[76px] transition-all"
+                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs min-h-[76px] transition-all"
                     />
                   </div>
 
@@ -2916,9 +3098,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           name="shipper_contact"
                           value={formData.shipper_contact || ""}
                           onChange={handleInputChange}
-                          placeholder="Enter phone number"
+                          placeholder="e.g. +93 700 123 456"
                           type="tel"
-                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                          className="pl-9 rounded-xl h-10.5 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                         />
                       </div>
                     </div>
@@ -2935,9 +3117,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           name="shipper_email"
                           value={formData.shipper_email || ""}
                           onChange={handleInputChange}
-                          placeholder="Enter email address"
+                          placeholder="e.g. info@company.com"
                           type="email"
-                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                          className="pl-9 rounded-xl h-10.5 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                         />
                       </div>
                     </div>
@@ -2946,8 +3128,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               </Card>
 
               {/* 03 Consignee Card */}
-              <Card id="section-consignee" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-                <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
+              <Card id="section-consignee" className="bg-white/80 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+                <CardHeader className="pb-4 border-b border-slate-100 bg-linear-to-r from-emerald-50/60 via-teal-50/30 to-white">
                   <CardTitle className="text-base flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-600 text-white text-[11px] font-black shadow-xs">
@@ -2957,11 +3139,11 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         <User className="h-4.5 w-4.5" />
                       </div>
                       <div>
-                        <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Consignee</span>
+                        <span className="font-extrabold text-slate-950 text-base tracking-tight select-none">Consignee / Importer</span>
                         <span className="text-[11px] text-emerald-700 font-medium block">Destination Recipient Details</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Button
                         type="button"
                         variant="ghost"
@@ -2984,18 +3166,42 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         <Copy className="h-3 w-3 mr-1 text-amber-600" />
                         ➔ Notify
                       </Button>
-                      <span className="text-xs font-extrabold text-emerald-900 font-[vazirmatn] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                        گیرنده / تحویل گیرنده
-                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopyConsigneeToShipper}
+                        className="h-7.5 px-2 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-800 text-[10.5px] font-bold"
+                        title="Copy Consignee to Shipper"
+                      >
+                        <Copy className="h-3 w-3 mr-1 text-blue-600" />
+                        ➔ Shipper
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearConsigneeFields}
+                        className="h-7.5 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-[10.5px] font-bold"
+                        title="Clear all Consignee fields"
+                      >
+                        ✕ Clear
+                      </Button>
                     </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-5 pb-6">
-                  <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-3.5 shadow-2xs">
+                  {/* Saved Consignees Directory Bar */}
+                  <div className="rounded-2xl border border-emerald-200/80 bg-linear-to-br from-emerald-50/80 to-teal-50/40 p-3.5 shadow-2xs">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                       <div className="flex-1">
                         <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
-                          <span>Saved Consignees</span>
+                          <span className="flex items-center gap-1.5">
+                            <span>Saved Consignees Directory</span>
+                            <span className="rounded-full bg-emerald-200/80 px-2 py-0.2 text-[10px] font-black text-emerald-900">
+                              {savedConsignees.length}
+                            </span>
+                          </span>
                           <span className="font-[vazirmatn] text-emerald-900 font-bold text-[11px]">گیرنده‌های ذخیره شده</span>
                         </label>
                         <Select
@@ -3008,15 +3214,15 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             applySavedConsignee(value)
                           }}
                         >
-                          <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-white bg-white/60 backdrop-blur-md shadow-inner rounded-xl shadow-2xs">
-                            <SelectValue placeholder="Select saved consignee" />
+                          <SelectTrigger className="h-10.5 text-xs font-bold text-slate-900 border-white bg-white/80 backdrop-blur-md rounded-xl shadow-2xs">
+                            <SelectValue placeholder="Select from saved directory..." />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Select saved consignee...</SelectItem>
+                          <SelectContent className="max-h-72">
+                            <SelectItem value="none">Select from saved directory...</SelectItem>
                             {savedConsignees.map((consignee, index) => (
                               <SelectItem key={`${consignee.id}-${index}`} value={consignee.id} className="text-xs py-2">
-                                <div className="flex flex-col gap-0.5 text-left max-w-[280px]">
-                                  <span className="font-bold text-slate-900 truncate">{consignee.name}</span>
+                                <div className="flex flex-col gap-0.5 text-left max-w-[320px]">
+                                  <span className="font-extrabold text-slate-900 truncate">{consignee.name}</span>
                                   {(consignee.address || consignee.contact || consignee.email) && (
                                     <span className="text-[10px] text-slate-500 font-mono truncate">
                                       {[consignee.address, consignee.contact, consignee.email].filter(Boolean).join(" • ")}
@@ -3028,23 +3234,28 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5">
                         <Button
                           type="button"
                           variant="outline"
                           onClick={saveCurrentConsignee}
-                          className="h-11 border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 font-extrabold text-xs rounded-xl shadow-2xs"
+                          className={`h-10.5 font-black text-xs rounded-xl shadow-2xs cursor-pointer transition-all ${
+                            isConsigneeExisting
+                              ? "border-blue-300 bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
+                              : "border-emerald-300 bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+                          }`}
+                          title={isConsigneeExisting ? "Update existing consignee in directory" : "Save as new consignee"}
                         >
-                          <Save className="h-3.5 w-3.5 mr-1 text-emerald-700" />
-                          Save
+                          <Save className="h-3.5 w-3.5 mr-1" />
+                          {isConsigneeExisting ? "Update" : "Save New"}
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
                           onClick={deleteSavedConsignee}
                           disabled={!selectedConsigneeId}
-                          className="h-11 border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-xl shadow-2xs disabled:opacity-40"
-                          title="Delete saved consignee"
+                          className="h-10.5 border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-xl shadow-2xs disabled:opacity-30"
+                          title="Delete selected saved consignee"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -3052,9 +3263,15 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                     </div>
                   </div>
 
-                  <div>
+                  {/* Consignee Name with Live Floating Autocomplete */}
+                  <div className="relative">
                     <label className="text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
-                      <span>Consignee Name</span>
+                      <span className="flex items-center gap-1.5">
+                        <span>Consignee Name / Importer</span>
+                        {isConsigneeExisting && (
+                          <span className="rounded-md bg-emerald-100 text-emerald-800 px-1.5 py-0.2 text-[9px] font-black">In Directory</span>
+                        )}
+                      </span>
                       <span className="font-[vazirmatn] text-emerald-900 font-bold text-[11px]">نام گیرنده</span>
                     </label>
                     <div className="relative flex items-center">
@@ -3064,12 +3281,67 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       <Input
                         name="consignee_name"
                         value={formData.consignee_name}
-                        onChange={handleInputChange}
-                        placeholder="Enter consignee name"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                        onFocus={() => setShowConsigneeDropdown(true)}
+                        onChange={(e) => {
+                          handleInputChange(e)
+                          setShowConsigneeDropdown(true)
+                          setConsigneeSearchQuery(e.target.value)
+                        }}
+                        placeholder="Type to search or enter new consignee name"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
                         dir="auto"
                       />
                     </div>
+
+                    {/* Floating Autocomplete Suggestions */}
+                    {showConsigneeDropdown && matchingConsignees.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full z-40 mt-1.5 max-h-72 overflow-y-auto rounded-2xl border border-emerald-200 bg-white/95 p-2.5 shadow-2xl shadow-slate-900/20 backdrop-blur-xl no-scrollbar">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-1.5 px-1">
+                          <span className="text-[11px] font-black text-emerald-950">
+                            Matching Saved Consignees ({matchingConsignees.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowConsigneeDropdown(false)}
+                            className="text-xs font-bold text-slate-400 hover:text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md transition"
+                          >
+                            ✕ Close
+                          </button>
+                        </div>
+                        <div className="space-y-1">
+                          {matchingConsignees.slice(0, 10).map((consignee) => (
+                            <button
+                              key={consignee.id}
+                              type="button"
+                              onClick={() => {
+                                applySavedConsignee(consignee.id)
+                                setShowConsigneeDropdown(false)
+                              }}
+                              className="w-full flex flex-col items-start p-2 rounded-xl text-left bg-slate-50/70 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-300 transition-all cursor-pointer group"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-xs font-black text-slate-900 group-hover:text-emerald-950 truncate">
+                                  {consignee.name}
+                                </span>
+                                <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 rounded px-1.5 py-0.2 shrink-0 ml-1">
+                                  Select ➔
+                                </span>
+                              </div>
+                              {consignee.address && (
+                                <p className="text-[10px] text-slate-500 font-medium truncate w-full mt-0.5">
+                                  {consignee.address}
+                                </p>
+                              )}
+                              {(consignee.contact || consignee.email) && (
+                                <p className="text-[9.5px] text-slate-400 font-mono truncate w-full">
+                                  {[consignee.contact, consignee.email].filter(Boolean).join(" • ")}
+                                </p>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -3081,9 +3353,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       name="consignee_address"
                       value={formData.consignee_address}
                       onChange={handleInputChange}
-                      placeholder="Enter consignee address"
+                      placeholder="Enter consignee complete destination address, city, country"
                       rows={3}
-                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs min-h-[76px] transition-all"
+                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs min-h-[76px] transition-all"
                     />
                   </div>
 
@@ -3101,9 +3373,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           name="consignee_contact"
                           value={formData.consignee_contact || ""}
                           onChange={handleInputChange}
-                          placeholder="Enter phone number"
+                          placeholder="e.g. +971 4 123 4567"
                           type="tel"
-                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                          className="pl-9 rounded-xl h-10.5 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
                         />
                       </div>
                     </div>
@@ -3120,9 +3392,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           name="consignee_email"
                           value={formData.consignee_email || ""}
                           onChange={handleInputChange}
-                          placeholder="Enter email address"
+                          placeholder="e.g. import@buyer.com"
                           type="email"
-                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                          className="pl-9 rounded-xl h-10.5 text-sm font-extrabold text-slate-950 bg-white border-slate-200 shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
                         />
                       </div>
                     </div>
