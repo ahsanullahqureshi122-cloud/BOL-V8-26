@@ -88,7 +88,7 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="fixed inset-0 w-full h-[100dvh] min-h-screen bg-slate-950 flex flex-col items-center justify-between p-3 sm:p-5 overflow-y-auto overflow-x-hidden font-sans text-slate-800 z-50 select-none">
+    <div className="fixed inset-0 w-full h-[100dvh] min-h-screen bg-slate-900 flex flex-col items-center justify-between p-3 sm:p-5 overflow-y-auto overflow-x-hidden font-sans text-slate-800 z-50 select-none">
       
       {/* Dynamic Background Image Layers (Zero gap / Zero white line) */}
       <div className="fixed inset-0 w-full h-full z-0 overflow-hidden pointer-events-none">
@@ -101,10 +101,9 @@ export function LoginScreen() {
             style={{ backgroundImage: `url("${bg.url}")` }}
           />
         ))}
-        {/* Multi-layered cinematic gradient & vignette overlays */}
-        <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-[1px] z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/25 to-slate-950/70 z-10" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(2,6,23,0.75)_100%)] z-10" />
+        {/* Clean, uniform translucent background overlay without any dark bottom bands */}
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[0.5px] z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/30 z-10" />
       </div>
 
       {/* Top Header Bar */}
