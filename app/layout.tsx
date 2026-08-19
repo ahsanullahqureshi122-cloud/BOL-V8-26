@@ -1,6 +1,25 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
+import { Inter, Vazirmatn, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const vazirmatn = Vazirmatn({ 
+  subsets: ['arabic'],
+  variable: '--font-vazirmatn',
+  display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'SKY ARIANA & BALAM BAR BARAN',
@@ -31,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background" suppressHydrationWarning>
+    <html lang="en" className={`bg-background ${inter.variable} ${vazirmatn.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100" suppressHydrationWarning>
         <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: -1 }}>
           <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-sky-200/50 blur-3xl" />

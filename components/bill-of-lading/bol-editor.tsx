@@ -1935,7 +1935,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   return (
     <div className="min-h-screen bg-transparent print:min-h-0 print:bg-white print:overflow-visible">
       {/* Action Bar - Mobile & Desktop sticky beneath header */}
-      <div className="sticky top-[61px] z-30 border-b border-blue-100/70 bg-white/90 px-3 py-2 shadow-md shadow-blue-900/5 backdrop-blur-xl md:px-4 md:py-2.5 print:hidden">
+      <div className="sticky top-[61px] z-30 border-b border-white/50/70 bg-white/90 px-3 py-2 shadow-md shadow-blue-900/5 backdrop-blur-xl md:px-4 md:py-2.5 print:hidden">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
           {/* Header Info - Stacked on mobile */}
           <div className="flex items-start md:items-center gap-2 md:gap-4 flex-wrap">
@@ -1957,7 +1957,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               <span className="text-slate-600">{issueDate}</span>
             </div>
             {persianDateNumeric && (
-              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-blue-100 bg-white/70 px-2 py-0.5 text-xs md:text-sm">
+              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/50 bg-white/70 px-2 py-0.5 text-xs md:text-sm">
                 <span className="text-slate-600 font-bold font-[vazirmatn]" dir="ltr" style={{ unicodeBidi: "isolate" }}>
                   {persianDateNumeric}
                 </span>
@@ -1980,7 +1980,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               variant="outline" 
               size="sm" 
               onClick={handleNewDocument}
-              className="h-8 rounded-2xl border-blue-100 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm"
+              className="h-8 rounded-2xl border-white/50 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm"
             >
               <Plus className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1" />
               <span className="hidden sm:inline">New</span>
@@ -1990,7 +1990,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               size="sm" 
               onClick={() => setIsPrintDialogOpen(true)}
               disabled={isSaving}
-              className="h-8 rounded-2xl border-blue-100 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-8 rounded-2xl border-white/50 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Printer className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1" />
               <span className="hidden sm:inline">Print</span>
@@ -2000,7 +2000,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                 variant="outline" 
                 size="sm" 
                 onClick={handleNewDocument}
-                className="h-8 rounded-2xl border-blue-100 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm"
+                className="h-8 rounded-2xl border-white/50 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm"
               >
                 <Plus className="h-3.5 md:h-4 w-3.5 md:w-4 mr-1" />
                 <span className="hidden md:inline">New Doc</span>
@@ -2035,7 +2035,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               variant="outline" 
               onClick={handleDownloadPDF} 
               disabled={isSaving}
-              className="h-8 rounded-2xl border-blue-100 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm"
+              className="h-8 rounded-2xl border-white/50 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm"
               title="Download PDF directly"
             >
               {isSaving ? (
@@ -2050,7 +2050,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               variant="outline" 
               onClick={handleExportPDF} 
               disabled={isSaving}
-              className="h-8 rounded-2xl border-blue-100 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm"
+              className="h-8 rounded-2xl border-white/50 bg-white/75 px-2 text-xs text-blue-700 hover:border-blue-200 hover:bg-blue-50 md:h-9 md:px-3 md:text-sm"
               title="Save PDF to cloud storage"
             >
               {isSaving ? (
@@ -2096,8 +2096,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
           <TabsContent value="form" className="edit-form-panel space-y-4">
             {/* 01 Document Information Card */}
-            <Card className="glass-card overflow-hidden rounded-3xl border border-blue-200/90 shadow-xl shadow-blue-500/5 bg-white/95">
-              <CardHeader className="pb-3.5 glass-header border-b border-blue-100 bg-linear-to-r from-blue-50/90 via-white to-blue-50/40">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
@@ -2128,7 +2128,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         <Input
                           value={bolNumber}
                           onChange={(e) => setBolNumber(e.target.value)}
-                          className="font-mono font-black text-sm text-slate-950 bg-slate-50/70 border-slate-300 rounded-xl h-11"
+                          className="font-mono font-black text-sm text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner rounded-xl h-11"
                           placeholder="BOL-XXX"
                         />
                         <Button
@@ -2169,7 +2169,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         type="date"
                         value={issueDate}
                         onChange={(e) => handleDateChange(e.target.value)}
-                        className="pl-9 font-mono font-black text-sm text-slate-950 bg-slate-50/70 border-slate-300 rounded-xl h-11 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        className="pl-9 font-mono font-black text-sm text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner rounded-xl h-11 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
                   </div>
@@ -2383,8 +2383,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             {/* Shipper & Consignee */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* 02 Shipper Card */}
-              <Card className="glass-card rounded-3xl overflow-hidden border border-blue-200/90 shadow-xl shadow-blue-500/5 bg-white/95">
-                <CardHeader className="pb-3.5 glass-header border-b border-blue-100 bg-linear-to-r from-blue-50/90 via-white to-blue-50/40">
+              <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+                <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                   <CardTitle className="text-base flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
@@ -2421,7 +2421,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             applySavedShipper(value)
                           }}
                         >
-                          <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-slate-300 bg-white rounded-xl shadow-2xs">
+                          <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-white bg-white/60 backdrop-blur-md shadow-inner rounded-xl shadow-2xs">
                             <SelectValue placeholder="Select saved shipper" />
                           </SelectTrigger>
                           <SelectContent>
@@ -2479,7 +2479,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.shipper_name}
                         onChange={handleInputChange}
                         placeholder="Enter shipper name"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -2495,7 +2495,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       onChange={handleInputChange}
                       placeholder="Enter shipper address"
                       rows={3}
-                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs min-h-[76px] transition-all"
+                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs min-h-[76px] transition-all"
                     />
                   </div>
 
@@ -2515,7 +2515,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           onChange={handleInputChange}
                           placeholder="Enter phone number"
                           type="tel"
-                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                         />
                       </div>
                     </div>
@@ -2534,7 +2534,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           onChange={handleInputChange}
                           placeholder="Enter email address"
                           type="email"
-                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                         />
                       </div>
                     </div>
@@ -2543,8 +2543,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               </Card>
 
               {/* 03 Consignee Card */}
-              <Card className="glass-card rounded-3xl overflow-hidden border border-emerald-200/90 shadow-xl shadow-emerald-500/5 bg-white/95">
-                <CardHeader className="pb-3.5 glass-header border-b border-emerald-100 bg-linear-to-r from-emerald-50/90 via-white to-emerald-50/40">
+              <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+                <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                   <CardTitle className="text-base flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-600 text-white text-[11px] font-black shadow-xs">
@@ -2581,7 +2581,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             applySavedConsignee(value)
                           }}
                         >
-                          <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-slate-300 bg-white rounded-xl shadow-2xs">
+                          <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-white bg-white/60 backdrop-blur-md shadow-inner rounded-xl shadow-2xs">
                             <SelectValue placeholder="Select saved consignee" />
                           </SelectTrigger>
                           <SelectContent>
@@ -2639,7 +2639,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.consignee_name}
                         onChange={handleInputChange}
                         placeholder="Enter consignee name"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
                         dir="auto"
                       />
                     </div>
@@ -2656,7 +2656,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       onChange={handleInputChange}
                       placeholder="Enter consignee address"
                       rows={3}
-                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs min-h-[76px] transition-all"
+                      className="rounded-xl p-3 text-sm font-medium text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs min-h-[76px] transition-all"
                     />
                   </div>
 
@@ -2676,7 +2676,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           onChange={handleInputChange}
                           placeholder="Enter phone number"
                           type="tel"
-                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
                         />
                       </div>
                     </div>
@@ -2695,7 +2695,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           onChange={handleInputChange}
                           placeholder="Enter email address"
                           type="email"
-                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
+                          className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-all"
                         />
                       </div>
                     </div>
@@ -2705,8 +2705,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </div>
 
             {/* 04 Notify Party Card */}
-            <Card className="glass-card rounded-3xl overflow-hidden border border-amber-200/90 shadow-xl shadow-amber-500/5 bg-white/95">
-              <CardHeader className="pb-3.5 glass-header border-b border-amber-100 bg-linear-to-r from-amber-50/90 via-white to-amber-50/40">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-amber-600 text-white text-[11px] font-black shadow-xs">
@@ -2743,7 +2743,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                           applySavedNotifyParty(value)
                         }}
                       >
-                        <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-slate-300 bg-white rounded-xl shadow-2xs">
+                        <SelectTrigger className="h-11 text-xs font-bold text-slate-900 border-white bg-white/60 backdrop-blur-md shadow-inner rounded-xl shadow-2xs">
                           <SelectValue placeholder="Select saved notify party" />
                         </SelectTrigger>
                         <SelectContent>
@@ -2790,7 +2790,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       value={formData.notify_party}
                       onChange={handleInputChange}
                       placeholder="Enter notify party name"
-                      className="rounded-xl h-10 text-xs font-bold text-slate-950 bg-white border-slate-300 focus:border-amber-500 shadow-2xs"
+                      className="rounded-xl h-10 text-xs font-bold text-slate-950 bg-white/60 backdrop-blur-md border border-white shadow-inner focus:border-amber-500 shadow-2xs"
                       dir="auto"
                     />
                   </div>
@@ -2804,7 +2804,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       value={formData.notify_party_address}
                       onChange={handleInputChange}
                       placeholder="Enter notify party address"
-                      className="rounded-xl h-10 text-xs font-bold text-slate-950 bg-white border-slate-300 focus:border-amber-500 shadow-2xs"
+                      className="rounded-xl h-10 text-xs font-bold text-slate-950 bg-white/60 backdrop-blur-md border border-white shadow-inner focus:border-amber-500 shadow-2xs"
                       dir="auto"
                     />
                   </div>
@@ -2813,8 +2813,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* 06 Cargo Details Card */}
-            <Card className="glass-card overflow-hidden rounded-3xl border border-purple-200/90 shadow-xl shadow-purple-500/5 bg-white/95">
-              <CardHeader className="pb-3.5 glass-header border-b border-purple-100 bg-linear-to-r from-purple-50/90 via-white to-purple-50/40">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-purple-600 text-white text-[11px] font-black shadow-xs">
@@ -2850,7 +2850,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.container_numbers}
                         onChange={handleInputChange}
                         placeholder="Container numbers"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -2870,7 +2870,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.seal_numbers}
                         onChange={handleInputChange}
                         placeholder="Seal numbers"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -2890,7 +2890,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.number_of_packages}
                         onChange={handleInputChange}
                         placeholder="Package count"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -2910,7 +2910,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.kgs_per_carton}
                         onChange={handleInputChange}
                         placeholder="e.g., 12.5"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -2930,7 +2930,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.gross_weight_per_carton}
                         onChange={handleInputChange}
                         placeholder="e.g., 13"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -3030,7 +3030,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.measurement}
                         onChange={handleInputChange}
                         placeholder="e.g., 25 CBM"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -3051,15 +3051,15 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                     onChange={handleInputChange}
                     placeholder="Detailed cargo description..."
                     rows={4}
-                    className="rounded-2xl p-4 text-sm font-semibold leading-relaxed text-slate-950 bg-white border border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-inner transition-all min-h-32"
+                    className="rounded-2xl p-4 text-sm font-semibold leading-relaxed text-slate-950 bg-white/60 backdrop-blur-md border border-white shadow-inner focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 shadow-inner transition-all min-h-32"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* 07 Truck Information Card */}
-            <Card className="glass-card overflow-hidden rounded-3xl border border-blue-200/90 shadow-xl shadow-blue-500/5 bg-white/95">
-              <CardHeader className="pb-3.5 glass-header border-b border-blue-100 bg-linear-to-r from-blue-50/90 via-white to-blue-50/40">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
@@ -3095,7 +3095,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.truck_number}
                         onChange={handleInputChange}
                         placeholder="e.g., AF-1234-KBL"
-                        className="pl-9 rounded-xl h-11 font-mono text-sm font-black uppercase text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 font-mono text-sm font-black uppercase text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -3115,7 +3115,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.driver_name}
                         onChange={handleInputChange}
                         placeholder="Enter driver name"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -3135,7 +3135,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.driver_father_name}
                         onChange={handleInputChange}
                         placeholder="Father's name"
-                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -3155,7 +3155,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         value={formData.driver_contact}
                         onChange={handleInputChange}
                         placeholder="Phone number"
-                        className="pl-9 rounded-xl h-11 font-mono text-sm font-extrabold text-slate-950 bg-slate-50/70 border-slate-300 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
+                        className="pl-9 rounded-xl h-11 font-mono text-sm font-extrabold text-slate-950 bg-white/60 backdrop-blur-md border-white shadow-inner focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
                       />
                     </div>
                   </div>
@@ -3184,8 +3184,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Routes - Multiple Stops */}
-            <Card className="glass-card rounded-3xl overflow-hidden shadow-2xl border-white/80">
-              <CardHeader className="pb-3.5 glass-header border-b border-blue-100/60 bg-white/90">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="p-3 rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-cyan-500 shadow-lg shadow-blue-500/25 text-white">
@@ -3501,78 +3501,81 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             />
                           </div>
 
-                          {/* Transport Mode & Details */}
+                          {/* Transport Mode Visual Selector */}
                           <div>
-                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1.5 block">
+                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-2.5 block">
                               Transport Mode / حالت حمل و نقل
                             </label>
-                            <Select value={route.transportMode || "none"} onValueChange={(value) => handleRouteChange(index, "transportMode", value === "none" ? undefined : (value as any))}>
-                              <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white/90 font-semibold text-slate-900 focus:border-amber-400 focus:ring-amber-200">
-                                <SelectValue placeholder="Select transport mode">
-                                  <div className="flex items-center gap-2">
-                                    {getTransportIcon(route.transportMode)}
-                                    <span className="font-bold text-sm text-slate-900">{getTransportLabel(route.transportMode)}</span>
-                                  </div>
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-slate-400" />
-                                    <span>None / انتخاب نشده</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="truck">
-                                  <div className="flex items-center gap-2.5">
-                                    <Truck className="h-4 w-4 text-blue-600" />
-                                    <span className="font-bold">Truck / تراک (زمینی)</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="vessel">
-                                  <div className="flex items-center gap-2.5">
-                                    <Ship className="h-4 w-4 text-cyan-600" />
-                                    <span className="font-bold">Vessel / کشتی (دریایی)</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="airplane">
-                                  <div className="flex items-center gap-2.5">
-                                    <Plane className="h-4 w-4 text-sky-600" />
-                                    <span className="font-bold">Airplane / هواپیما (هوایی)</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="train">
-                                  <div className="flex items-center gap-2.5">
-                                    <Train className="h-4 w-4 text-orange-600" />
-                                    <span className="font-bold">Train / قطار (ریلی)</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="road">
-                                  <div className="flex items-center gap-2.5">
-                                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                                    <span className="font-bold">Road / جاده (ترانزیت)</span>
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                            
+                            <div className="flex flex-wrap items-center gap-2">
+                              {/* Option: Truck/Road */}
+                              <button
+                                type="button"
+                                onClick={() => handleRouteChange(index, "transportMode", "truck")}
+                                className={`flex flex-col items-center justify-center gap-2 h-20 w-[90px] rounded-2xl border transition-all cursor-pointer ${
+                                  route.transportMode === "truck" || route.transportMode === "road"
+                                    ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-500/10 ring-2 ring-blue-500/20"
+                                    : "border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50"
+                                }`}
+                              >
+                                <Truck className={`h-6 w-6 ${route.transportMode === "truck" || route.transportMode === "road" ? "text-blue-600" : "text-slate-400"}`} />
+                                <span className={`text-[10px] font-black uppercase ${route.transportMode === "truck" || route.transportMode === "road" ? "text-blue-900" : "text-slate-500"}`}>Truck</span>
+                              </button>
 
+                              {/* Option: Vessel/Sea */}
+                              <button
+                                type="button"
+                                onClick={() => handleRouteChange(index, "transportMode", "vessel")}
+                                className={`flex flex-col items-center justify-center gap-2 h-20 w-[90px] rounded-2xl border transition-all cursor-pointer ${
+                                  route.transportMode === "vessel"
+                                    ? "border-cyan-500 bg-cyan-50 shadow-md shadow-cyan-500/10 ring-2 ring-cyan-500/20"
+                                    : "border-slate-200 bg-white hover:border-cyan-300 hover:bg-slate-50"
+                                }`}
+                              >
+                                <Ship className={`h-6 w-6 ${route.transportMode === "vessel" ? "text-cyan-600" : "text-slate-400"}`} />
+                                <span className={`text-[10px] font-black uppercase ${route.transportMode === "vessel" ? "text-cyan-900" : "text-slate-500"}`}>Vessel</span>
+                              </button>
+
+                              {/* Option: Plane/Air */}
+                              <button
+                                type="button"
+                                onClick={() => handleRouteChange(index, "transportMode", "airplane")}
+                                className={`flex flex-col items-center justify-center gap-2 h-20 w-[90px] rounded-2xl border transition-all cursor-pointer ${
+                                  route.transportMode === "airplane"
+                                    ? "border-sky-500 bg-sky-50 shadow-md shadow-sky-500/10 ring-2 ring-sky-500/20"
+                                    : "border-slate-200 bg-white hover:border-sky-300 hover:bg-slate-50"
+                                }`}
+                              >
+                                <Plane className={`h-6 w-6 ${route.transportMode === "airplane" ? "text-sky-600" : "text-slate-400"}`} />
+                                <span className={`text-[10px] font-black uppercase ${route.transportMode === "airplane" ? "text-sky-900" : "text-slate-500"}`}>Air</span>
+                              </button>
+
+                              {/* Option: Train/Rail */}
+                              <button
+                                type="button"
+                                onClick={() => handleRouteChange(index, "transportMode", "train")}
+                                className={`flex flex-col items-center justify-center gap-2 h-20 w-[90px] rounded-2xl border transition-all cursor-pointer ${
+                                  route.transportMode === "train"
+                                    ? "border-amber-500 bg-amber-50 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/20"
+                                    : "border-slate-200 bg-white hover:border-amber-300 hover:bg-slate-50"
+                                }`}
+                              >
+                                <Train className={`h-6 w-6 ${route.transportMode === "train" ? "text-amber-600" : "text-slate-400"}`} />
+                                <span className={`text-[10px] font-black uppercase ${route.transportMode === "train" ? "text-amber-900" : "text-slate-500"}`}>Rail</span>
+                              </button>
+                            </div>
+
+                            {/* Details Overlay */}
                             {route.transportMode && (
-                              <div className="mt-2.5 rounded-xl border border-blue-100 bg-linear-to-br from-blue-50/90 to-amber-50/40 p-3 shadow-xs">
-                                <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-800">
+                              <div className="mt-3 rounded-2xl border border-slate-200 bg-white/40 backdrop-blur-md p-3.5 shadow-sm">
+                                <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-slate-800">
                                   <div>
-                                    <span className="text-[10px] font-extrabold uppercase text-slate-500 block">Duration</span>
-                                    <p className="font-black text-slate-900">{getTransportDetails(route.transportMode).duration}</p>
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Duration</span>
+                                    <p className="font-extrabold text-slate-700">{getTransportDetails(route.transportMode).duration}</p>
                                   </div>
                                   <div>
-                                    <span className="text-[10px] font-extrabold uppercase text-slate-500 block">Capacity</span>
-                                    <p className="font-black text-slate-900">{getTransportDetails(route.transportMode).capacity}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-[10px] font-extrabold uppercase text-slate-500 block">Cost</span>
-                                    <p className="font-black text-amber-700">{getTransportDetails(route.transportMode).cost}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-[10px] font-extrabold uppercase text-slate-500 block">Notes</span>
-                                    <p className="font-bold text-slate-700 text-[11px] truncate">{getTransportDetails(route.transportMode).notes}</p>
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Capacity</span>
+                                    <p className="font-extrabold text-slate-700">{getTransportDetails(route.transportMode).capacity}</p>
                                   </div>
                                 </div>
                               </div>
@@ -3582,7 +3585,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
                         {/* Dedicated Truck Details Specifications Panel (When Truck/Road mode is selected) */}
                         {(route.transportMode === "truck" || route.transportMode === "road") && (
-                          <div className="mt-4 rounded-2xl border border-blue-200/90 bg-linear-to-br from-blue-50/80 via-indigo-50/40 to-amber-50/40 p-4 shadow-sm space-y-3">
+                          <div className="mt-4 rounded-2xl border border-white bg-linear-to-br from-blue-50/80 via-indigo-50/40 to-amber-50/40 p-4 shadow-sm space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-200/60 pb-2.5">
                               <div className="flex items-center gap-2">
                                 <div className="p-1.5 rounded-lg bg-blue-600 text-white shadow-xs">
@@ -3728,7 +3731,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       </Button>
                     ))}
                     {quickLocationMatches.length === 0 && (
-                      <div className="col-span-full rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-5 text-center text-xs font-bold text-slate-500">
+                      <div className="col-span-full rounded-xl border border-dashed border-slate-300 bg-white/40 backdrop-blur-md px-3 py-5 text-center text-xs font-bold text-slate-500">
                         No matching locations / نتیجه‌ای یافت نشد
                       </div>
                     )}
@@ -3738,8 +3741,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Container Details */}
-            <Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
@@ -3808,8 +3811,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Shipping Details */}
-            <Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-linear-to-br from-cyan-500 to-cyan-600 shadow-md shadow-cyan-500/30">
@@ -3875,8 +3878,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Freight Information */}
-            <Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-linear-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/30">
@@ -3912,8 +3915,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Remarks */}
-            <Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-linear-to-br from-gray-500 to-gray-600 shadow-md shadow-gray-500/30">
@@ -3937,7 +3940,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Afghanistan Documents */}
-            <Card className="glass-card rounded-2xl overflow-hidden ring-1 ring-green-100/50">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-3 bg-linear-to-r from-green-500/12 via-green-400/6 to-transparent border-b border-green-200/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -4382,8 +4385,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
           {/* PDF Settings Tab */}
           <TabsContent value="pdf-settings">
-            <Card className="glass-card rounded-2xl overflow-hidden">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
@@ -4715,8 +4718,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Logo Editor */}
-            <Card className="glass-card rounded-2xl overflow-hidden mt-6">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-sm md:text-base flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
@@ -4778,8 +4781,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Company Information */}
-            <Card className="glass-card rounded-2xl overflow-hidden mt-6">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
@@ -4869,8 +4872,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Iran Office Information */}
-            <Card className="glass-card rounded-2xl overflow-hidden mt-6">
-              <CardHeader className="pb-3 glass-header">
+            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-linear-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">

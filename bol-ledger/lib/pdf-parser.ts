@@ -1,16 +1,5 @@
 'use client'
 
-import * as pdfjsLib from 'pdfjs-dist'
-
-// Set up the worker - only in browser
-if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
-  try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
-  } catch (e) {
-    console.warn('[v0] Failed to set PDF worker source:', e)
-  }
-}
-
 export interface PDFLedgerRow {
   sNo?: number | string
   date: string
@@ -27,19 +16,33 @@ export interface PDFLedgerRow {
 }
 
 export async function parseLedgerPDF(file: File): Promise<PDFLedgerRow[]> {
+  if (typeof window === 'undefined') {
+    throw new Error('PDF parsing can only be executed in the browser environment.')
+  }
+
   try {
+    const pdfjsLib = await import('pdfjs-dist')
+    if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.0.379'}/pdf.worker.min.mjs`
+      } catch (e) {
+        console.warn('[v0] Failed to set PDF worker source:', e)
+      }
+    }
+
     const arrayBuffer = await file.arrayBuffer()
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+    const pdf = await loadingTask.promise
     
     const rows: PDFLedgerRow[] = []
     const allText: string[] = []
 
     // Extract text from all pages
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i)
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum)
       const textContent = await page.getTextContent()
       const pageText = textContent.items
-        .map((item: any) => item.str || '')
+        .map((item: any) => (typeof item?.str === 'string' ? item.str : ''))
         .join(' ')
       allText.push(pageText)
     }
@@ -53,7 +56,7 @@ export async function parseLedgerPDF(file: File): Promise<PDFLedgerRow[]> {
     let sNoCounter = 1
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
+      const line = lines.at(i) ?? ''
 
       // Skip header and footer lines
       if (isHeaderLine(line) || isFooterLine(line)) continue
@@ -66,7 +69,8 @@ export async function parseLedgerPDF(file: File): Promise<PDFLedgerRow[]> {
         currentRow = parseRowStart(line)
       } else if (currentRow && isNumeric(line)) {
         // This might be a quantity, debit, or credit
-        currentRow = assignNumericField(currentRow, line, lines[i + 1])
+        const nextLine = lines.at(i + 1)
+        currentRow = assignNumericField(currentRow, line, nextLine)
       }
     }
 

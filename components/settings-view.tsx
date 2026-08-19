@@ -117,28 +117,29 @@ export function SettingsView() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-      {/* Header Banner */}
-      <div className="rounded-3xl border border-blue-200/80 bg-linear-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 md:p-8 text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Header Banner - Premium Glassmorphism */}
+      <div className="rounded-[32px] border border-blue-200/60 bg-gradient-to-r from-blue-900 via-[#1e3a8a] to-slate-900 p-6 md:p-8 text-white shadow-[0_20px_80px_-15px_rgba(30,58,138,0.4)] relative overflow-hidden">
+        <div className="absolute -top-20 -right-20 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-xs font-extrabold text-blue-200">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-blue-100 shadow-inner">
               <Sliders className="w-3.5 h-3.5" />
               <span>SYSTEM CONTROL PANEL</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight">System Settings & Management</h1>
-            <p className="text-xs md:text-sm text-blue-200/90 font-[vazirmatn]" dir="rtl">
+            <h1 className="text-2xl md:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">System Settings</h1>
+            <p className="text-xs md:text-sm text-blue-200/90 font-[vazirmatn] font-bold" dir="rtl">
               تنظیمات سیستم، مدیریت کاربران، امنیت و بروزرسانی نرم‌افزار
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/15 self-start md:self-auto">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center font-bold text-amber-300">
+          <div className="flex items-center gap-3 bg-white/10 backdrop-blur-xl p-3.5 rounded-2xl border border-white/20 self-start md:self-auto shadow-inner">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 border border-amber-300 shadow-lg flex items-center justify-center font-black text-xl text-amber-950">
               {currentUser?.name?.charAt(0) || "A"}
             </div>
             <div>
-              <div className="text-xs font-bold text-white">{currentUser?.name || "Administrator"}</div>
-              <div className="text-[10px] text-amber-300 font-extrabold uppercase">
+              <div className="text-sm font-black text-white">{currentUser?.name || "Administrator"}</div>
+              <div className="text-[10px] text-amber-300 font-black tracking-widest uppercase">
                 {currentUser?.role || "superadmin"}
               </div>
             </div>
@@ -146,58 +147,59 @@ export function SettingsView() {
         </div>
       </div>
 
-      {/* Tabs Navigation Bar */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/80 border border-slate-200 shadow-md backdrop-blur-xl overflow-x-auto">
+      {/* Tabs Navigation Bar - Frosted Glass */}
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/60 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-2xl overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab("users")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-[14px] text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "users"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-              : "text-slate-700 hover:bg-slate-100"
+              ? "bg-gradient-to-b from-white to-slate-50 text-blue-700 shadow-md border border-slate-100"
+              : "text-slate-500 hover:bg-white/50 hover:text-slate-800"
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>User Management ({users.length})</span>
+          <span>User Management</span>
+          <span className="ml-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-800">{users.length}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("password")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-[14px] text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "password"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-              : "text-slate-700 hover:bg-slate-100"
+              ? "bg-gradient-to-b from-white to-slate-50 text-blue-700 shadow-md border border-slate-100"
+              : "text-slate-500 hover:bg-white/50 hover:text-slate-800"
           }`}
         >
           <Key className="w-4 h-4" />
-          <span>Change Password</span>
+          <span>Security</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("general")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-[14px] text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "general"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-              : "text-slate-700 hover:bg-slate-100"
+              ? "bg-gradient-to-b from-white to-slate-50 text-blue-700 shadow-md border border-slate-100"
+              : "text-slate-500 hover:bg-white/50 hover:text-slate-800"
           }`}
         >
           <Building2 className="w-4 h-4" />
-          <span>Company & Regional Info</span>
+          <span>Company Info</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("update")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-[14px] text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "update"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-              : "text-slate-700 hover:bg-slate-100"
+              ? "bg-gradient-to-b from-white to-slate-50 text-blue-700 shadow-md border border-slate-100"
+              : "text-slate-500 hover:bg-white/50 hover:text-slate-800"
           }`}
         >
           <Download className="w-4 h-4" />
-          <span>System Version & Updates</span>
+          <span>Updates & Build</span>
         </button>
       </div>
 
@@ -205,15 +207,15 @@ export function SettingsView() {
       {activeTab === "users" && (
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Add New User Panel */}
-          <div className="lg:col-span-1 bg-white rounded-3xl border border-slate-200/90 p-5 shadow-lg space-y-4">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-              <div className="p-2 rounded-xl bg-blue-100 text-blue-700">
-                <UserPlus className="w-5 h-5" />
+          <div className="lg:col-span-1 bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-6 md:p-8 space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-white/50">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-500/30">
+                <UserPlus className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-extrabold text-slate-900">Add New System User</h3>
-                <p className="text-xs text-slate-500 font-[vazirmatn]" dir="rtl">
-                  ایجاد کاربر جدید با سطوح دسترسی مختلف
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">Add System User</h3>
+                <p className="text-[11px] text-slate-500 font-[vazirmatn] font-bold" dir="rtl">
+                  ایجاد کاربر جدید با سطوح دسترسی
                 </p>
               </div>
             </div>
@@ -231,37 +233,37 @@ export function SettingsView() {
               </div>
             )}
 
-            <form onSubmit={handleAddUserSubmit} className="space-y-3">
+            <form onSubmit={handleAddUserSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-extrabold text-slate-800 block mb-1">Username / شناسه کاربر</label>
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 block mb-1.5 ml-1">Username / شناسه کاربر</label>
                 <input
                   type="text"
                   required
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   placeholder="e.g. jsmith"
-                  className="w-full h-10 px-3 text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20"
+                  className="w-full h-12 px-4 text-sm font-bold text-slate-900 bg-white/60 backdrop-blur-md border border-white shadow-inner rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-slate-800 block mb-1">Full Name / نام کامل</label>
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 block mb-1.5 ml-1">Full Name / نام کامل</label>
                 <input
                   type="text"
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. John Smith"
-                  className="w-full h-10 px-3 text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20"
+                  className="w-full h-12 px-4 text-sm font-bold text-slate-900 bg-white/60 backdrop-blur-md border border-white shadow-inner rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-slate-800 block mb-1">System Role / نقش کاربر</label>
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 block mb-1.5 ml-1">System Role / نقش کاربر</label>
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
-                  className="w-full h-10 px-3 text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:border-blue-500"
+                  className="w-full h-12 px-4 text-sm font-bold text-slate-900 bg-white/60 backdrop-blur-md border border-white shadow-inner rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all appearance-none"
                 >
                   <option value="superadmin">👑 Superadmin (Full System Access)</option>
                   <option value="admin">🛡️ Admin (BOL & Accounting Access)</option>
@@ -271,79 +273,82 @@ export function SettingsView() {
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-slate-800 block mb-1">Email (Optional)</label>
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 block mb-1.5 ml-1">Email (Optional)</label>
                 <input
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="user@skybalam.com"
-                  className="w-full h-10 px-3 text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-xl focus:border-blue-500"
+                  className="w-full h-12 px-4 text-sm font-bold text-slate-900 bg-white/60 backdrop-blur-md border border-white shadow-inner rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full h-10 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="group relative w-full h-12 mt-4 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-black uppercase tracking-wider text-[11px] rounded-xl shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2 cursor-pointer overflow-hidden"
               >
-                <UserPlus className="w-4 h-4" />
-                <span>Create System Account</span>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="relative z-10 flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Create System Account
+                </span>
               </button>
             </form>
           </div>
 
           {/* Active Users Table Panel */}
-          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200/90 p-5 shadow-lg space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
-                  <Shield className="w-5 h-5" />
+          <div className="lg:col-span-2 bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-6 md:p-8 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-white/50 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 text-white shadow-lg shadow-purple-500/30">
+                  <Shield className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">System Users & Roles</h3>
-                  <p className="text-xs text-slate-500">Manage user access levels across 4 roles</p>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">System Users & Roles</h3>
+                  <p className="text-xs font-bold text-slate-500">Manage user access levels across 4 roles</p>
                 </div>
               </div>
-              <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-extrabold text-slate-700">
-                {users.length} Users
+              <span className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-black text-slate-700 shadow-sm self-start md:self-auto">
+                {users.length} Users Enrolled
               </span>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <div className="overflow-x-auto rounded-[24px] border border-white bg-white/40 backdrop-blur-md shadow-inner">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-extrabold uppercase tracking-wider">
-                    <th className="p-3">User</th>
-                    <th className="p-3">Role Level</th>
-                    <th className="p-3">Created</th>
-                    <th className="p-3 text-right">Actions</th>
+                  <tr className="border-b border-white/60 text-slate-500 font-black uppercase tracking-widest text-[10px]">
+                    <th className="p-4 pl-6">User</th>
+                    <th className="p-4">Role Level</th>
+                    <th className="p-4">Created</th>
+                    <th className="p-4 pr-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-white/50 font-medium">
                   {users.map((u) => {
                     const badge = ROLE_BADGES[u.role] || ROLE_BADGES.viewer
                     return (
-                      <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center font-bold text-blue-700 shrink-0">
+                      <tr key={u.id} className="hover:bg-white/60 transition-colors group">
+                        <td className="p-4 pl-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-slate-100 to-white border border-white shadow-sm flex items-center justify-center font-black text-slate-700 shrink-0 text-sm group-hover:scale-105 transition-transform">
                               {u.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div className="font-extrabold text-slate-900">{u.name}</div>
-                              <div className="text-[11px] text-slate-500 font-mono">@{u.username}</div>
+                              <div className="font-black text-slate-900 text-sm tracking-tight">{u.name}</div>
+                              <div className="text-[11px] text-slate-500 font-bold">@{u.username}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-3">
+                        <td className="p-4">
                           <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] ${badge.bg} ${badge.text}`}>
-                              <span>{badge.icon}</span>
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shadow-sm text-[10px] uppercase tracking-wider ${badge.bg} ${badge.text}`}>
+                              <span className="text-sm">{badge.icon}</span>
                               <span>{badge.label}</span>
                             </span>
                             <select
                               value={u.role}
                               onChange={(e) => updateUserRole(u.id, e.target.value as UserRole)}
-                              className="h-7 px-1 text-[11px] font-bold bg-slate-50 border border-slate-200 rounded-lg text-slate-700 cursor-pointer"
+                              className="h-8 px-2 text-[11px] font-black uppercase tracking-wider bg-white/50 backdrop-blur-sm border border-white rounded-xl text-slate-700 cursor-pointer hover:bg-white/80 transition-colors focus:ring-2 focus:ring-blue-100 outline-none shadow-sm appearance-none"
                               title="Change User Role"
                             >
                               <option value="superadmin">Superadmin</option>
@@ -353,13 +358,13 @@ export function SettingsView() {
                             </select>
                           </div>
                         </td>
-                        <td className="p-3 text-slate-600 font-mono text-[11px]">{u.createdAt || "2026-01-01"}</td>
-                        <td className="p-3 text-right">
+                        <td className="p-4 text-slate-500 font-bold text-[11px] uppercase tracking-widest">{u.createdAt || "2026-01-01"}</td>
+                        <td className="p-4 pr-6 text-right">
                           <button
                             type="button"
                             onClick={() => deleteUser(u.id)}
                             disabled={users.length <= 1 || u.username === "admin"}
-                            className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            className="p-2.5 rounded-xl border border-red-200/50 bg-red-50/50 text-red-600 hover:bg-red-100 hover:border-red-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all shadow-sm group-hover:shadow-md"
                             title="Delete User Account"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -377,14 +382,14 @@ export function SettingsView() {
 
       {/* Tab 2: Change Password */}
       {activeTab === "password" && (
-        <div className="max-w-xl mx-auto bg-white rounded-3xl border border-slate-200/90 p-6 md:p-8 shadow-lg space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-            <div className="p-2.5 rounded-2xl bg-amber-100 text-amber-700">
+        <div className="max-w-xl mx-auto bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-6 md:p-10 space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-white/50">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 text-white shadow-lg shadow-amber-500/30">
               <Key className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-slate-900">Change Account Password</h3>
-              <p className="text-xs text-slate-500 font-[vazirmatn]" dir="rtl">
+              <h3 className="text-xl font-black tracking-tight text-slate-900">Change Account Password</h3>
+              <p className="text-xs font-bold text-slate-500 font-[vazirmatn]" dir="rtl">
                 تغییر رمز عبور حساب کاربری فعلی
               </p>
             </div>
@@ -471,14 +476,14 @@ export function SettingsView() {
 
       {/* Tab 3: Company & Regional Info */}
       {activeTab === "general" && (
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-lg space-y-5">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-            <div className="p-2.5 rounded-2xl bg-teal-100 text-teal-700">
+        <div className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-6 md:p-8 space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-white/50">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 text-white shadow-lg shadow-teal-500/30">
               <Building2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-slate-900">Company & Regional Preferences</h3>
-              <p className="text-xs text-slate-500">Official contact information and PDF document settings</p>
+              <h3 className="text-xl font-black tracking-tight text-slate-900">Company & Regional Preferences</h3>
+              <p className="text-xs font-bold text-slate-500">Official contact information and database backup settings</p>
             </div>
           </div>
 
@@ -596,15 +601,15 @@ export function SettingsView() {
 
       {/* Tab 4: System Version & Updates (from system-version.ts) */}
       {activeTab === "update" && (
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 md:p-8 shadow-lg space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-6 md:p-8 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/50">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-indigo-100 text-indigo-700">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-lg shadow-indigo-500/30">
                 <Download className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900">System Version & Software Updates</h3>
-                <p className="text-xs text-slate-500">Loaded directly from system configuration file (`system-version.ts`)</p>
+                <h3 className="text-xl font-black tracking-tight text-slate-900">System Version & Software Updates</h3>
+                <p className="text-xs font-bold text-slate-500">Loaded directly from system configuration file (`system-version.ts`)</p>
               </div>
             </div>
 

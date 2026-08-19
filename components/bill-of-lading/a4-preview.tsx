@@ -99,7 +99,7 @@ const darkHeaderStyle = {
 
 const headerGridStyle = {
   display: "grid",
-  gridTemplateColumns: "36mm 1fr 68mm",
+  gridTemplateColumns: "36mm 1fr 72mm",
   alignItems: "center",
   columnGap: "3mm",
 } satisfies CSSProperties
@@ -241,7 +241,7 @@ function DocumentQRCode({ value, size = 52 }: { value: string; size?: number }) 
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      className="bg-white p-1 border-2 border-blue-900 rounded-md shadow-xs shrink-0 print:border-blue-900 print:bg-white"
+      className="shrink-0"
       style={{
         shapeRendering: "crispEdges",
         WebkitPrintColorAdjust: "exact",
@@ -1130,7 +1130,7 @@ export function A4Preview({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={logoUrl || "/images/logo.png"}
+                src={logoUrl || "/logo.png"}
                 alt="Company logo"
                 className="logo object-contain"
                 style={logoImageStyle}
@@ -1159,16 +1159,21 @@ export function A4Preview({
                   {labels.billOfLadingFa}
                 </p>
               </div>
-              <div data-pdf-bol-badge="true" className="bol-number-box flex min-h-12 items-center justify-between gap-2 bg-white px-2.5 py-1 border-t border-blue-100">
-                <span
-                  data-pdf-bol-number="true"
-                  className="bol-number-text block flex-1 text-center font-mono text-[9.5pt] font-black leading-none text-blue-950 tracking-tight whitespace-nowrap overflow-visible"
-                  style={{ color: "#1e3a8a", fontFamily: "Arial, Helvetica, sans-serif" }}
-                >
-                  {bolNumber}
-                </span>
-                <div className="shrink-0 flex items-center justify-center p-1 bg-white border-2 border-blue-900 rounded-lg shadow-2xs">
-                  <DocumentQRCode value={bolNumber || "SKY-BOL"} size={40} />
+              <div
+                data-pdf-bol-badge="true"
+                className="bol-number-box flex min-h-[50px] w-full flex-col items-center justify-center gap-1.5 bg-white px-2 py-1.5 border-t border-blue-100"
+              >
+                <div className="flex w-full items-center justify-between gap-1.5">
+                  <span
+                    data-pdf-bol-number="true"
+                    className="bol-number-text block flex-1 text-center font-mono text-[9pt] sm:text-[10pt] font-black leading-none text-blue-950 tracking-tight break-all"
+                    style={{ color: "#1e3a8a", fontFamily: "Arial, Helvetica, sans-serif" }}
+                  >
+                    {bolNumber}
+                  </span>
+                  <div className="shrink-0 flex items-center justify-center p-1 bg-white border border-slate-200 rounded-md shadow-sm">
+                    <DocumentQRCode value={bolNumber || "SKY-BOL"} size={32} />
+                  </div>
                 </div>
               </div>
             </div>

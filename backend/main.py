@@ -44,9 +44,28 @@ app.add_middleware(
 )
 
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
+
 @app.on_event("startup")
-def on_startup() -> None:
-    init_db()
+async def on_startup() -> None:
+    await init_db()
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request, exc):
+    print(f"Database Error: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"success": False, "error": "Internal database error occurred.", "source": "python-fastapi"},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=422,
+        content={"success": False, "error": str(exc), "details": exc.errors(), "source": "python-fastapi"},
+    )
 
 
 @app.get("/health")

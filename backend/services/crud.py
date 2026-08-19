@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Type
 
 from sqlalchemy import desc, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def serialize_record(record: Any) -> dict[str, Any]:
@@ -47,8 +47,8 @@ def serialize_record(record: Any) -> dict[str, Any]:
     return data
 
 
-def list_records(db: Session, model: Type[Any], q: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
-    statement = select(model).order_by(desc(model.updated_at)).limit(min(max(limit, 1), 1000))
+async def list_records(db: AsyncSession, model: Type[Any], q: str | None = None, limit: int = 200, offset: int = 0) -> list[dict[str, Any]]:
+    statement = select(model).order_by(desc(model.updated_at)).offset(offset).limit(min(max(limit, 1), 1000))
     if q:
         searchable = []
         for name in ("invoice_number", "customer_name", "bol_number", "shipper_name", "consignee_name", "name", "driver_name", "container_number", "track_no", "destination"):
@@ -56,15 +56,16 @@ def list_records(db: Session, model: Type[Any], q: str | None = None, limit: int
                 searchable.append(getattr(model, name).ilike(f"%{q}%"))
         if searchable:
             statement = statement.where(or_(*searchable))
-    return [serialize_record(record) for record in db.execute(statement).scalars().all()]
+    result = await db.execute(statement)
+    return [serialize_record(record) for record in result.scalars().all()]
 
 
-def get_record(db: Session, model: Type[Any], record_id: str) -> Any | None:
-    return db.get(model, record_id)
+async def get_record(db: AsyncSession, model: Type[Any], record_id: str) -> Any | None:
+    return await db.get(model, record_id)
 
 
-def upsert_payload_record(db: Session, model: Type[Any], payload: dict[str, Any], record_id: str | None = None) -> Any:
-    record = db.get(model, record_id) if record_id else None
+async def upsert_payload_record(db: AsyncSession, model: Type[Any], payload: dict[str, Any], record_id: str | None = None) -> Any:
+    record = await db.get(model, record_id) if record_id else None
     if record is None:
         record = model()
         if record_id:
@@ -73,17 +74,17 @@ def upsert_payload_record(db: Session, model: Type[Any], payload: dict[str, Any]
 
     record.payload = payload
     apply_known_fields(record, payload)
-    db.commit()
-    db.refresh(record)
+    await db.commit()
+    await db.refresh(record)
     return record
 
 
-def delete_record(db: Session, model: Type[Any], record_id: str) -> bool:
-    record = db.get(model, record_id)
+async def delete_record(db: AsyncSession, model: Type[Any], record_id: str) -> bool:
+    record = await db.get(model, record_id)
     if record is None:
         return False
-    db.delete(record)
-    db.commit()
+    await db.delete(record)
+    await db.commit()
     return True
 
 

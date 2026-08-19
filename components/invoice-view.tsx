@@ -438,26 +438,42 @@ export function InvoiceView() {
 
   // Invoice List View
   return (
-    <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-6 no-print">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Invoices</h2>
-          <p className="text-muted-foreground">Generate invoices for {currentCompany.name}</p>
+    <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 font-sans">
+      {/* Top Banner Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 bg-white/80 backdrop-blur-xl border border-amber-200/60 rounded-3xl p-6 shadow-xl shadow-amber-900/5 relative overflow-hidden no-print">
+        {/* Subtle Background Glow */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              Invoices
+            </h2>
+            <span className="px-3 py-1 text-xs font-black rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
+              <FileText className="w-3 h-3 text-amber-600" />
+              <span>{currentCompany.name}</span>
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-600 mt-1 font-bold">
+            Generate and manage invoices for {currentCompany.name}
+          </p>
         </div>
-        <div className="flex gap-2">
+
+        <div className="flex gap-2 relative z-10">
           <Button
             variant="outline"
-            className="gap-2 bg-white/30 hover:bg-white/50"
+            className="gap-2 bg-white/80 hover:bg-slate-50 border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm h-12 px-6"
             onClick={() => setView('ledger')}
           >
             <FileText className="h-4 w-4" />
-            Ledger
+            View Ledger
           </Button>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4" />
-                Create Invoice
+              <Button className="gap-2 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 hover:from-blue-950 hover:to-indigo-950 text-white font-black shadow-xl shadow-blue-950/20 hover:scale-[1.02] active:scale-[0.98] transition-all h-12 px-6 text-sm cursor-pointer">
+                <Plus className="h-5 w-5 text-amber-400" />
+                <span>Create Invoice</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="glass-strong max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -700,33 +716,53 @@ export function InvoiceView() {
 
       {/* Invoices Grid */}
       {companyInvoices.length === 0 ? (
-        <Card className="glass border-dashed border-2 border-primary/30">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <FileText className="h-16 w-16 text-primary/40 mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">No Invoices Yet</h3>
-            <p className="text-muted-foreground text-center mb-6">
+        <Card className="glass border-2 border-dashed border-amber-300/80 rounded-3xl overflow-hidden shadow-xl">
+          <CardContent className="flex flex-col items-center justify-center py-20 px-4 relative text-center">
+            <div className="p-5 rounded-2xl bg-amber-100/80 mb-4 shadow-inner">
+              <FileText className="h-12 w-12 text-amber-800" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2">No Invoices Yet</h3>
+            <p className="text-slate-600 text-center mb-6 max-w-md font-medium text-sm">
               Create your first invoice for this company
             </p>
-            <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Your First Invoice
+            <Button 
+              type="button"
+              onClick={() => setIsCreateOpen(true)} 
+              size="lg"
+              className="gap-2 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-950 hover:to-indigo-950 text-white font-black shadow-xl shadow-blue-950/20 rounded-2xl px-6 cursor-pointer"
+            >
+              <Plus className="h-5 w-5 text-amber-400" />
+              <span>Create Your First Invoice</span>
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {companyInvoices.map(invoice => (
             <Card
               key={invoice.id}
-              className="glass hover:shadow-lg transition-all cursor-pointer group"
+              className="group relative flex flex-col rounded-3xl border border-slate-200/90 bg-white p-5 shadow-lg shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1 hover:border-amber-400 hover:shadow-2xl hover:shadow-amber-900/10 overflow-hidden cursor-pointer"
               onClick={() => setSelectedInvoice(invoice)}
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-semibold">{invoice.invoiceNo}</CardTitle>
+              {/* Top Accent Gradient Line */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-900 via-indigo-800 to-amber-500 group-hover:h-2 transition-all duration-300" />
+
+              <div className="flex items-start justify-between gap-3 pt-1 mb-4">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-900 to-indigo-900 text-amber-400 shadow-md shadow-blue-950/20">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <CardTitle className="text-base font-black text-slate-900 group-hover:text-blue-900 transition-colors truncate">
+                      {invoice.invoiceNo}
+                    </CardTitle>
+                    <span className="text-xs text-amber-700 font-[vazirmatn] font-bold block">انوایس</span>
+                  </div>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20 hover:text-destructive"
+                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600 rounded-xl"
                   onClick={e => {
                     e.stopPropagation()
                     deleteInvoice(invoice.id)
@@ -734,23 +770,21 @@ export function InvoiceView() {
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date:</span>
-                    <span>{invoice.date}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Items:</span>
-                    <span>{invoice.items.length}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-muted-foreground">Total:</span>
-                    <span className="text-primary">{formatCurrency(invoice.grandTotal)}</span>
-                  </div>
+              </div>
+              <div className="space-y-3 text-sm flex-1">
+                <div className="flex justify-between items-center p-2 rounded-xl bg-slate-50 border border-slate-100 group-hover:bg-amber-50/30 transition-colors">
+                  <span className="text-xs font-black text-slate-500">Date:</span>
+                  <span className="font-bold text-slate-700">{invoice.date}</span>
                 </div>
-              </CardContent>
+                <div className="flex justify-between items-center p-2 rounded-xl bg-slate-50 border border-slate-100 group-hover:bg-amber-50/30 transition-colors">
+                  <span className="text-xs font-black text-slate-500">Items:</span>
+                  <span className="font-bold text-slate-700">{invoice.items.length}</span>
+                </div>
+                <div className="flex justify-between items-center p-2 rounded-xl bg-blue-50/50 border border-blue-100 group-hover:bg-blue-50 transition-colors">
+                  <span className="text-xs font-black text-blue-800">Total:</span>
+                  <span className="font-black text-blue-900 font-mono">{formatCurrency(invoice.grandTotal)}</span>
+                </div>
+              </div>
             </Card>
           ))}
         </div>

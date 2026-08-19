@@ -7,7 +7,8 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from backend.config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_ALGORITHM, SECRET_KEY
 from backend.database import get_db
@@ -33,20 +34,21 @@ def create_access_token(subject: str, extra: dict[str, Any] | None = None) -> st
     return jwt.encode(payload, SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
-def get_or_create_default_admin(db: Session) -> User:
-    user = db.query(User).filter(User.username == "admin").first()
+async def get_or_create_default_admin(db: AsyncSession) -> User:
+    result = await db.execute(select(User).where(User.username == "admin"))
+    user = result.scalar_one_or_none()
     if user:
         return user
     user = User(username="admin", display_name="Administrator", role="admin", password_hash=hash_password("admin"))
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 
-def current_user(
+async def current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> User:
     if credentials is None:
         raise HTTPException(status_code=401, detail="Missing authentication token")
@@ -55,7 +57,7 @@ def current_user(
         user_id = payload.get("sub")
     except JWTError as exc:
         raise HTTPException(status_code=401, detail="Invalid authentication token") from exc
-    user = db.get(User, user_id)
+    user = await db.get(User, user_id)
     if user is None or not user.is_active:
         raise HTTPException(status_code=401, detail="Inactive or missing user")
     return user

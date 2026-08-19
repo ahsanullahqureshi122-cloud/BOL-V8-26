@@ -3,21 +3,30 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import Invoice, InvoiceItem
 from backend.routes.generic import build_crud_router
+from backend.schemas.core import InvoiceCreate, InvoiceUpdate
 from backend.services.crud import list_records, serialize_record, upsert_payload_record
 
-router = build_crud_router(Invoice, "invoices")
+router = build_crud_router(
+    Invoice,
+    "invoices",
+    create_schema=InvoiceCreate,
+    update_schema=InvoiceUpdate
+)
 
 
 @router.get("/tools/next-number")
-def next_invoice_number(db: Session = Depends(get_db)):
+async def next_invoice_number(db: AsyncSession = Depends(get_db)):
     year = datetime.now().year
-    count = db.query(Invoice).count() + 1
+    from sqlalchemy import func
+    count_stmt = select(func.count()).select_from(Invoice)
+    result = await db.execute(count_stmt)
+    count = result.scalar() + 1
     return {"success": True, "invoiceNumber": f"INV-{year}-{count:04d}", "source": "python-fastapi"}
 
 

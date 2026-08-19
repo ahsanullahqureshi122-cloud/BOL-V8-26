@@ -1,0 +1,8 @@
+[stderr] 2026-08-19 02:52:41 INFO     [codeboarding_pro.cli:152] Server process 20776 is alive and port 8765 is listening; another instance is using this server
+[stderr] INFO:     Started server process [33528]
+[stderr] INFO:     Waiting for application startup.
+[stderr] INFO:     Application startup complete.
+[stderr] ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8765): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
+[stderr] INFO:     Waiting for application shutdown.
+[stderr] INFO:     Application shutdown complete.
+Server exited (code=1, signal=null)

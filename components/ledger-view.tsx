@@ -179,6 +179,17 @@ export function LedgerView() {
 
     document.body.classList.add("ledger-landscape-active")
 
+    const cleanup = () => {
+      document.body.classList.remove("ledger-landscape-active")
+      const styleEl = document.getElementById("sky-ledger-landscape-print-style")
+      if (styleEl && styleEl.parentElement) {
+        styleEl.parentElement.removeChild(styleEl)
+      }
+      window.removeEventListener("afterprint", cleanup)
+    }
+
+    window.addEventListener("afterprint", cleanup)
+
     // Use a slight delay to ensure DOM and print styles are ready
     setTimeout(() => {
       try {
@@ -187,13 +198,7 @@ export function LedgerView() {
         console.error('Print error:', error)
         setPrintError('Failed to open print dialog. Please try again or use Ctrl+P.')
         setTimeout(() => setPrintError(null), 5000)
-      } finally {
-        setTimeout(() => {
-          document.body.classList.remove("ledger-landscape-active")
-          if (landscapeStyle && landscapeStyle.parentElement) {
-            landscapeStyle.parentElement.removeChild(landscapeStyle)
-          }
-        }, 2500)
+        cleanup()
       }
     }, 100)
   }, [currentCompany])
@@ -773,64 +778,86 @@ export function LedgerView() {
         className="hidden"
       />
 
-      {/* Top Ledger Summary Metric Badges */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 no-print">
-        <div className="p-4 rounded-2xl bg-white/80 border border-blue-200/90 shadow-sm backdrop-blur-md flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Total Debit (پور)</p>
-            <p className="text-2xl font-black text-blue-950 mt-1 font-mono">${totalDebit.toLocaleString()}</p>
+      {/* Top Banner Header */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 bg-white/80 backdrop-blur-xl border border-amber-200/60 rounded-3xl p-6 shadow-xl shadow-amber-900/5 relative overflow-hidden no-print">
+        {/* Subtle Background Glow */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Title & Context */}
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              Ledger
+            </h2>
+            <span className="px-3 py-1 text-xs font-black rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
+              <span>{currentAccount.name}</span>
+            </span>
+            <span className="px-3 py-1 text-xs font-black rounded-full bg-blue-100 text-blue-900 border border-blue-300 flex items-center gap-1 shadow-2xs">
+              <span>{currentCompany.name}</span>
+            </span>
+            <span className="px-2 py-1 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              {currentCompany.ledgerEntries.length} entries
+            </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 border border-blue-300 flex items-center justify-center text-blue-700 font-black text-xs">
-            USD
-          </div>
+          <p className="text-xs sm:text-sm text-slate-600 mt-1 font-bold">
+            Manage transactions and print statements
+          </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white/80 border border-emerald-200/90 shadow-sm backdrop-blur-md flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Total Credit (ترلاسه شوی)</p>
-            <p className="text-2xl font-black text-emerald-950 mt-1 font-mono">${totalCredit.toLocaleString()}</p>
+        {/* Top Ledger Summary Metric Badges (Inline) */}
+        <div className="flex flex-wrap gap-3 xl:gap-4 relative z-10">
+          <div className="px-4 py-3 rounded-2xl bg-white/90 border border-slate-200 shadow-sm flex items-center gap-3 min-w-[140px]">
+            <div className="w-8 h-8 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-black text-[10px]">
+              USD
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Debit (پور)</p>
+              <p className="text-lg font-black text-blue-950 font-mono leading-none mt-0.5">${totalDebit.toLocaleString()}</p>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 font-black text-xs">
-            REC
+          
+          <div className="px-4 py-3 rounded-2xl bg-white/90 border border-slate-200 shadow-sm flex items-center gap-3 min-w-[140px]">
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-black text-[10px]">
+              REC
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Credit (ترلاسه)</p>
+              <p className="text-lg font-black text-emerald-950 font-mono leading-none mt-0.5">${totalCredit.toLocaleString()}</p>
+            </div>
           </div>
-        </div>
 
-        <div className={`p-4 rounded-2xl bg-white/80 border shadow-sm backdrop-blur-md flex items-center justify-between ${
-          finalBalance >= 0 ? 'border-amber-200/90' : 'border-red-200/90'
-        }`}>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Net Balance (بیلانس)</p>
-            <p className={`text-2xl font-black mt-1 font-mono ${finalBalance >= 0 ? 'text-amber-950' : 'text-red-700'}`}>
-              ${finalBalance.toLocaleString()}
-            </p>
-          </div>
-          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black text-xs ${
-            finalBalance >= 0 ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-red-100 border-red-300 text-red-800'
+          <div className={`px-4 py-3 rounded-2xl bg-white/90 border shadow-sm flex items-center gap-3 min-w-[140px] ${
+            finalBalance >= 0 ? 'border-amber-200' : 'border-red-200'
           }`}>
-            BAL
+            <div className={`w-8 h-8 rounded-xl border flex items-center justify-center font-black text-[10px] ${
+              finalBalance >= 0 ? 'bg-amber-100 border-amber-200 text-amber-800' : 'bg-red-100 border-red-200 text-red-800'
+            }`}>
+              BAL
+            </div>
+            <div>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${finalBalance >= 0 ? 'text-amber-700' : 'text-red-600'}`}>Net (بیلانس)</p>
+              <p className={`text-lg font-black font-mono leading-none mt-0.5 ${finalBalance >= 0 ? 'text-amber-950' : 'text-red-700'}`}>
+                ${finalBalance.toLocaleString()}
+              </p>
+            </div>
           </div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white/80 border border-amber-300/90 shadow-sm backdrop-blur-md flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Driver Total (کرایه درایوران)</p>
-            <p className="text-2xl font-black text-amber-950 mt-1 font-mono">{formatAFN(totalDriverRentAFN)}</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 font-black text-xs">
-            AFN
+          
+          <div className="px-4 py-3 rounded-2xl bg-white/90 border border-slate-200 shadow-sm flex items-center gap-3 min-w-[140px]">
+            <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-black text-[10px]">
+              AFN
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Driver Rent</p>
+              <p className="text-lg font-black text-slate-900 font-mono leading-none mt-0.5">{formatAFN(totalDriverRentAFN)}</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Actions Bar - Glass Blue Design */}
+      {/* Actions Bar - Premium Glass Design */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 no-print">
         <div className="flex flex-wrap items-center gap-3">
-          <div>
-            <h2 className="text-3xl font-bold text-blue-900 tracking-tight">Ledger</h2>
-            <p className="text-blue-600/70 text-xs mt-0.5 font-medium">
-              {currentAccount.name} &bull; {currentCompany.name} ({currentCompany.ledgerEntries.length} entries)
-            </p>
-          </div>
           
           {/* Account Selector */}
           <Select
@@ -840,12 +867,12 @@ export function LedgerView() {
               if (acc) selectAccount(acc)
             }}
           >
-            <SelectTrigger className="w-[200px] h-9 bg-white/70 border-blue-200 text-xs font-bold text-blue-900">
+            <SelectTrigger className="w-[200px] h-12 rounded-2xl bg-white/70 backdrop-blur-md border border-slate-200/80 text-sm font-bold text-slate-800 shadow-sm hover:bg-white/90 transition-all">
               <SelectValue placeholder="Select Account" />
             </SelectTrigger>
-            <SelectContent className="glass-strong border-blue-200">
+            <SelectContent className="glass-strong border-slate-200/80 rounded-2xl">
               {accounts.map(acc => (
-                <SelectItem key={acc.id} value={acc.id} className="text-xs font-semibold">
+                <SelectItem key={acc.id} value={acc.id} className="text-sm font-semibold rounded-xl">
                   {acc.name}
                 </SelectItem>
               ))}
@@ -860,12 +887,12 @@ export function LedgerView() {
               if (comp) selectCompany(comp)
             }}
           >
-            <SelectTrigger className="w-[180px] h-9 bg-white/70 border-blue-200 text-xs font-bold text-blue-900">
+            <SelectTrigger className="w-[180px] h-12 rounded-2xl bg-white/70 backdrop-blur-md border border-slate-200/80 text-sm font-bold text-slate-800 shadow-sm hover:bg-white/90 transition-all">
               <SelectValue placeholder="Select Company" />
             </SelectTrigger>
-            <SelectContent className="glass-strong border-blue-200">
+            <SelectContent className="glass-strong border-slate-200/80 rounded-2xl">
               {currentAccount.companies.map(comp => (
-                <SelectItem key={comp.id} value={comp.id} className="text-xs font-semibold">
+                <SelectItem key={comp.id} value={comp.id} className="text-sm font-semibold rounded-xl">
                   {comp.name}
                 </SelectItem>
               ))}
@@ -876,7 +903,7 @@ export function LedgerView() {
           <Button
             type="button"
             variant="outline"
-            className="gap-2 bg-white/50 hover:bg-blue-50/80 border-blue-200/60 text-blue-700 hover:text-blue-900 backdrop-blur-sm"
+            className="gap-2 rounded-2xl h-12 px-5 bg-white/80 hover:bg-slate-50 border-slate-200 text-slate-700 font-bold shadow-sm transition-all"
             onClick={() => setView('invoice')}
           >
             <Receipt className="h-4 w-4" />
@@ -886,17 +913,17 @@ export function LedgerView() {
           {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" className="gap-2 bg-emerald-50/80 hover:bg-emerald-100/90 border-emerald-200 text-emerald-800 font-bold backdrop-blur-sm shadow-xs">
+              <Button type="button" variant="outline" className="gap-2 rounded-2xl h-12 px-5 bg-emerald-50/80 hover:bg-emerald-100/90 border-emerald-200 text-emerald-800 font-bold shadow-sm transition-all">
                 <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
                 Export
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="glass-strong border-emerald-200/60">
-              <DropdownMenuItem onClick={handleExportExcel} className="gap-2 cursor-pointer hover:bg-emerald-50 font-semibold">
+            <DropdownMenuContent className="glass-strong border-emerald-200/60 rounded-2xl p-1">
+              <DropdownMenuItem onClick={handleExportExcel} className="gap-2 cursor-pointer hover:bg-emerald-50 font-semibold rounded-xl p-2">
                 <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
                 Export Excel (.xlsx)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportCSV} className="gap-2 cursor-pointer hover:bg-emerald-50 font-semibold">
+              <DropdownMenuItem onClick={handleExportCSV} className="gap-2 cursor-pointer hover:bg-emerald-50 font-semibold rounded-xl p-2">
                 <FileText className="h-4 w-4 text-blue-600" />
                 Export CSV (.csv)
               </DropdownMenuItem>
@@ -906,99 +933,100 @@ export function LedgerView() {
           {/* Import Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" className="gap-2 bg-white/50 hover:bg-blue-50/80 border-blue-200/60 text-blue-700 hover:text-blue-900 backdrop-blur-sm" disabled={isLoading}>
+              <Button type="button" variant="outline" className="gap-2 rounded-2xl h-12 px-5 bg-white/80 hover:bg-slate-50 border-slate-200 text-slate-700 font-bold shadow-sm transition-all" disabled={isLoading}>
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 {isLoading ? 'Processing...' : 'Import'}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="glass-strong border-blue-200/50">
-              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="gap-2 cursor-pointer hover:bg-blue-50/80">
+            <DropdownMenuContent className="glass-strong border-slate-200/80 rounded-2xl p-1">
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="gap-2 cursor-pointer hover:bg-slate-50 font-semibold rounded-xl p-2">
                 <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
                 Import from Excel (.xlsx, .csv)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="gap-2 cursor-pointer hover:bg-blue-50/80">
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="gap-2 cursor-pointer hover:bg-slate-50 font-semibold rounded-xl p-2">
                 <FileText className="h-4 w-4 text-red-500" />
                 Import from PDF
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button type="button" variant="outline" className="gap-2 bg-white/50 hover:bg-blue-50/80 border-blue-200/60 text-blue-700 hover:text-blue-900 backdrop-blur-sm" onClick={handlePrint}>
+          <Button type="button" variant="outline" className="gap-2 rounded-2xl h-12 px-5 bg-white/80 hover:bg-slate-50 border-slate-200 text-slate-700 font-bold shadow-sm transition-all" onClick={handlePrint}>
             <Printer className="h-4 w-4" />
             Print
           </Button>
-          <Button type="button" variant="outline" className="gap-2 bg-white/50 hover:bg-blue-50/80 border-blue-200/60 text-blue-700 hover:text-blue-900 backdrop-blur-sm" onClick={() => setIsSettingsOpen(true)}>
+          <Button type="button" variant="outline" className="gap-2 rounded-2xl h-12 px-5 bg-white/80 hover:bg-slate-50 border-slate-200 text-slate-700 font-bold shadow-sm transition-all" onClick={() => setIsSettingsOpen(true)}>
             <Settings2 className="h-4 w-4" />
             Settings
           </Button>
-          <Button type="button" onClick={() => setIsOpen(true)} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 font-bold">
-            <Plus className="h-4 w-4" />
-            Add Entry
+          <Button type="button" onClick={() => setIsOpen(true)} className="gap-2 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 hover:from-blue-950 hover:to-indigo-950 text-white font-black shadow-xl shadow-blue-950/20 hover:scale-[1.02] active:scale-[0.98] transition-all h-12 px-6">
+            <Plus className="h-5 w-5 text-amber-400" />
+            <span>Add Entry</span>
           </Button>
         </div>
       </div>
 
-      {/* Filter & Search Bar - Glass Box */}
-      <div className="mb-6 p-4 rounded-2xl bg-white/80 border border-blue-200/80 shadow-sm backdrop-blur-md flex flex-wrap items-center justify-between gap-3 no-print">
-        <div className="flex flex-1 flex-wrap items-center gap-3 min-w-[280px]">
-          <div className="relative flex-1 min-w-[220px]">
+      {/* Filter & Search Bar - Premium Glass Design */}
+      <div className="mb-6 p-5 rounded-3xl bg-white/80 border border-slate-200/80 shadow-lg shadow-slate-200/50 backdrop-blur-xl flex flex-wrap items-center justify-between gap-4 no-print relative overflow-hidden group hover:border-amber-400/60 transition-all">
+        {/* Accent Top Border */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-900/10 via-indigo-800/10 to-amber-500/10 group-hover:from-blue-900 group-hover:via-indigo-800 group-hover:to-amber-500 transition-all duration-300" />
+        
+        <div className="flex flex-1 flex-wrap items-center gap-4 min-w-[280px]">
+          <div className="relative flex-1 min-w-[240px]">
             <Input
               type="text"
               placeholder="Search Barnameh No, Invoice, Consignee, Container..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pr-8 bg-white/90 border-blue-200/90 text-xs font-semibold text-blue-950 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+              className="h-11 pr-10 rounded-2xl bg-white border-slate-200 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-sm"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">From:</span>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="h-9 w-36 bg-white/90 border-blue-200/90 text-xs font-bold text-slate-800"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">To:</span>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="h-9 w-36 bg-white/90 border-blue-200/90 text-xs font-bold text-slate-800"
-            />
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 shadow-sm">
+            <span className="text-xs font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Date Range:</span>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-8 w-36 bg-white border-slate-200 text-xs font-bold text-slate-800 rounded-xl"
+              />
+              <span className="text-slate-400 font-bold">-</span>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-8 w-36 bg-white border-slate-200 text-xs font-bold text-slate-800 rounded-xl"
+              />
+            </div>
           </div>
 
           {(searchTerm || startDate || endDate) && (
             <Button
               type="button"
               variant="ghost"
-              size="sm"
               onClick={() => {
                 setSearchTerm('')
                 setStartDate('')
                 setEndDate('')
               }}
-              className="h-9 text-xs font-bold text-red-600 hover:bg-red-50"
+              className="h-11 rounded-2xl px-5 text-sm font-black text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
             >
               Reset Filters
             </Button>
           )}
         </div>
 
-        <div className="text-xs font-bold text-slate-600">
-          Showing <span className="text-blue-900 font-extrabold">{filteredEntries.length}</span> of {currentCompany.ledgerEntries.length} entries
+        <div className="text-sm font-bold text-slate-600 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-2.5">
+          Showing <span className="text-blue-900 font-extrabold text-base">{filteredEntries.length}</span> of {currentCompany.ledgerEntries.length} entries
         </div>
       </div>
 
