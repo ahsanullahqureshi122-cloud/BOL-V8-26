@@ -324,6 +324,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   const [activeRouteIndex, setActiveRouteIndex] = useState<number | null>(null)
   const [showLocationDropdown, setShowLocationDropdown] = useState<number | null>(null)
   const [selectedCountryFilter, setSelectedCountryFilter] = useState("ALL")
+  const [routeLocationSearch, setRouteLocationSearch] = useState("")
   const [savedShippers, setSavedShippers] = useState<SavedParty[]>([])
   const [selectedShipperId, setSelectedShipperId] = useState<string>("")
   const [savedConsignees, setSavedConsignees] = useState<SavedParty[]>([])
@@ -1222,6 +1223,112 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     })
   }
 
+  const applyMazarHairatanTashkentPreset = () => {
+    setFormData((prev) => ({
+      ...prev,
+      routes: [
+        { id: crypto.randomUUID(), location: "Mazar-i-Sharif, AF", locationPersian: "مزار شریف، افغانستان", stopOrder: 1, transportMode: "truck" },
+        { id: crypto.randomUUID(), location: "Hairatan Border, AF", locationPersian: "حیرتان، افغانستان", stopOrder: 2, transportMode: "train", customsSealRequired: true, customsSealNote: "📍 سیل ګمرک حیرتان" },
+        { id: crypto.randomUUID(), location: "Termez, UZ", locationPersian: "ترمذ، ازبکستان", stopOrder: 3, transportMode: "train" },
+        { id: crypto.randomUUID(), location: "Tashkent, UZ", locationPersian: "تاشکند، ازبکستان", stopOrder: 4, transportMode: "train" },
+      ],
+    }))
+    setActiveRouteIndex(0)
+    toast.success("Applied Uzbekistan Rail Route", {
+      description: "مزار شریف → حیرتان → تاشکند مسیر اضافه شد",
+    })
+  }
+
+  const applyNimrozChabaharIndiaPreset = () => {
+    setFormData((prev) => ({
+      ...prev,
+      routes: [
+        { id: crypto.randomUUID(), location: "Zaranj / Nimroz, AF", locationPersian: "زرنج / نیمروز، افغانستان", stopOrder: 1, transportMode: "truck" },
+        { id: crypto.randomUUID(), location: "Milak Border, IR", locationPersian: "مرز میلک، ایران", stopOrder: 2, transportMode: "truck", customsSealRequired: true, customsSealNote: "📍 گمرک میلک" },
+        { id: crypto.randomUUID(), location: "Chabahar Port, IR", locationPersian: "بندر چابهار، ایران", stopOrder: 3, transportMode: "vessel" },
+        { id: crypto.randomUUID(), location: "Mundra Port, IN", locationPersian: "بندر موندرا، هند", stopOrder: 4, transportMode: "vessel" },
+      ],
+    }))
+    setActiveRouteIndex(0)
+    toast.success("Applied Chabahar Port Route", {
+      description: "نیمروز → میلک → چابهار → موندرا هند مسیر اضافه شد",
+    })
+  }
+
+  const applyKabulDubaiAirPreset = () => {
+    setFormData((prev) => ({
+      ...prev,
+      routes: [
+        { id: crypto.randomUUID(), location: "Kabul Airport (KBL), AF", locationPersian: "میدان هوایی کابل، افغانستان", stopOrder: 1, transportMode: "airplane" },
+        { id: crypto.randomUUID(), location: "Dubai Airport (DXB), AE", locationPersian: "میدان هوایی دبی، امارات", stopOrder: 2, transportMode: "airplane" },
+      ],
+    }))
+    setActiveRouteIndex(0)
+    toast.success("Applied Air Cargo Route", {
+      description: "کابل → دبی مسیر هوایی اضافه شد",
+    })
+  }
+
+  const moveRouteStop = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= formData.routes.length) return
+    setFormData((prev) => {
+      const newRoutes = [...prev.routes]
+      const temp = newRoutes[index]
+      newRoutes[index] = newRoutes[targetIndex]
+      newRoutes[targetIndex] = temp
+      return {
+        ...prev,
+        routes: newRoutes.map((r, i) => ({ ...r, stopOrder: i + 1 })),
+      }
+    })
+    setActiveRouteIndex(targetIndex)
+  }
+
+  const duplicateRouteStop = (index: number) => {
+    setFormData((prev) => {
+      const currentStop = prev.routes[index]
+      const newStop: RouteStop = {
+        ...currentStop,
+        id: crypto.randomUUID(),
+        stopOrder: index + 2,
+      }
+      const newRoutes = [...prev.routes]
+      newRoutes.splice(index + 1, 0, newStop)
+      return {
+        ...prev,
+        routes: newRoutes.map((r, i) => ({ ...r, stopOrder: i + 1 })),
+      }
+    })
+    setActiveRouteIndex(index + 1)
+    toast.success("Stop Duplicated", { description: "توقفگاه کپی شد" })
+  }
+
+  const reverseRoutes = () => {
+    setFormData((prev) => ({
+      ...prev,
+      routes: [...prev.routes].reverse().map((r, i) => ({ ...r, stopOrder: i + 1 })),
+    }))
+    setActiveRouteIndex(0)
+    toast.success("Route Pathway Reversed", { description: "مسیر ترانزیت برعکس شد" })
+  }
+
+  const syncRoutesWithBOLPorts = () => {
+    if (formData.routes.length < 2) return
+    const firstStop = formData.routes[0]
+    const lastStop = formData.routes[formData.routes.length - 1]
+    
+    setFormData((prev) => ({
+      ...prev,
+      port_of_loading: firstStop.location || prev.port_of_loading,
+      port_of_discharge: lastStop.location || prev.port_of_discharge,
+      place_of_delivery: lastStop.location || prev.place_of_delivery,
+    }))
+    toast.success("Synchronized with B/L Ports", {
+      description: `بارگیری: ${firstStop.location || "N/A"} | تخلیه: ${lastStop.location || "N/A"}`,
+    })
+  }
+
   const addRouteStop = () => {
     setFormData((prev) => ({
       ...prev,
@@ -1235,6 +1342,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
         },
       ],
     }))
+    setActiveRouteIndex(formData.routes.length)
   }
 
   const removeRouteStop = (index: number) => {
@@ -1245,6 +1353,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
         .filter((_, i) => i !== index)
         .map((route, routeIndex) => ({ ...route, stopOrder: routeIndex + 1 })),
     }))
+    if (activeRouteIndex === index) {
+      setActiveRouteIndex(Math.max(0, index - 1))
+    }
   }
 
   const getTransportIcon = (mode?: string) => {
@@ -1576,10 +1687,10 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     })
   }
 
-  const quickLocationQuery =
-    activeRouteIndex !== null
-      ? formData.routes[activeRouteIndex]?.location.trim().toLowerCase() || ""
-      : ""
+  const quickLocationQuery = (
+    routeLocationSearch.trim() ||
+    (activeRouteIndex !== null ? formData.routes[activeRouteIndex]?.location.trim() : "")
+  ).toLowerCase()
 
   const quickLocationMatches = predefinedLocations.filter((loc) => {
     if (selectedCountryFilter !== "ALL" && loc.country !== selectedCountryFilter) {
@@ -3521,91 +3632,217 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Routes - Multiple Stops */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-              <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
-                <CardTitle className="text-base flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-cyan-500 shadow-lg shadow-blue-500/25 text-white">
-                      <MapPin className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-blue-950 text-lg tracking-tight">Route Stops</span>
-                        <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200 font-[vazirmatn]">
-                          مسیر حمل و نقل
-                        </span>
+            <Card id="section-routes" className="bg-white/80 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.06)] overflow-hidden">
+              <CardHeader className="pb-4 border-b border-slate-100/80 bg-linear-to-r from-blue-50/50 via-indigo-50/30 to-slate-50/50">
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-2xl bg-linear-to-br from-blue-600 via-indigo-600 to-cyan-500 shadow-lg shadow-blue-500/25 text-white">
+                        <MapPin className="h-5 w-5" />
                       </div>
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">Define transport pathway origin, intermediate border transit stops, and final destination</p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-blue-950 text-lg tracking-tight">Route Stops &amp; Transit Pathway</span>
+                          <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200 font-[vazirmatn]">
+                            مسیر حمل و نقل و توقفگاه‌ها
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">
+                          Define multi-stop transit route, border customs points, vehicle plates, and transport modes
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Top Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={syncRoutesWithBOLPorts}
+                        className="h-9 rounded-xl border-blue-200 bg-blue-50/90 px-3 text-xs font-extrabold text-blue-900 shadow-xs hover:bg-blue-100 cursor-pointer transition-all"
+                        title="Synchronize Stop 1 with Port of Loading and Last Stop with Port of Discharge"
+                      >
+                        <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5 text-blue-700" />
+                        Sync with B/L / همگام‌سازی
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={reverseRoutes}
+                        className="h-9 rounded-xl border-purple-200 bg-purple-50/90 px-3 text-xs font-extrabold text-purple-900 shadow-xs hover:bg-purple-100 cursor-pointer transition-all"
+                        title="Reverse the entire route sequence (e.g. Export return trip)"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mr-1.5 text-purple-700" />
+                        Reverse / معکوس مسیر
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={addRouteStop}
+                        className="h-9 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 text-white px-3.5 text-xs font-extrabold shadow-md shadow-amber-500/20 hover:from-amber-600 hover:to-orange-600 cursor-pointer transition-all"
+                      >
+                        <Plus className="h-4 w-4 mr-1 text-white" />
+                        Add Stop / افزودن توقفگاه
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+
+                  {/* Route Presets Strip */}
+                  <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                      Quick Presets:
+                    </span>
+                    
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       onClick={applyKandaharNimrozBandarAbbasDubaiIndiaPreset}
-                      className="h-9.5 rounded-xl border-emerald-200 bg-emerald-50/80 px-3 text-xs font-extrabold text-emerald-900 shadow-xs hover:bg-emerald-100 cursor-pointer transition-all"
-                      title="Quick Preset: Kandahar → Nimroz → Bandar Abbas → Dubai → Nhava Sheva (India)"
+                      className="h-7.5 rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 text-[11px] font-extrabold text-emerald-900 shadow-2xs hover:bg-emerald-100 cursor-pointer transition-all"
+                      title="Kandahar → Nimroz → Bandar Abbas → Dubai → Nhava Sheva (India)"
                     >
-                      <Ship className="h-4 w-4 mr-1.5 text-emerald-700" />
-                      🇦🇫 → 🇮🇷 → 🇦🇪 → 🇮🇳 Kandahar to India Route
+                      <Ship className="h-3.5 w-3.5 mr-1 text-emerald-700" />
+                      🇦🇫 ➡️ 🇮🇷 ➡️ 🇦🇪 ➡️ 🇮🇳 Kandahar to India
                     </Button>
 
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       onClick={applyHeratIslamQalaDougharounPreset}
-                      className="h-9.5 rounded-xl border-blue-200 bg-blue-50/80 px-3 text-xs font-extrabold text-blue-900 shadow-xs hover:bg-blue-100 cursor-pointer transition-all"
-                      title="Quick Preset: Herat → Islam Qala → Dougharoun (Afghanistan to Iran)"
+                      className="h-7.5 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 text-[11px] font-extrabold text-blue-900 shadow-2xs hover:bg-blue-100 cursor-pointer transition-all"
+                      title="Herat → Islam Qala → Dougharoun (Afghanistan to Iran)"
                     >
-                      <Truck className="h-4 w-4 mr-1.5 text-blue-700" />
-                      🚛 Herat → Dougharoun Route
+                      <Truck className="h-3.5 w-3.5 mr-1 text-blue-700" />
+                      🚛 Herat ➡️ Dougharoun
                     </Button>
 
                     <Button
                       type="button"
+                      variant="ghost"
                       size="sm"
-                      onClick={addRouteStop}
-                      className="h-9.5 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 text-white px-3.5 text-xs font-extrabold shadow-md shadow-amber-500/20 hover:from-amber-600 hover:to-orange-600 cursor-pointer transition-all"
+                      onClick={applyNimrozChabaharIndiaPreset}
+                      className="h-7.5 rounded-lg border border-cyan-200 bg-cyan-50/80 px-2.5 text-[11px] font-extrabold text-cyan-900 shadow-2xs hover:bg-cyan-100 cursor-pointer transition-all"
+                      title="Nimroz → Milak Border → Chabahar Port → Mundra (India)"
                     >
-                      <Plus className="h-4 w-4 mr-1 text-white" />
-                      Add Stop / افزودن توقفگاه
+                      <Ship className="h-3.5 w-3.5 mr-1 text-cyan-700" />
+                      🇮🇷 Nimroz ➡️ Chabahar ➡️ India
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={applyKandaharChamanKarachiDubaiPreset}
+                      className="h-7.5 rounded-lg border border-indigo-200 bg-indigo-50/80 px-2.5 text-[11px] font-extrabold text-indigo-900 shadow-2xs hover:bg-indigo-100 cursor-pointer transition-all"
+                      title="Kandahar → Chaman → Karachi → Dubai"
+                    >
+                      <Truck className="h-3.5 w-3.5 mr-1 text-indigo-700" />
+                      🇵🇰 Kandahar ➡️ Karachi ➡️ Dubai
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={applyMazarHairatanTashkentPreset}
+                      className="h-7.5 rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 text-[11px] font-extrabold text-amber-900 shadow-2xs hover:bg-amber-100 cursor-pointer transition-all"
+                      title="Mazar-i-Sharif → Hairatan Border → Termez → Tashkent (Rail)"
+                    >
+                      <Train className="h-3.5 w-3.5 mr-1 text-amber-700" />
+                      🇺🇿 Mazar ➡️ Hairatan ➡️ Tashkent
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={applyKabulDubaiAirPreset}
+                      className="h-7.5 rounded-lg border border-sky-200 bg-sky-50/80 px-2.5 text-[11px] font-extrabold text-sky-900 shadow-2xs hover:bg-sky-100 cursor-pointer transition-all"
+                      title="Kabul Airport → Dubai Airport (Air Cargo)"
+                    >
+                      <Plane className="h-3.5 w-3.5 mr-1 text-sky-700" />
+                      ✈️ Kabul ➡️ Dubai (Air)
                     </Button>
                   </div>
-                </CardTitle>
+                </div>
               </CardHeader>
+              
               <CardContent className="space-y-6 pt-5 pb-6">
-                {/* Visual Route Pathway Timeline */}
-                <div className="rounded-2xl border border-blue-200/80 bg-linear-to-r from-blue-50/90 via-indigo-50/60 to-cyan-50/90 p-4 shadow-inner overflow-hidden">
+                {/* Visual Route Pathway Stepper Timeline */}
+                <div className="rounded-2xl border border-blue-200/80 bg-linear-to-r from-blue-50/90 via-indigo-50/50 to-cyan-50/90 p-4 shadow-inner overflow-hidden">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-blue-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-blue-950">
+                        Transit Stepper Pathway / نقشه مسیر
+                      </span>
+                      <span className="rounded-full bg-blue-200/70 px-2 py-0.5 text-[10px] font-black text-blue-900">
+                        {formData.routes.length} Stops Total
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-500 font-[vazirmatn]" dir="rtl">
+                      برای انتخاب یا ویرایش روی هر توقفگاه کلیک کنید
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 scrollbar-thin">
                     {formData.routes.map((route, index) => {
                       const isOrigin = index === 0
                       const isDest = index === formData.routes.length - 1
-                      const stopName = route.location || getRouteStopLabel(index, formData.routes.length)
+                      const stopName = route.location || `Stop #${index + 1}`
+                      const isSelected = activeRouteIndex === index
                       
                       return (
-                        <div key={route.id} className="flex items-center gap-3 shrink-0">
+                        <div key={route.id} className="flex items-center gap-2.5 shrink-0">
                           <div
                             onClick={() => setActiveRouteIndex(index)}
-                            className={`group relative flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all duration-300 cursor-pointer ${
-                              activeRouteIndex === index
-                                ? "border-2 border-blue-600 bg-white shadow-xl shadow-blue-500/15 ring-4 ring-blue-500/10 scale-102"
+                            className={`group relative flex items-center gap-3 rounded-2xl border p-3 text-left transition-all duration-300 cursor-pointer ${
+                              isSelected
+                                ? "border-2 border-blue-600 bg-white shadow-xl shadow-blue-500/15 ring-4 ring-blue-500/15 scale-102"
                                 : "border-slate-200/90 bg-white/95 hover:border-blue-300 hover:bg-white hover:shadow-md"
                             }`}
                           >
-                            {/* Action Buttons (Hover) */}
-                            <div className="absolute -top-3 -right-2 hidden group-hover:flex items-center gap-1 bg-white p-1 rounded-xl shadow-lg border border-slate-200 z-10">
+                            {/* Reorder & Action Mini Toolbar (Hover) */}
+                            <div className="absolute -top-3.5 right-2 hidden group-hover:flex items-center gap-0.5 bg-white p-0.5 rounded-lg shadow-md border border-slate-200 z-10">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  setActiveRouteIndex(index)
+                                  moveRouteStop(index, 'up')
                                 }}
-                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"
-                                title="Edit Stop"
+                                disabled={index === 0}
+                                className="p-1 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer disabled:opacity-30"
+                                title="Move Earlier (▲)"
                               >
-                                <Edit3 className="h-3.5 w-3.5" />
+                                <ChevronUp className="h-3 w-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  moveRouteStop(index, 'down')
+                                }}
+                                disabled={index === formData.routes.length - 1}
+                                className="p-1 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer disabled:opacity-30"
+                                title="Move Later (▼)"
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  duplicateRouteStop(index)
+                                }}
+                                className="p-1 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded cursor-pointer"
+                                title="Duplicate Stop"
+                              >
+                                <Copy className="h-3 w-3" />
                               </button>
                               {formData.routes.length > 2 && (
                                 <button
@@ -3614,16 +3851,17 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                     e.stopPropagation()
                                     removeRouteStop(index)
                                   }}
-                                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
+                                  className="p-1 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
                                   title="Delete Stop"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-3 w-3" />
                                 </button>
                               )}
                             </div>
 
+                            {/* Stop Index Badge */}
                             <div
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-extrabold text-white text-base shadow-md ${
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black text-white text-sm shadow-md ${
                                 isOrigin
                                   ? "bg-linear-to-br from-emerald-500 to-teal-700 shadow-emerald-500/25"
                                   : isDest
@@ -3633,36 +3871,39 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             >
                               {index + 1}
                             </div>
-                            <div className="min-w-28 max-w-56">
+
+                            <div className="min-w-28 max-w-52">
                               <div className="flex items-center gap-1.5">
                                 {getTransportIcon(route.transportMode)}
-                                <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                                <span className={`text-[10px] font-black uppercase tracking-wider ${
                                   isOrigin ? "text-emerald-700" : isDest ? "text-indigo-700" : "text-blue-700"
                                 }`}>
-                                  {getRouteStopLabel(index, formData.routes.length)}
+                                  {isOrigin ? "Origin (مبدأ)" : isDest ? "Destination (مقصد)" : `Stop #${index + 1}`}
                                 </span>
                               </div>
-                              <p className="mt-0.5 truncate text-xs font-extrabold text-blue-950">{stopName}</p>
+                              <p className="mt-0.5 truncate text-xs font-black text-blue-950">{stopName}</p>
                               {route.locationPersian && (
-                                <p className="truncate text-[11px] font-bold text-slate-500 font-[vazirmatn]" dir="rtl">{route.locationPersian}</p>
+                                <p className="truncate text-[10px] font-bold text-slate-500 font-[vazirmatn]" dir="rtl">{route.locationPersian}</p>
                               )}
 
-                              {/* Truck Badge info if present */}
+                              {/* Truck / Seal details badge */}
                               {route.plateNumber && (
-                                <span className="mt-1 inline-block rounded-md bg-blue-100 px-1.5 py-0.5 text-[9px] font-extrabold text-blue-900 border border-blue-200">
+                                <span className="mt-1 inline-block rounded bg-blue-100 px-1 py-0.2 text-[9px] font-extrabold text-blue-900 border border-blue-200">
                                   Plate: {route.plateNumber}
                                 </span>
                               )}
                               {route.customsSealRequired && (
-                                <span className="mt-1 ml-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-extrabold text-amber-900 border border-amber-200" dir="rtl">
-                                  📍 سیل غواړي
+                                <span className="mt-1 ml-1 inline-block rounded bg-amber-100 px-1 py-0.2 text-[9px] font-extrabold text-amber-900 border border-amber-200" dir="rtl">
+                                  📍 سیل ګمرک
                                 </span>
                               )}
                             </div>
                           </div>
+
+                          {/* Connecting arrow */}
                           {index < formData.routes.length - 1 && (
-                            <div className="flex items-center gap-1.5 px-1 text-blue-500 shrink-0">
-                              <span className="h-0.5 w-5 bg-linear-to-r from-blue-400 to-indigo-400 rounded-full" />
+                            <div className="flex items-center gap-1 px-0.5 text-blue-500 shrink-0">
+                              <span className="h-0.5 w-4 bg-linear-to-r from-blue-400 to-indigo-400 rounded-full" />
                               <ArrowRight className="h-4 w-4 text-blue-600" />
                             </div>
                           )}
@@ -3688,9 +3929,10 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             : "border-slate-200/90 bg-white/95 hover:border-slate-300"
                         } p-4.5`}
                       >
+                        {/* Stop Card Header */}
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-3">
-                            <div className={`flex h-11 w-11 items-center justify-center rounded-xl text-base font-black text-white shadow-md ${
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-black text-white shadow-md ${
                               isOrigin
                                 ? "bg-linear-to-br from-emerald-500 to-teal-700"
                                 : isDest
@@ -3701,35 +3943,86 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-base font-extrabold text-blue-950">{getRouteStopLabel(index, formData.routes.length)}</span>
+                                <span className="text-base font-extrabold text-blue-950">
+                                  {isOrigin ? "Origin Point (نقطه مبدأ)" : isDest ? "Final Destination (مقصد نهایی)" : `Stop #${index + 1} - Transit Stop (توقفگاه)`}
+                                </span>
                                 <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
                                   isOrigin ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : isDest ? "bg-indigo-100 text-indigo-800 border border-indigo-200" : "bg-blue-100 text-blue-800 border border-blue-200"
                                 }`}>
-                                  {isOrigin ? "Origin Point" : isDest ? "Final Destination" : `Stop #${index}`}
+                                  {isOrigin ? "Port of Loading" : isDest ? "Port of Discharge" : `Transit Stop`}
                                 </span>
                               </div>
-                              <p className="text-xs font-bold text-slate-500 font-[vazirmatn] mt-0.5" dir="rtl">{getRouteStopLabelPersian(index, formData.routes.length)}</p>
+                              <p className="text-xs font-bold text-slate-500 font-[vazirmatn] mt-0.5" dir="rtl">
+                                {route.locationPersian || (isOrigin ? "محل بارگیری" : isDest ? "محل تخلیه نهایی" : "ایستگاه و مرز ترانزیتی")}
+                              </p>
                             </div>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-9 rounded-xl border border-red-200 bg-red-50/50 px-3 text-xs font-bold text-red-600 hover:bg-red-100 hover:text-red-700 disabled:opacity-40"
-                            onClick={() => removeRouteStop(index)}
-                            disabled={formData.routes.length <= 2}
-                            title="Remove this route stop"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Remove Stop
-                          </Button>
+
+                          {/* Action Toolbar on Card */}
+                          <div className="flex items-center gap-1.5">
+                            {/* Move Up */}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={index === 0}
+                              onClick={() => moveRouteStop(index, 'up')}
+                              className="h-8 rounded-lg border-slate-200 px-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-30"
+                              title="Move Stop Earlier (▲)"
+                            >
+                              <ChevronUp className="h-3.5 w-3.5 mr-0.5" />
+                              Move Up
+                            </Button>
+
+                            {/* Move Down */}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={index === formData.routes.length - 1}
+                              onClick={() => moveRouteStop(index, 'down')}
+                              className="h-8 rounded-lg border-slate-200 px-2 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-30"
+                              title="Move Stop Later (▼)"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5 mr-0.5" />
+                              Move Down
+                            </Button>
+
+                            {/* Duplicate */}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => duplicateRouteStop(index)}
+                              className="h-8 rounded-lg border-emerald-200 bg-emerald-50/50 px-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
+                              title="Duplicate this stop"
+                            >
+                              <Copy className="h-3.5 w-3.5 mr-0.5" />
+                              Duplicate
+                            </Button>
+
+                            {/* Delete */}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 rounded-lg border border-red-200 bg-red-50/50 px-2.5 text-xs font-bold text-red-600 hover:bg-red-100 hover:text-red-700 disabled:opacity-30"
+                              onClick={() => removeRouteStop(index)}
+                              disabled={formData.routes.length <= 2}
+                              title="Remove this route stop"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
                         </div>
 
+                        {/* Location and Transport Inputs */}
                         <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1.4fr]">
-                          {/* English Location with Inline Quick Select Popover */}
+                          {/* English Location */}
                           <div className="relative">
-                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center justify-between">
-                              <span>Location (English) / {getRouteStopLabel(index, formData.routes.length)}</span>
+                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
+                              <span>Location (English) / {isOrigin ? "Origin" : isDest ? "Destination" : `Stop #${index + 1}`}</span>
                               {route.location && (
                                 <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Selected</span>
                               )}
@@ -3746,12 +4039,12 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                 handleRouteChange(index, "location", e.target.value)
                               }}
                               placeholder={`e.g. ${isOrigin ? "Kandahar, AF" : isDest ? "Nhava Sheva, IN" : "Bandar Abbas, IR"}`}
-                              className="h-11 rounded-xl border-slate-200 bg-white/90 font-semibold text-slate-900 focus:border-amber-400 focus:ring-amber-200"
+                              className="h-10.5 rounded-xl border-slate-200 bg-white font-semibold text-slate-900 focus:border-amber-400 focus:ring-amber-200"
                             />
 
-                            {/* Floating Inline Recommendation Popover */}
+                            {/* Inline Recommendation Popover */}
                             {showLocationDropdown === index && (
-                              <div className="absolute left-0 right-0 top-full z-40 mt-1.5 max-h-80 overflow-y-auto rounded-2xl border border-amber-300/80 bg-white/95 p-3 shadow-2xl shadow-slate-900/20 backdrop-blur-xl">
+                              <div className="absolute left-0 right-0 top-full z-40 mt-1.5 max-h-80 overflow-y-auto rounded-2xl border border-amber-300/80 bg-white p-3 shadow-2xl shadow-slate-900/20 backdrop-blur-xl">
                                 <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-xs font-black text-amber-900">Suggested Locations</span>
@@ -3770,7 +4063,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
                                 {/* Quick Country Filter Chips */}
                                 <div className="flex flex-wrap gap-1 mb-2.5 pb-1 border-b border-slate-100">
-                                  {["ALL", "Afghanistan", "Iran", "Pakistan", "United Arab Emirates", "China", "India"].map((ctry) => (
+                                  {["ALL", "Afghanistan", "Iran", "Pakistan", "United Arab Emirates", "China", "India", "Turkey", "Uzbekistan"].map((ctry) => (
                                     <button
                                       key={ctry}
                                       type="button"
@@ -3781,7 +4074,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                           : "bg-slate-100 text-slate-700 hover:bg-amber-100 hover:text-amber-900"
                                       }`}
                                     >
-                                      {ctry === "ALL" ? "🌍 All" : ctry === "Afghanistan" ? "🇦🇫 AF" : ctry === "Iran" ? "🇮🇷 IR" : ctry === "Pakistan" ? "🇵🇰 PK" : ctry === "United Arab Emirates" ? "🇦🇪 UAE" : ctry === "China" ? "🇨🇳 CN" : "🇮🇳 IN"}
+                                      {ctry === "ALL" ? "🌍 All" : ctry === "Afghanistan" ? "🇦🇫 AF" : ctry === "Iran" ? "🇮🇷 IR" : ctry === "Pakistan" ? "🇵🇰 PK" : ctry === "United Arab Emirates" ? "🇦🇪 UAE" : ctry === "China" ? "🇨🇳 CN" : ctry === "India" ? "🇮🇳 IN" : ctry === "Turkey" ? "🇹🇷 TR" : "🇺🇿 UZ"}
                                     </button>
                                   ))}
                                 </div>
@@ -3819,8 +4112,8 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
                           {/* Persian Location */}
                           <div className="relative">
-                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1.5 block">
-                              Location (Persian) / موقعیت فارسی
+                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1.5 block">
+                              Location (Persian / Pashto) / موقعیت فارسی یا پښتو
                             </label>
                             <Input
                               value={route.locationPersian}
@@ -3832,104 +4125,88 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                 setActiveRouteIndex(index)
                                 handleRouteChange(index, "locationPersian", e.target.value)
                               }}
-                              placeholder="نام محل یا بند"
+                              placeholder="نام محل، بندر یا گمرک"
                               dir="rtl"
-                              className="h-11 rounded-xl border-slate-200 bg-white/90 font-semibold text-slate-900 font-[vazirmatn] focus:border-amber-400 focus:ring-amber-200"
+                              className="h-10.5 rounded-xl border-slate-200 bg-white font-semibold text-slate-900 font-[vazirmatn] focus:border-amber-400 focus:ring-amber-200"
                             />
                           </div>
 
-                          {/* Transport Mode Visual Selector */}
+                          {/* Transport Mode Selector */}
                           <div>
-                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-2.5 block">
+                            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1.5 block">
                               Transport Mode / حالت حمل و نقل
                             </label>
                             
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="grid grid-cols-4 gap-1.5">
                               {/* Option: Truck/Road */}
                               <button
                                 type="button"
                                 onClick={() => handleRouteChange(index, "transportMode", "truck")}
-                                className={`flex flex-col items-center justify-center gap-2 h-20 w-[90px] rounded-2xl border transition-all cursor-pointer ${
-                                  route.transportMode === "truck" || route.transportMode === "road"
-                                    ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-500/10 ring-2 ring-blue-500/20"
-                                    : "border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50"
+                                className={`flex flex-col items-center justify-center gap-1 h-14 rounded-xl border transition-all cursor-pointer ${
+                                  route.transportMode === "truck" || route.transportMode === "road" || !route.transportMode
+                                    ? "border-blue-500 bg-blue-50 text-blue-900 shadow-sm ring-2 ring-blue-500/20 font-black"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-slate-50 font-bold"
                                 }`}
                               >
-                                <Truck className={`h-6 w-6 ${route.transportMode === "truck" || route.transportMode === "road" ? "text-blue-600" : "text-slate-400"}`} />
-                                <span className={`text-[10px] font-black uppercase ${route.transportMode === "truck" || route.transportMode === "road" ? "text-blue-900" : "text-slate-500"}`}>Truck</span>
+                                <Truck className={`h-5 w-5 ${route.transportMode === "truck" || route.transportMode === "road" || !route.transportMode ? "text-blue-600" : "text-slate-400"}`} />
+                                <span className="text-[10px] uppercase">Truck</span>
                               </button>
 
                               {/* Option: Vessel/Sea */}
                               <button
                                 type="button"
                                 onClick={() => handleRouteChange(index, "transportMode", "vessel")}
-                                className={`flex flex-col items-center justify-center gap-2 h-20 w-[90px] rounded-2xl border transition-all cursor-pointer ${
+                                className={`flex flex-col items-center justify-center gap-1 h-14 rounded-xl border transition-all cursor-pointer ${
                                   route.transportMode === "vessel"
-                                    ? "border-cyan-500 bg-cyan-50 shadow-md shadow-cyan-500/10 ring-2 ring-cyan-500/20"
-                                    : "border-slate-200 bg-white hover:border-cyan-300 hover:bg-slate-50"
+                                    ? "border-cyan-500 bg-cyan-50 text-cyan-900 shadow-sm ring-2 ring-cyan-500/20 font-black"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:bg-slate-50 font-bold"
                                 }`}
                               >
-                                <Ship className={`h-6 w-6 ${route.transportMode === "vessel" ? "text-cyan-600" : "text-slate-400"}`} />
-                                <span className={`text-[10px] font-black uppercase ${route.transportMode === "vessel" ? "text-cyan-900" : "text-slate-500"}`}>Vessel</span>
+                                <Ship className={`h-5 w-5 ${route.transportMode === "vessel" ? "text-cyan-600" : "text-slate-400"}`} />
+                                <span className="text-[10px] uppercase">Sea</span>
                               </button>
 
                               {/* Option: Plane/Air */}
                               <button
                                 type="button"
                                 onClick={() => handleRouteChange(index, "transportMode", "airplane")}
-                                className={`flex flex-col items-center justify-center gap-2 h-20 w-[90px] rounded-2xl border transition-all cursor-pointer ${
+                                className={`flex flex-col items-center justify-center gap-1 h-14 rounded-xl border transition-all cursor-pointer ${
                                   route.transportMode === "airplane"
-                                    ? "border-sky-500 bg-sky-50 shadow-md shadow-sky-500/10 ring-2 ring-sky-500/20"
-                                    : "border-slate-200 bg-white hover:border-sky-300 hover:bg-slate-50"
+                                    ? "border-sky-500 bg-sky-50 text-sky-900 shadow-sm ring-2 ring-sky-500/20 font-black"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-sky-300 hover:bg-slate-50 font-bold"
                                 }`}
                               >
-                                <Plane className={`h-6 w-6 ${route.transportMode === "airplane" ? "text-sky-600" : "text-slate-400"}`} />
-                                <span className={`text-[10px] font-black uppercase ${route.transportMode === "airplane" ? "text-sky-900" : "text-slate-500"}`}>Air</span>
+                                <Plane className={`h-5 w-5 ${route.transportMode === "airplane" ? "text-sky-600" : "text-slate-400"}`} />
+                                <span className="text-[10px] uppercase">Air</span>
                               </button>
 
                               {/* Option: Train/Rail */}
                               <button
                                 type="button"
                                 onClick={() => handleRouteChange(index, "transportMode", "train")}
-                                className={`flex flex-col items-center justify-center gap-2 h-20 w-[90px] rounded-2xl border transition-all cursor-pointer ${
+                                className={`flex flex-col items-center justify-center gap-1 h-14 rounded-xl border transition-all cursor-pointer ${
                                   route.transportMode === "train"
-                                    ? "border-amber-500 bg-amber-50 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/20"
-                                    : "border-slate-200 bg-white hover:border-amber-300 hover:bg-slate-50"
+                                    ? "border-amber-500 bg-amber-50 text-amber-900 shadow-sm ring-2 ring-amber-500/20 font-black"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-amber-300 hover:bg-slate-50 font-bold"
                                 }`}
                               >
-                                <Train className={`h-6 w-6 ${route.transportMode === "train" ? "text-amber-600" : "text-slate-400"}`} />
-                                <span className={`text-[10px] font-black uppercase ${route.transportMode === "train" ? "text-amber-900" : "text-slate-500"}`}>Rail</span>
+                                <Train className={`h-5 w-5 ${route.transportMode === "train" ? "text-amber-600" : "text-slate-400"}`} />
+                                <span className="text-[10px] uppercase">Rail</span>
                               </button>
                             </div>
-
-                            {/* Details Overlay */}
-                            {route.transportMode && (
-                              <div className="mt-3 rounded-2xl border border-slate-200 bg-white/40 backdrop-blur-md p-3.5 shadow-sm">
-                                <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-slate-800">
-                                  <div>
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Duration</span>
-                                    <p className="font-extrabold text-slate-700">{getTransportDetails(route.transportMode).duration}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">Capacity</span>
-                                    <p className="font-extrabold text-slate-700">{getTransportDetails(route.transportMode).capacity}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         </div>
 
-                        {/* Dedicated Truck Details Specifications Panel (When Truck/Road mode is selected) */}
-                        {(route.transportMode === "truck" || route.transportMode === "road") && (
-                          <div className="mt-4 rounded-2xl border border-white bg-linear-to-br from-blue-50/80 via-indigo-50/40 to-amber-50/40 p-4 shadow-sm space-y-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-200/60 pb-2.5">
+                        {/* Dedicated Specifications Panel based on Transport Mode */}
+                        {(route.transportMode === "truck" || route.transportMode === "road" || !route.transportMode) && (
+                          <div className="mt-3.5 rounded-2xl border border-blue-100 bg-linear-to-br from-blue-50/70 via-indigo-50/30 to-amber-50/30 p-3.5 shadow-2xs space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-200/60 pb-2">
                               <div className="flex items-center gap-2">
                                 <div className="p-1.5 rounded-lg bg-blue-600 text-white shadow-xs">
-                                  <Truck className="h-4 w-4" />
+                                  <Truck className="h-3.5 w-3.5" />
                                 </div>
                                 <span className="text-xs font-black uppercase tracking-wider text-blue-950">
-                                  Truck Details &amp; Customs Seal / مشخصات موتر و ګمرک
+                                  Truck Specifications &amp; Customs Seal / مشخصات موتر و ګمرک
                                 </span>
                               </div>
                               <span className="text-[11px] font-bold text-blue-800 font-[vazirmatn]" dir="rtl">
@@ -3938,7 +4215,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-3">
-                              {/* Plate Number (پلیټ نمبر / ليټ نمبر) */}
+                              {/* Plate Number */}
                               <div>
                                 <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
                                   Plate No. / پلیټ نمبر / ليټ نمبر
@@ -3947,11 +4224,11 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                   value={route.plateNumber || ""}
                                   onChange={(e) => handleRouteChange(index, "plateNumber", e.target.value)}
                                   placeholder="مثلا: KBL-7842"
-                                  className="h-10 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs focus:border-amber-400 focus:ring-amber-200"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs focus:border-amber-400 focus:ring-amber-200"
                                 />
                               </div>
 
-                              {/* Chassis Number (شاسی نمبر) */}
+                              {/* Chassis Number */}
                               <div>
                                 <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
                                   Chassis No. / شاسی نمبر
@@ -3960,11 +4237,11 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                   value={route.chassisNumber || ""}
                                   onChange={(e) => handleRouteChange(index, "chassisNumber", e.target.value)}
                                   placeholder="CH-908712"
-                                  className="h-10 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs focus:border-amber-400 focus:ring-amber-200"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs focus:border-amber-400 focus:ring-amber-200"
                                 />
                               </div>
 
-                              {/* Trailer Man / Driver (ټیلر مان / ډریور) */}
+                              {/* Driver / Trailer Man */}
                               <div>
                                 <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1 font-[vazirmatn]">
                                   Trailer Man / ټیلر مان / ډریور
@@ -3973,19 +4250,19 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                   value={route.trailerMan || ""}
                                   onChange={(e) => handleRouteChange(index, "trailerMan", e.target.value)}
                                   placeholder="نام دریور / ټیلر مان"
-                                  className="h-10 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs font-[vazirmatn] focus:border-amber-400 focus:ring-amber-200"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs font-[vazirmatn] focus:border-amber-400 focus:ring-amber-200"
                                 />
                               </div>
                             </div>
 
-                            {/* Customs Seal Requirement (📍 په ګمرک کې سیل غواړي) */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-blue-200/60">
-                              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            {/* Customs Seal Requirement */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-blue-200/50">
+                              <label className="flex items-center gap-2 cursor-pointer select-none">
                                 <input
                                   type="checkbox"
                                   checked={Boolean(route.customsSealRequired)}
                                   onChange={(e) => handleRouteChange(index, "customsSealRequired", e.target.checked)}
-                                  className="h-4.5 w-4.5 rounded-md border-amber-400 text-amber-600 focus:ring-amber-400 cursor-pointer"
+                                  className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-400 cursor-pointer"
                                 />
                                 <span className="text-xs font-black text-slate-900 font-[vazirmatn]" dir="rtl">
                                   📍 په ګمرک کې سیل غواړي (Customs Seal Required)
@@ -3996,9 +4273,137 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                                   value={route.customsSealNote || ""}
                                   onChange={(e) => handleRouteChange(index, "customsSealNote", e.target.value)}
                                   placeholder="Customs seal details / جزئیات سیل ګمرک"
-                                  className="h-9 w-full sm:w-72 rounded-xl border-amber-400 bg-white text-xs font-bold text-slate-900 font-[vazirmatn] focus:border-amber-500"
+                                  className="h-8.5 w-full sm:w-72 rounded-lg border-amber-400 bg-white text-xs font-bold text-slate-900 font-[vazirmatn] focus:border-amber-500"
                                 />
                               )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Sea / Vessel Mode Panel */}
+                        {route.transportMode === "vessel" && (
+                          <div className="mt-3.5 rounded-2xl border border-cyan-100 bg-linear-to-br from-cyan-50/70 via-blue-50/30 to-slate-50/30 p-3.5 shadow-2xs space-y-3">
+                            <div className="flex items-center gap-2 border-b border-cyan-200/60 pb-2">
+                              <div className="p-1.5 rounded-lg bg-cyan-600 text-white shadow-xs">
+                                <Ship className="h-3.5 w-3.5" />
+                              </div>
+                              <span className="text-xs font-black uppercase tracking-wider text-cyan-950">
+                                Sea Port &amp; Vessel Details / مشخصات کشتی و بندر بحری
+                              </span>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Vessel Name / نام کشتی
+                                </label>
+                                <Input
+                                  value={route.notes || ""}
+                                  onChange={(e) => handleRouteChange(index, "notes", e.target.value)}
+                                  placeholder="e.g. WAN HAI 512"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Port Terminal / ترمینل بندر
+                                </label>
+                                <Input
+                                  value={route.customsSealNote || ""}
+                                  onChange={(e) => handleRouteChange(index, "customsSealNote", e.target.value)}
+                                  placeholder="Terminal 1 / Berthing Quay"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Container No. / کانتینر
+                                </label>
+                                <Input
+                                  value={route.plateNumber || ""}
+                                  onChange={(e) => handleRouteChange(index, "plateNumber", e.target.value)}
+                                  placeholder="MSCU-1234567"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs font-mono"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Air Cargo Panel */}
+                        {route.transportMode === "airplane" && (
+                          <div className="mt-3.5 rounded-2xl border border-sky-100 bg-linear-to-br from-sky-50/70 via-blue-50/30 to-slate-50/30 p-3.5 shadow-2xs space-y-3">
+                            <div className="flex items-center gap-2 border-b border-sky-200/60 pb-2">
+                              <div className="p-1.5 rounded-lg bg-sky-600 text-white shadow-xs">
+                                <Plane className="h-3.5 w-3.5" />
+                              </div>
+                              <span className="text-xs font-black uppercase tracking-wider text-sky-950">
+                                Air Freight &amp; Flight Information / پرواز و بارنامه هوایی
+                              </span>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Flight No. / شماره پرواز
+                                </label>
+                                <Input
+                                  value={route.notes || ""}
+                                  onChange={(e) => handleRouteChange(index, "notes", e.target.value)}
+                                  placeholder="e.g. FG-311 / EK-205"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Air Waybill (AWB) / شماره AWB
+                                </label>
+                                <Input
+                                  value={route.plateNumber || ""}
+                                  onChange={(e) => handleRouteChange(index, "plateNumber", e.target.value)}
+                                  placeholder="AWB-9087612"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs font-mono"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Rail Freight Panel */}
+                        {route.transportMode === "train" && (
+                          <div className="mt-3.5 rounded-2xl border border-amber-100 bg-linear-to-br from-amber-50/70 via-orange-50/30 to-slate-50/30 p-3.5 shadow-2xs space-y-3">
+                            <div className="flex items-center gap-2 border-b border-amber-200/60 pb-2">
+                              <div className="p-1.5 rounded-lg bg-amber-600 text-white shadow-xs">
+                                <Train className="h-3.5 w-3.5" />
+                              </div>
+                              <span className="text-xs font-black uppercase tracking-wider text-amber-950">
+                                Railway Freight Information / معلومات خط آهن و واگن
+                              </span>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Wagon / Train No. / شماره واگن
+                                </label>
+                                <Input
+                                  value={route.plateNumber || ""}
+                                  onChange={(e) => handleRouteChange(index, "plateNumber", e.target.value)}
+                                  placeholder="WGN-54210"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block mb-1">
+                                  Railway Station / ایستگاه ریل
+                                </label>
+                                <Input
+                                  value={route.notes || ""}
+                                  onChange={(e) => handleRouteChange(index, "notes", e.target.value)}
+                                  placeholder="Hairatan Railway Terminal"
+                                  className="h-9.5 rounded-xl border-slate-200 bg-white font-bold text-slate-900 text-xs"
+                                />
+                              </div>
                             </div>
                           </div>
                         )}
@@ -4007,18 +4412,30 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                   })}
                 </div>
 
-                {/* Quick Select Locations Bar */}
+                {/* Quick Select Locations Bar with Live Search */}
                 <div className="pt-4 border-t border-slate-200/80">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                        Quick Select Location / انتخاب سریع محل:
-                      </p>
-                      {activeRouteIndex !== null && (
-                        <p className="text-xs font-bold text-amber-700">
-                          Active Target: <span className="font-black text-slate-900">{getRouteStopLabel(activeRouteIndex, formData.routes.length)}</span>
+                  <div className="flex flex-col gap-3 mb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-wider text-slate-800">
+                          Quick Location Selector / انتخاب سریع محل:
                         </p>
-                      )}
+                        {activeRouteIndex !== null && (
+                          <p className="text-xs font-bold text-amber-700">
+                            Targeting: <span className="font-black text-blue-950">{getRouteStopLabel(activeRouteIndex, formData.routes.length)} (Stop #{activeRouteIndex + 1})</span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Live Search Input for Locations */}
+                      <div className="w-full sm:w-64">
+                        <Input
+                          value={routeLocationSearch}
+                          onChange={(e) => setRouteLocationSearch(e.target.value)}
+                          placeholder="Search city, port, or country..."
+                          className="h-8.5 text-xs rounded-xl bg-white border-slate-200"
+                        />
+                      </div>
                     </div>
 
                     {/* Regional Country Tabs */}
@@ -4029,8 +4446,10 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         { label: "🇮🇷 IRAN", country: "Iran" },
                         { label: "🇦🇪 UAE", country: "UAE" },
                         { label: "🇮🇳 INDIA", country: "India" },
+                        { label: "🇵🇰 PAKISTAN", country: "Pakistan" },
                         { label: "🇹🇷 TURKEY", country: "Turkey" },
                         { label: "🇨🇳 CHINA", country: "China" },
+                        { label: "🇺🇿 UZBEKISTAN", country: "Uzbekistan" },
                       ].map((tab) => (
                         <button
                           key={tab.country}
@@ -4055,7 +4474,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="text-xs h-auto py-2 px-3 flex flex-col items-start rounded-xl border-slate-200 bg-white/90 hover:border-amber-400 hover:bg-amber-50/60 transition-all shadow-2xs cursor-pointer"
+                        className="text-xs h-auto py-2 px-2.5 flex flex-col items-start rounded-xl border-slate-200 bg-white/90 hover:border-amber-400 hover:bg-amber-50/60 transition-all shadow-2xs cursor-pointer text-left"
                         onClick={() => handleQuickLocationSelect(loc)}
                         title={`${loc.name} - ${loc.country} (${loc.code})`}
                       >
