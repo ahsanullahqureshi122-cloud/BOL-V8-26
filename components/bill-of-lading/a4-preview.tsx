@@ -999,6 +999,176 @@ function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData
   )
 }
 
+function CargoOverview({
+  formData,
+  labels,
+  pdfMode = false,
+}: {
+  formData: BillOfLadingFormData
+  labels: Record<string, string>
+  pdfMode?: boolean
+}) {
+  const hasPackages = hasValue(formData.number_of_packages)
+  const hasNetCtn = hasValue(formData.kgs_per_carton)
+  const hasGrossCtn = hasValue(formData.gross_weight_per_carton)
+  const hasRate = hasValue(formData.rate_per_kgs)
+  const hasGoodsValue = hasValue(formData.goods_value)
+  const hasNetWeight = hasValue(formData.net_weight)
+  const hasGrossWeight = hasValue(formData.gross_weight)
+  const hasContainer = hasValue(formData.container_numbers)
+  const hasSeal = hasValue(formData.seal_numbers)
+  const hasMeasurement = hasValue(formData.measurement)
+
+  const hasCards = hasPackages || hasNetCtn || hasGrossCtn || hasRate || hasGoodsValue || hasNetWeight || hasGrossWeight
+
+  if (!hasCards && !hasContainer && !hasSeal && !hasMeasurement) return null
+
+  return (
+    <div className="space-y-1.5">
+      {/* Top Metadata Badges (Container, Seal, Measurement) */}
+      {(hasContainer || hasSeal || hasMeasurement) && (
+        <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+          {hasContainer && (
+            <div className="inline-flex items-center gap-1 bg-blue-50/90 text-blue-950 font-mono font-bold text-[7pt] px-2 py-0.5 rounded-md border border-blue-200 shadow-2xs">
+              <span className="text-blue-700 font-black">CONT:</span>
+              <span>{formData.container_numbers}</span>
+            </div>
+          )}
+          {hasSeal && (
+            <div className="inline-flex items-center gap-1 bg-amber-50/90 text-amber-950 font-mono font-bold text-[7pt] px-2 py-0.5 rounded-md border border-amber-200 shadow-2xs">
+              <span className="text-amber-700 font-black">SEAL:</span>
+              <span>{formData.seal_numbers}</span>
+            </div>
+          )}
+          {hasMeasurement && (
+            <div className="inline-flex items-center gap-1 bg-slate-50 text-slate-800 font-mono font-bold text-[7pt] px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
+              <span className="text-slate-600 font-black">MEASUREMENT:</span>
+              <span>{formData.measurement}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4 Executive KPI Cards */}
+      {hasCards && (
+        <div className="grid grid-cols-4 gap-1.5">
+          {/* 1. NO. OF PACKAGES */}
+          <div
+            className={`rounded-lg border px-2 py-1.5 text-center flex flex-col justify-between ${
+              pdfMode ? "border-blue-100 bg-white" : "border-blue-100/90 bg-white/95 shadow-xs shadow-blue-100/50"
+            }`}
+          >
+            <div>
+              <div className="text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight">
+                NO. OF PACKAGES
+              </div>
+              <div className="persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
+                {labels.packagesFa || "تعداد بسته"}
+              </div>
+            </div>
+            <div className="mt-1 font-mono font-black text-slate-950 text-[8.8pt] leading-tight break-words">
+              {formData.number_of_packages || "—"}
+            </div>
+          </div>
+
+          {/* 2. WEIGHT PER CARTON */}
+          <div
+            className={`rounded-lg border px-2 py-1.5 text-center flex flex-col justify-between ${
+              pdfMode ? "border-blue-100 bg-white" : "border-blue-100/90 bg-white/95 shadow-xs shadow-blue-100/50"
+            }`}
+          >
+            <div>
+              <div className="text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight">
+                WT / CARTON
+              </div>
+              <div className="persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
+                وزن خالص و ناخالص فی کارتن
+              </div>
+            </div>
+            <div className="mt-1 space-y-0.5 text-[7.5pt] font-extrabold leading-tight text-left">
+              {hasNetCtn && (
+                <div className="flex items-center justify-between gap-1 text-blue-900">
+                  <span className="text-[6.2pt] font-black text-slate-500 uppercase shrink-0">NET:</span>
+                  <span className="font-mono truncate">{formData.kgs_per_carton}</span>
+                </div>
+              )}
+              {hasGrossCtn && (
+                <div className="flex items-center justify-between gap-1 text-slate-900">
+                  <span className="text-[6.2pt] font-black text-slate-500 uppercase shrink-0">GROSS:</span>
+                  <span className="font-mono truncate">{formData.gross_weight_per_carton}</span>
+                </div>
+              )}
+              {!hasNetCtn && !hasGrossCtn && <div className="text-slate-400 text-center">—</div>}
+            </div>
+          </div>
+
+          {/* 3. TOTAL WEIGHTS */}
+          <div
+            className={`rounded-lg border px-2 py-1.5 text-center flex flex-col justify-between ${
+              pdfMode ? "border-blue-100 bg-white" : "border-blue-100/90 bg-white/95 shadow-xs shadow-blue-100/50"
+            }`}
+          >
+            <div>
+              <div className="text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight">
+                TOTAL WEIGHTS
+              </div>
+              <div className="persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
+                وزن کل خالص و ناخالص
+              </div>
+            </div>
+            <div className="mt-1 space-y-0.5 text-[7.5pt] font-extrabold leading-tight text-left">
+              {hasNetWeight && (
+                <div className="flex items-center justify-between gap-1 text-blue-950">
+                  <span className="text-[6.2pt] font-black text-slate-500 uppercase shrink-0">NET:</span>
+                  <span className="font-mono font-black truncate">{formData.net_weight}</span>
+                </div>
+              )}
+              {hasGrossWeight && (
+                <div className="flex items-center justify-between gap-1 text-slate-900">
+                  <span className="text-[6.2pt] font-black text-slate-500 uppercase shrink-0">GROSS:</span>
+                  <span className="font-mono font-black truncate">{formData.gross_weight}</span>
+                </div>
+              )}
+              {!hasNetWeight && !hasGrossWeight && <div className="text-slate-400 text-center">—</div>}
+            </div>
+          </div>
+
+          {/* 4. RATE & GOODS VALUE */}
+          <div
+            className={`rounded-lg border px-2 py-1.5 text-center flex flex-col justify-between ${
+              pdfMode ? "border-blue-100 bg-white" : "border-blue-100/90 bg-white/95 shadow-xs shadow-blue-100/50"
+            }`}
+          >
+            <div>
+              <div className="text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight">
+                RATE &amp; GOODS VALUE
+              </div>
+              <div className="persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
+                نرخ و ارزش کالا
+              </div>
+            </div>
+            <div className="mt-1 space-y-0.5 text-[7.5pt] font-extrabold leading-tight text-left">
+              {hasRate && (
+                <div className="flex items-center justify-between gap-1 text-slate-700">
+                  <span className="text-[6.2pt] font-black text-slate-500 uppercase shrink-0">RATE:</span>
+                  <span className="font-mono truncate">{formData.rate_per_kgs}</span>
+                </div>
+              )}
+              {hasGoodsValue && (
+                <div className="flex items-center justify-between gap-1 text-emerald-950">
+                  <span className="text-[6.2pt] font-black text-emerald-700 uppercase shrink-0">VAL:</span>
+                  <span className="font-mono font-black text-emerald-900 truncate">{formData.goods_value}</span>
+                </div>
+              )}
+              {!hasRate && !hasGoodsValue && <div className="text-slate-400 text-center">—</div>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function A4Preview({
   bolNumber,
   issueDate,
@@ -1059,15 +1229,18 @@ export function A4Preview({
     { label: "Driver Rent / کرایه راننده", value: formData.driver_rent, highlightColor: "red" },
   ].filter((item) => hasValue(item.value))
 
-  const cargoSummaryItems: DetailItem[] = [
-    { label: `Container No.\n${labels.containerNoFa}`, value: formData.container_numbers, important: true },
-    { label: `Seal No.\n${labels.sealNoFa}`, value: formData.seal_numbers, important: true },
-    { label: `No. of Packages\n${labels.packagesFa}`, value: formData.number_of_packages, important: true },
-    { label: `Net & Gross Wt / CTN\nوزن خالص و ناخالص فی کارتن`, value: [formData.kgs_per_carton, formData.gross_weight_per_carton].filter(Boolean).join(" | "), important: true },
-    { label: `Rate & Goods Value\nنرخ و ارزش کالا`, value: [formData.rate_per_kgs, formData.goods_value].filter(Boolean).join(" | "), important: true },
-    { label: `Gross & Net Weight\n${labels.grossWeightFa} و ${labels.netWeightFa}`, value: [formData.gross_weight, formData.net_weight].filter(Boolean).join(" | "), important: true },
-    { label: `Measurement\n${labels.measurementFa}`, value: formData.measurement },
-  ].filter((item) => hasValue(item.value))
+  const hasCargoData = [
+    formData.number_of_packages,
+    formData.kgs_per_carton,
+    formData.gross_weight_per_carton,
+    formData.rate_per_kgs,
+    formData.goods_value,
+    formData.net_weight,
+    formData.gross_weight,
+    formData.container_numbers,
+    formData.seal_numbers,
+    formData.measurement,
+  ].some(hasValue)
 
   const cleanedCargoDesc = cleanCargoDescriptionText(formData.cargo_description)
   const hasExporter = [formData.shipper_name, formData.shipper_address, formData.shipper_contact, formData.shipper_email].some(hasValue)
@@ -1285,30 +1458,26 @@ export function A4Preview({
             <RouteTimeline routes={formData.routes} glass={!pdfMode} />
           </Section>
 
-          {(cargoSummaryItems.length > 0 || hasValue(cleanedCargoDesc)) && (
+          {(hasCargoData || hasValue(cleanedCargoDesc)) && (
             <Section title="Cargo Description" subtitle={labels.cargoDescFa} icon={<Package className="h-6 w-6" />} glass={!pdfMode} printKey="cargo" pdfMode={pdfMode} titleClassName="text-[10.2pt]">
-              {cargoSummaryItems.length > 0 && (
-                <div className="grid grid-cols-4 gap-1 break-word" style={{ gridAutoRows: 'minmax(32px, auto)' }}>
-                  {cargoSummaryItems.map((item) => (
-                    <DetailCard key={item.label} {...item} glass={!pdfMode} pdfMode={pdfMode} compact center />
-                  ))}
-                </div>
+              {hasCargoData && (
+                <CargoOverview formData={formData} labels={labels} pdfMode={pdfMode} />
               )}
               {hasValue(cleanedCargoDesc) && (
                 <div
-                  className={`mt-1.5 rounded-xl border p-2 shadow-inner ${
+                  className={`mt-2 rounded-xl border p-2.5 shadow-inner ${
                     pdfMode ? "border-blue-100 bg-white" : "border-white/80 bg-white/65 backdrop-blur-md"
                   }`}
                 >
                   <div className="mb-1 flex items-center gap-1.5 text-blue-800">
                     <FileText className="h-4.5 w-4.5" />
                     <p className="text-[9.5pt] font-black leading-tight">
-                      Description of Goods / <span className="persian-text bol-persian-text" dir="rtl">{labels.goodsDescriptionFa}</span>
+                      Description of Goods / <span className="persian-text bol-persian-text font-[vazirmatn]" dir="rtl">{labels.goodsDescriptionFa}</span>
                     </p>
                   </div>
                   <TextLines
                     value={cleanedCargoDesc}
-                    className="text-[10.2pt] font-bold leading-[1.25] text-slate-950"
+                    className="text-[9.8pt] font-bold leading-relaxed text-slate-950"
                   />
                 </div>
               )}
