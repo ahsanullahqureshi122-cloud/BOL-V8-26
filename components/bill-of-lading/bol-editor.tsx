@@ -541,43 +541,22 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     setFormData((prev) => {
       const next = { ...prev, [name]: value }
 
-      if (name === "number_of_packages" || name === "kgs_per_carton") {
-        const packageCount = parseNumericValue(
-          name === "number_of_packages" ? value : next.number_of_packages
-        )
-        const kgsPerCarton = parseNumericValue(
-          name === "kgs_per_carton" ? value : next.kgs_per_carton
-        )
-
-        if (packageCount !== null && kgsPerCarton !== null) {
-          next.net_weight = `${formatWeightValue(packageCount * kgsPerCarton)} KG`
-        }
-      }
-
-      if (name === "number_of_packages" || name === "gross_weight_per_carton") {
-        const packageCount = parseNumericValue(
-          name === "number_of_packages" ? value : next.number_of_packages
-        )
-        const grossWeightPerCarton = parseNumericValue(
-          name === "gross_weight_per_carton" ? value : next.gross_weight_per_carton
-        )
-
-        if (packageCount !== null && grossWeightPerCarton !== null) {
-          next.gross_weight = `${formatWeightValue(packageCount * grossWeightPerCarton)} KG`
-        }
-      }
-
-      if (name === "rate_per_kgs" || name === "net_weight" || name === "number_of_packages" || name === "kgs_per_carton") {
-        const ratePerKgs = parseNumericValue(
+      if (
+        name === "number_of_packages" ||
+        name === "kgs_per_carton" ||
+        name === "gross_weight_per_carton" ||
+        name === "rate_per_kgs"
+      ) {
+        const calc = calculateMultiCargo(
+          name === "number_of_packages" ? value : next.number_of_packages,
+          name === "kgs_per_carton" ? value : next.kgs_per_carton,
+          name === "gross_weight_per_carton" ? value : next.gross_weight_per_carton,
           name === "rate_per_kgs" ? value : next.rate_per_kgs
         )
-        const netWeight = parseNumericValue(
-          name === "net_weight" ? value : next.net_weight
-        )
 
-        if (ratePerKgs !== null && netWeight !== null) {
-          next.goods_value = formatUsdValue(ratePerKgs * netWeight)
-        }
+        if (calc.formattedNetWeight) next.net_weight = calc.formattedNetWeight
+        if (calc.formattedGrossWeight) next.gross_weight = calc.formattedGrossWeight
+        if (calc.formattedGoodsValue) next.goods_value = calc.formattedGoodsValue
       }
 
       return next
@@ -590,6 +569,137 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
     const parsed = Number(cleaned)
     return Number.isFinite(parsed) ? parsed : null
+  }
+
+  const parsePackagesList = (str: string): number[] => {
+    if (!str) return []
+    const cleaned = str.replace(/(\d),(\d)/g, '$1$2')
+    const parts = cleaned.split(/\s*[\+;/]\s*|\s+-\s+|\s*,\s*/)
+    const numbers: number[] = []
+
+    for (const part of parts) {
+      const nonKgMatches = part.match(/\b(\d+(\.\d+)?)\s*(?!kg|kgs|kilo|ton|cbm)\b/gi)
+      if (nonKgMatches && nonKgMatches.length > 0) {
+        for (const m of nonKgMatches) {
+          const num = parseFloat(m.replace(/[^\d.]/g, ''))
+          if (!isNaN(num) && num > 0) {
+            numbers.push(num)
+          }
+        }
+      } else {
+        const matches = part.match(/\b\d+(\.\d+)?\b/g)
+        if (matches && matches.length > 0) {
+          const num = parseFloat(matches[0])
+          if (!isNaN(num) && num > 0) {
+            numbers.push(num)
+          }
+        }
+      }
+    }
+
+    if (numbers.length === 0) {
+      const allMatches = cleaned.match(/\b\d+(\.\d+)?\b/g)
+      if (allMatches) {
+        for (const m of allMatches) {
+          const num = parseFloat(m)
+          if (!isNaN(num) && num > 0) {
+            numbers.push(num)
+          }
+        }
+      }
+    }
+
+    return numbers
+  }
+
+  const parseWeightsOrRatesList = (str: string): number[] => {
+    if (!str) return []
+    const cleaned = str.replace(/(\d),(\d)/g, '$1$2')
+    const matches = cleaned.match(/\b\d+(\.\d+)?\b/g)
+    if (!matches) return []
+    return matches.map((m) => parseFloat(m)).filter((n) => !isNaN(n) && n > 0)
+  }
+
+  const calculateMultiCargo = (
+    packagesStr: string,
+    netPerCartonStr: string,
+    grossPerCartonStr: string,
+    rateStr: string
+  ) => {
+    const pkgList = parsePackagesList(packagesStr || "")
+    const netKgList = parseWeightsOrRatesList(netPerCartonStr || "")
+    const grossKgList = parseWeightsOrRatesList(grossPerCartonStr || "")
+    const rateList = parseWeightsOrRatesList(rateStr || "")
+
+    const itemCount = Math.max(pkgList.length, netKgList.length, grossKgList.length, rateList.length, 1)
+    const isMultiItem = itemCount > 1 || pkgList.length > 1
+
+    const items: Array<{
+      packages: number
+      netPerCarton: number
+      grossPerCarton: number
+      rate: number
+      netWeight: number
+      grossWeight: number
+      goodsValue: number
+    }> = []
+
+    let totalPackages = 0
+    let totalNetWeight = 0
+    let totalGrossWeight = 0
+    let totalGoodsValue = 0
+
+    for (let i = 0; i < itemCount; i++) {
+      const pkg = pkgList[i] !== undefined ? pkgList[i] : (pkgList[0] || 0)
+      const netPerCt = netKgList[i] !== undefined ? netKgList[i] : (netKgList[0] || 0)
+      const grossPerCt = grossKgList[i] !== undefined ? grossKgList[i] : (grossKgList[0] || 0)
+      const rate = rateList[i] !== undefined ? rateList[i] : (rateList[0] || 0)
+
+      const netWeight = pkg > 0 && netPerCt > 0 ? pkg * netPerCt : 0
+      const grossWeight = pkg > 0 && grossPerCt > 0 ? pkg * grossPerCt : 0
+      const goodsValue = netWeight > 0 && rate > 0 ? netWeight * rate : 0
+
+      items.push({
+        packages: pkg,
+        netPerCarton: netPerCt,
+        grossPerCarton: grossPerCt,
+        rate,
+        netWeight,
+        grossWeight,
+        goodsValue,
+      })
+
+      totalPackages += pkg
+      totalNetWeight += netWeight
+      totalGrossWeight += grossWeight
+      totalGoodsValue += goodsValue
+    }
+
+    let formattedNetWeight = ""
+    let formattedGrossWeight = ""
+    let formattedGoodsValue = ""
+
+    if (isMultiItem && items.length > 1) {
+      formattedNetWeight = items.map((it) => `${formatWeightValue(it.netWeight)} KG`).join(" - ")
+      formattedGrossWeight = items.map((it) => `${formatWeightValue(it.grossWeight)} KG`).join(" - ")
+      formattedGoodsValue = items.map((it) => `${it.goodsValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`).join(" - ")
+    } else if (items.length === 1 && items[0].netWeight > 0) {
+      formattedNetWeight = `${formatWeightValue(items[0].netWeight)} KG`
+      formattedGrossWeight = items[0].grossWeight > 0 ? `${formatWeightValue(items[0].grossWeight)} KG` : ""
+      formattedGoodsValue = items[0].goodsValue > 0 ? formatUsdValue(items[0].goodsValue) : ""
+    }
+
+    return {
+      isMultiItem,
+      items,
+      totalPackages,
+      totalNetWeight,
+      totalGrossWeight,
+      totalGoodsValue,
+      formattedNetWeight,
+      formattedGrossWeight,
+      formattedGoodsValue,
+    }
   }
 
   const formatWeightValue = (value: number): string => {
@@ -1068,36 +1178,29 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
   }
 
   const handleAutoCalculateWeights = () => {
-    const packageCount = parseNumericValue(formData.number_of_packages || "0")
-    const kgsPerCarton = parseNumericValue(formData.kgs_per_carton || "0")
-    const grossPerCarton = parseNumericValue(formData.gross_weight_per_carton || "0")
-    const ratePerKgs = parseNumericValue(formData.rate_per_kgs || "0")
-
-    let updatedNet = formData.net_weight
-    let updatedGross = formData.gross_weight
-    let updatedGoodsVal = formData.goods_value
-
-    if (packageCount && kgsPerCarton) {
-      updatedNet = `${formatWeightValue(packageCount * kgsPerCarton)} KG`
-    }
-    if (packageCount && grossPerCarton) {
-      updatedGross = `${formatWeightValue(packageCount * grossPerCarton)} KG`
-    }
-    const netVal = parseNumericValue(updatedNet || "0")
-    if (ratePerKgs && netVal) {
-      updatedGoodsVal = formatUsdValue(ratePerKgs * netVal)
-    }
+    const calc = calculateMultiCargo(
+      formData.number_of_packages || "",
+      formData.kgs_per_carton || "",
+      formData.gross_weight_per_carton || "",
+      formData.rate_per_kgs || ""
+    )
 
     setFormData((prev) => ({
       ...prev,
-      net_weight: updatedNet,
-      gross_weight: updatedGross,
-      goods_value: updatedGoodsVal,
+      net_weight: calc.formattedNetWeight || prev.net_weight,
+      gross_weight: calc.formattedGrossWeight || prev.gross_weight,
+      goods_value: calc.formattedGoodsValue || prev.goods_value,
     }))
 
-    toast.success("Weights & Goods Value Recalculated!", {
-      description: `Net: ${updatedNet || "N/A"} | Gross: ${updatedGross || "N/A"} | Value: ${updatedGoodsVal || "N/A"}`,
-    })
+    if (calc.isMultiItem) {
+      toast.success(`Calculated ${calc.items.length} Cargo Items!`, {
+        description: `Net: ${calc.formattedNetWeight} | Gross: ${calc.formattedGrossWeight} | Val: ${calc.formattedGoodsValue}`,
+      })
+    } else {
+      toast.success("Weights & Goods Value Recalculated!", {
+        description: `Net: ${calc.formattedNetWeight || "N/A"} | Gross: ${calc.formattedGrossWeight || "N/A"} | Value: ${calc.formattedGoodsValue || "N/A"}`,
+      })
+    }
   }
 
   const handleApplyCargoPreset = (preset: (typeof CARGO_PRESETS)[number]) => {
@@ -1132,24 +1235,22 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     setFormData((prev) => {
       const updated = { ...prev, [fieldName]: value }
 
-      const pkgCount = parseNumericValue(fieldName === "number_of_packages" ? value : updated.number_of_packages || "0")
-      const kgsPerCt = parseNumericValue(fieldName === "kgs_per_carton" ? value : updated.kgs_per_carton || "0")
-      const grossPerCt = parseNumericValue(fieldName === "gross_weight_per_carton" ? value : updated.gross_weight_per_carton || "0")
-      const rateKgs = parseNumericValue(fieldName === "rate_per_kgs" ? value : updated.rate_per_kgs || "0")
+      if (
+        fieldName === "number_of_packages" ||
+        fieldName === "kgs_per_carton" ||
+        fieldName === "gross_weight_per_carton" ||
+        fieldName === "rate_per_kgs"
+      ) {
+        const calc = calculateMultiCargo(
+          updated.number_of_packages || "",
+          updated.kgs_per_carton || "",
+          updated.gross_weight_per_carton || "",
+          updated.rate_per_kgs || ""
+        )
 
-      // Auto compute Net Weight if packages or kgs_per_carton changed
-      if (pkgCount && kgsPerCt && (fieldName === "number_of_packages" || fieldName === "kgs_per_carton")) {
-        updated.net_weight = `${formatWeightValue(pkgCount * kgsPerCt)} KG`
-      }
-      // Auto compute Gross Weight if packages or gross_weight_per_carton changed
-      if (pkgCount && grossPerCt && (fieldName === "number_of_packages" || fieldName === "gross_weight_per_carton")) {
-        updated.gross_weight = `${formatWeightValue(pkgCount * grossPerCt)} KG`
-      }
-
-      // Auto compute Goods Value if rate or net weight changed
-      const netVal = parseNumericValue(updated.net_weight || "0")
-      if (rateKgs && netVal && (fieldName === "rate_per_kgs" || fieldName === "number_of_packages" || fieldName === "kgs_per_carton" || fieldName === "net_weight")) {
-        updated.goods_value = formatUsdValue(rateKgs * netVal)
+        if (calc.formattedNetWeight) updated.net_weight = calc.formattedNetWeight
+        if (calc.formattedGrossWeight) updated.gross_weight = calc.formattedGrossWeight
+        if (calc.formattedGoodsValue) updated.goods_value = calc.formattedGoodsValue
       }
 
       return updated
@@ -3616,75 +3717,165 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               </CardHeader>
               <CardContent className="space-y-5 pt-5 pb-6">
                 {/* Live Weights & Calculation Metrics KPI Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {/* Total Packages */}
-                  <div className="rounded-2xl border border-purple-200/80 bg-linear-to-br from-purple-50/90 to-purple-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 flex items-center gap-1">
-                        <Package className="h-3.5 w-3.5 text-purple-600" />
-                        Total Packages
-                      </span>
-                      <span className="text-[9px] font-bold text-purple-600 bg-purple-200/70 px-1.5 py-0.2 rounded-md">
-                        بسته‌ها
-                      </span>
-                    </div>
-                    <p className="text-lg sm:text-xl font-black text-purple-950 truncate tracking-tight">
-                      {formData.number_of_packages || "0"}
-                    </p>
-                    <span className="text-[10px] text-purple-700 font-medium block mt-0.5">Cartons / Units</span>
-                  </div>
+                {(() => {
+                  const liveCargoCalc = calculateMultiCargo(
+                    formData.number_of_packages || "",
+                    formData.kgs_per_carton || "",
+                    formData.gross_weight_per_carton || "",
+                    formData.rate_per_kgs || ""
+                  )
+                  const isMulti = liveCargoCalc.isMultiItem && liveCargoCalc.items.length > 1
 
-                  {/* Total Net Weight */}
-                  <div className="rounded-2xl border border-blue-200/80 bg-linear-to-br from-blue-50/90 to-blue-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-blue-800 flex items-center gap-1">
-                        <Scale className="h-3.5 w-3.5 text-blue-600" />
-                        Total Net Weight
-                      </span>
-                      <span className="text-[9px] font-bold text-blue-600 bg-blue-200/70 px-1.5 py-0.2 rounded-md">
-                        وزن خالص
-                      </span>
-                    </div>
-                    <p className="text-lg sm:text-xl font-black text-blue-950 truncate tracking-tight">
-                      {formData.net_weight || "0 KG"}
-                    </p>
-                    <span className="text-[10px] text-blue-700 font-medium block mt-0.5">Net Cargo Weight</span>
-                  </div>
+                  return (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {/* Total Packages */}
+                        <div className="rounded-2xl border border-purple-200/80 bg-linear-to-br from-purple-50/90 to-purple-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 flex items-center gap-1">
+                              <Package className="h-3.5 w-3.5 text-purple-600" />
+                              Total Packages
+                            </span>
+                            <span className="text-[9px] font-bold text-purple-600 bg-purple-200/70 px-1.5 py-0.2 rounded-md">
+                              بسته‌ها
+                            </span>
+                          </div>
+                          <p className="text-lg sm:text-xl font-black text-purple-950 truncate tracking-tight">
+                            {isMulti && liveCargoCalc.totalPackages > 0
+                              ? `${liveCargoCalc.totalPackages.toLocaleString("en-US")} CTNS`
+                              : formData.number_of_packages || "0"}
+                          </p>
+                          <span className="text-[10px] text-purple-700 font-medium block mt-0.5 truncate">
+                            {isMulti
+                              ? liveCargoCalc.items.map((it, idx) => `Item ${idx + 1}: ${it.packages}`).join(" | ")
+                              : "Cartons / Units"}
+                          </span>
+                        </div>
 
-                  {/* Total Gross Weight */}
-                  <div className="rounded-2xl border border-indigo-200/80 bg-linear-to-br from-indigo-50/90 to-indigo-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800 flex items-center gap-1">
-                        <Scale className="h-3.5 w-3.5 text-indigo-600" />
-                        Total Gross Weight
-                      </span>
-                      <span className="text-[9px] font-bold text-indigo-600 bg-indigo-200/70 px-1.5 py-0.2 rounded-md">
-                        وزن ناخالص
-                      </span>
-                    </div>
-                    <p className="text-lg sm:text-xl font-black text-indigo-950 truncate tracking-tight">
-                      {formData.gross_weight || "0 KG"}
-                    </p>
-                    <span className="text-[10px] text-indigo-700 font-medium block mt-0.5">Gross with Packaging</span>
-                  </div>
+                        {/* Total Net Weight */}
+                        <div className="rounded-2xl border border-blue-200/80 bg-linear-to-br from-blue-50/90 to-blue-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-800 flex items-center gap-1">
+                              <Scale className="h-3.5 w-3.5 text-blue-600" />
+                              Total Net Weight
+                            </span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-200/70 px-1.5 py-0.2 rounded-md">
+                              وزن خالص
+                            </span>
+                          </div>
+                          <p className="text-lg sm:text-xl font-black text-blue-950 truncate tracking-tight">
+                            {isMulti && liveCargoCalc.totalNetWeight > 0
+                              ? `${formatWeightValue(liveCargoCalc.totalNetWeight)} KG`
+                              : formData.net_weight || "0 KG"}
+                          </p>
+                          <span className="text-[10px] text-blue-700 font-medium block mt-0.5 truncate">
+                            {isMulti
+                              ? liveCargoCalc.items.map((it) => `${formatWeightValue(it.netWeight)} KG`).join(" + ")
+                              : "Net Cargo Weight"}
+                          </span>
+                        </div>
 
-                  {/* Estimated Goods Value */}
-                  <div className="rounded-2xl border border-emerald-200/80 bg-linear-to-br from-emerald-50/90 to-emerald-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1">
-                        <Receipt className="h-3.5 w-3.5 text-emerald-600" />
-                        Est. Goods Value
-                      </span>
-                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-200/70 px-1.5 py-0.2 rounded-md">
-                        ارزش کالا
-                      </span>
+                        {/* Total Gross Weight */}
+                        <div className="rounded-2xl border border-indigo-200/80 bg-linear-to-br from-indigo-50/90 to-indigo-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800 flex items-center gap-1">
+                              <Scale className="h-3.5 w-3.5 text-indigo-600" />
+                              Total Gross Weight
+                            </span>
+                            <span className="text-[9px] font-bold text-indigo-600 bg-indigo-200/70 px-1.5 py-0.2 rounded-md">
+                              وزن ناخالص
+                            </span>
+                          </div>
+                          <p className="text-lg sm:text-xl font-black text-indigo-950 truncate tracking-tight">
+                            {isMulti && liveCargoCalc.totalGrossWeight > 0
+                              ? `${formatWeightValue(liveCargoCalc.totalGrossWeight)} KG`
+                              : formData.gross_weight || "0 KG"}
+                          </p>
+                          <span className="text-[10px] text-indigo-700 font-medium block mt-0.5 truncate">
+                            {isMulti
+                              ? liveCargoCalc.items.map((it) => `${formatWeightValue(it.grossWeight)} KG`).join(" + ")
+                              : "Gross with Packaging"}
+                          </span>
+                        </div>
+
+                        {/* Estimated Goods Value */}
+                        <div className="rounded-2xl border border-emerald-200/80 bg-linear-to-br from-emerald-50/90 to-emerald-100/40 p-3.5 shadow-2xs transition-all hover:shadow-md">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                              <Receipt className="h-3.5 w-3.5 text-emerald-600" />
+                              Est. Goods Value
+                            </span>
+                            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-200/70 px-1.5 py-0.2 rounded-md">
+                              ارزش کالا
+                            </span>
+                          </div>
+                          <p className="text-lg sm:text-xl font-black text-emerald-950 truncate tracking-tight">
+                            {isMulti && liveCargoCalc.totalGoodsValue > 0
+                              ? formatUsdValue(liveCargoCalc.totalGoodsValue)
+                              : formData.goods_value || "$0.00"}
+                          </p>
+                          <span className="text-[10px] text-emerald-700 font-medium block mt-0.5 truncate">
+                            {isMulti
+                              ? liveCargoCalc.items.map((it) => `$${it.goodsValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}`).join(" + ")
+                              : "Total Declared Value"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Multi-Item Cargo Breakdown Interactive Live Strip */}
+                      {isMulti && (
+                        <div className="rounded-2xl border border-purple-200 bg-linear-to-r from-purple-50/90 via-indigo-50/60 to-purple-50/90 p-3.5 shadow-2xs space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="flex items-center justify-center w-5 h-5 rounded-md bg-purple-600 text-white text-[10px] font-black">
+                                2+
+                              </span>
+                              <span className="text-xs font-black text-purple-950">
+                                Multi-Item Shipment Breakdown ({liveCargoCalc.items.length} Cargo Items)
+                              </span>
+                            </div>
+                            <span className="text-[10.5px] font-black text-purple-700 bg-purple-200/70 px-2 py-0.5 rounded-lg border border-purple-300">
+                              تفکیک اقلام چندگانه محموله
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            {liveCargoCalc.items.map((it, idx) => (
+                              <div key={idx} className="rounded-xl bg-white/90 p-3 border border-purple-200/80 shadow-2xs space-y-1.5">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                  <span className="text-xs font-black text-purple-900 flex items-center gap-1">
+                                    <Package className="h-3.5 w-3.5 text-purple-600" />
+                                    Item #{idx + 1}
+                                  </span>
+                                  <span className="text-[11px] font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+                                    {it.packages.toLocaleString("en-US")} CTNS
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                  <div className="bg-blue-50/70 p-1.5 rounded-lg border border-blue-100">
+                                    <span className="text-blue-600 block text-[9.5px] font-bold">Net Weight</span>
+                                    <span className="font-black text-blue-950 text-xs">{formatWeightValue(it.netWeight)} KG</span>
+                                    <span className="text-[9px] text-blue-500 block font-medium">({it.netPerCarton} kg/ctn)</span>
+                                  </div>
+                                  <div className="bg-indigo-50/70 p-1.5 rounded-lg border border-indigo-100">
+                                    <span className="text-indigo-600 block text-[9.5px] font-bold">Gross Weight</span>
+                                    <span className="font-black text-indigo-950 text-xs">{formatWeightValue(it.grossWeight)} KG</span>
+                                    <span className="text-[9px] text-indigo-500 block font-medium">({it.grossPerCarton} kg/ctn)</span>
+                                  </div>
+                                </div>
+                                <div className="border-t border-slate-100 pt-1.5 flex items-center justify-between bg-emerald-50/60 p-1.5 rounded-lg border border-emerald-100">
+                                  <span className="text-[10px] font-bold text-emerald-800">Rate: ${it.rate}/kg</span>
+                                  <span className="text-xs font-black text-emerald-950">
+                                    ${it.goodsValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-lg sm:text-xl font-black text-emerald-950 truncate tracking-tight">
-                      {formData.goods_value || "$0.00"}
-                    </p>
-                    <span className="text-[10px] text-emerald-700 font-medium block mt-0.5">Total Declared Value</span>
-                  </div>
-                </div>
+                  )
+                })()}
 
                 {/* Field Grid - Row 1: Container, Seal & Package Quantities */}
                 <div className="space-y-3">
