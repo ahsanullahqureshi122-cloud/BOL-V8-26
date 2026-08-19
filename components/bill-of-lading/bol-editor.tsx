@@ -2641,9 +2641,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             {/* Shipper & Consignee */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* 02 Shipper Card */}
-              <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <Card id="section-shipper" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
                 <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
-                  <CardTitle className="text-base flex items-center justify-between">
+                  <CardTitle className="text-base flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black shadow-xs">
                         02
@@ -2656,9 +2656,33 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         <span className="text-[11px] text-blue-700 font-medium block">Origin Consignor Information</span>
                       </div>
                     </div>
-                    <span className="text-xs font-extrabold text-blue-900 font-[vazirmatn] bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                      فرستنده / صادرکننده
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSwapShipperConsignee}
+                        className="h-7.5 px-2 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-800 text-[10.5px] font-bold"
+                        title="Swap Shipper with Consignee"
+                      >
+                        <ArrowLeftRight className="h-3 w-3 mr-1 text-blue-600" />
+                        Swap ⇄
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopyShipperToNotify}
+                        className="h-7.5 px-2 rounded-lg border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 text-[10.5px] font-bold"
+                        title="Copy Shipper to Notify Party"
+                      >
+                        <Copy className="h-3 w-3 mr-1 text-amber-600" />
+                        ➔ Notify
+                      </Button>
+                      <span className="text-xs font-extrabold text-blue-900 font-[vazirmatn] bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                        فرستنده / صادرکننده
+                      </span>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-5 pb-6">
@@ -2801,9 +2825,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               </Card>
 
               {/* 03 Consignee Card */}
-              <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <Card id="section-consignee" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
                 <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
-                  <CardTitle className="text-base flex items-center justify-between">
+                  <CardTitle className="text-base flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-600 text-white text-[11px] font-black shadow-xs">
                         03
@@ -2816,9 +2840,33 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                         <span className="text-[11px] text-emerald-700 font-medium block">Destination Recipient Details</span>
                       </div>
                     </div>
-                    <span className="text-xs font-extrabold text-emerald-900 font-[vazirmatn] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                      گیرنده / تحویل گیرنده
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSwapShipperConsignee}
+                        className="h-7.5 px-2 rounded-lg border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-800 text-[10.5px] font-bold"
+                        title="Swap Consignee with Shipper"
+                      >
+                        <ArrowLeftRight className="h-3 w-3 mr-1 text-emerald-600" />
+                        Swap ⇄
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopyConsigneeToNotify}
+                        className="h-7.5 px-2 rounded-lg border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 text-[10.5px] font-bold"
+                        title="Copy Consignee to Notify Party"
+                      >
+                        <Copy className="h-3 w-3 mr-1 text-amber-600" />
+                        ➔ Notify
+                      </Button>
+                      <span className="text-xs font-extrabold text-emerald-900 font-[vazirmatn] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                        گیرنده / تحویل گیرنده
+                      </span>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-5 pb-6">
@@ -2963,7 +3011,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </div>
 
             {/* 04 Notify Party Card */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-notify" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -3071,9 +3119,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* 06 Cargo Details Card */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-cargo" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
-                <CardTitle className="text-base flex items-center justify-between">
+                <CardTitle className="text-base flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-purple-600 text-white text-[11px] font-black shadow-xs">
                       06
@@ -3086,12 +3134,43 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                       <span className="text-[11px] text-purple-700 font-medium block">Packages, Weights, Rates & Cargo Description</span>
                     </div>
                   </div>
-                  <span className="text-xs font-extrabold text-purple-900 font-[vazirmatn] bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
-                    مشخصات کالا و محموله
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAutoCalculateWeights}
+                      className="h-7.5 px-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10.5px] font-black shadow-xs hover:from-purple-700 hover:to-indigo-700 cursor-pointer active:scale-95"
+                      title="Calculate Net Weight, Gross Weight and Goods Value"
+                    >
+                      <Calculator className="h-3 w-3 mr-1" />
+                      ⚡ Recalculate Totals
+                    </Button>
+                    <span className="text-xs font-extrabold text-purple-900 font-[vazirmatn] bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+                      مشخصات کالا و محموله
+                    </span>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5 pt-5 pb-6">
+                {/* Live Weights & Calculation Metrics Summary Bar */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl border border-purple-200/80 bg-linear-to-r from-purple-50/80 via-indigo-50/50 to-blue-50/80 shadow-inner">
+                  <div className="rounded-xl bg-white/80 p-2 border border-purple-100 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Packages</span>
+                    <p className="text-xs sm:text-sm font-black text-purple-950 truncate">{formData.number_of_packages || "0"}</p>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2 border border-purple-100 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Net Weight</span>
+                    <p className="text-xs sm:text-sm font-black text-blue-950 truncate">{formData.net_weight || "0 KG"}</p>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2 border border-purple-100 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Gross Weight</span>
+                    <p className="text-xs sm:text-sm font-black text-indigo-950 truncate">{formData.gross_weight || "0 KG"}</p>
+                  </div>
+                  <div className="rounded-xl bg-white/80 p-2 border border-purple-100 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Est. Goods Value</span>
+                    <p className="text-xs sm:text-sm font-black text-emerald-800 truncate">{formData.goods_value || "$0.00"}</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
                   {/* Container No */}
                   <div>
@@ -3316,7 +3395,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* 07 Truck Information Card */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-truck" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -3999,7 +4078,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Container Details */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-container" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -4069,7 +4148,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Shipping Details */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-shipping" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -4136,7 +4215,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Freight Information */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-freight" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -4173,7 +4252,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Remarks */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-remarks" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -4198,7 +4277,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
             </Card>
 
             {/* Afghanistan Documents */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-afghan" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-3 bg-linear-to-r from-green-500/12 via-green-400/6 to-transparent border-b border-green-200/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
