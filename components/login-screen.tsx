@@ -226,14 +226,14 @@ export function LoginScreen() {
               For account recovery or technical support, please contact the IT administration team.
             </p>
             <div className="space-y-3 text-left">
-              <div className="p-3 bg-slate-50 rounded-xl flex items-center gap-3">
-                <Phone className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-semibold text-slate-800">+98 9172325086</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-xl flex items-center gap-3">
-                <Globe className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-semibold text-slate-800">info@skyariana.com</span>
-              </div>
+              <a href="tel:+989172325086" className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl flex items-center gap-3 transition-colors group">
+                <Phone className="w-4 h-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">+98 9172325086</span>
+              </a>
+              <a href="mailto:info@skyariana.com" className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl flex items-center gap-3 transition-colors group">
+                <Globe className="w-4 h-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">info@skyariana.com</span>
+              </a>
             </div>
           </div>
         </div>
