@@ -2358,9 +2358,9 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
 
           <TabsContent value="form" className="edit-form-panel space-y-4">
             {/* Top Smart Quick-Actions & Navigation Ribbon */}
-            <div className="sticky top-2 z-30 rounded-2xl border border-white/90 bg-white/90 p-3 shadow-lg shadow-blue-500/10 backdrop-blur-2xl transition-all">
-              <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-                {/* Left: Quick Utility Buttons */}
+            <div className="sticky top-2 z-30 rounded-2xl border border-white/90 bg-white/95 p-3 shadow-lg shadow-blue-500/10 backdrop-blur-2xl transition-all space-y-2.5">
+              {/* Row 1: Smart Utility Buttons + Quick Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Button
                     type="button"
@@ -2410,44 +2410,54 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                   </Button>
                 </div>
 
-                {/* Right: Quick Jump Section Navigation */}
-                <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
-                  {[
-                    { id: "section-doc", label: "01 Doc", icon: Calendar },
-                    { id: "section-shipper", label: "02 Shipper", icon: User },
-                    { id: "section-consignee", label: "03 Consignee", icon: User },
-                    { id: "section-notify", label: "04 Notify", icon: Bell },
-                    { id: "section-cargo", label: "05 Cargo", icon: Package },
-                    { id: "section-truck", label: "06 Truck", icon: Truck },
-                    { id: "section-routes", label: "07 Routes", icon: MapPin },
-                    { id: "section-container", label: "08 Container", icon: Box },
-                    { id: "section-shipping", label: "09 Shipping", icon: Ship },
-                    { id: "section-freight", label: "10 Freight", icon: Receipt },
-                    { id: "section-afghan", label: "11 Docs", icon: ScrollText },
-                  ].map((sec) => {
-                    const IconComponent = sec.icon
-                    return (
-                      <button
-                        key={sec.id}
-                        type="button"
-                        onClick={() => {
-                          const el = document.getElementById(sec.id)
-                          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }}
-                        className="flex items-center gap-1 rounded-lg border border-slate-200/80 bg-slate-50/80 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 px-2 py-1 text-[10.5px] font-extrabold text-slate-700 whitespace-nowrap transition-all cursor-pointer shadow-2xs"
-                      >
-                        <IconComponent className="h-3 w-3 text-blue-600 shrink-0" />
-                        <span>{sec.label}</span>
-                      </button>
-                    )
-                  })}
+                {/* Status Indicator / Quick count */}
+                <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/80 border border-slate-200/60 text-[11px] font-bold text-slate-600">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>B/L Editor Ready</span>
                 </div>
               </div>
 
-              {/* Cargo Presets Bar */}
-              <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto border-t border-slate-100/90 pt-2 no-scrollbar">
+              {/* Row 2: Section Jump Navigation Strip */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar scroll-smooth">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400 mr-1 shrink-0 flex items-center gap-1">
+                  <Layers className="h-3 w-3 text-blue-500" />
+                  Jump:
+                </span>
+                {[
+                  { id: "section-doc", label: "01 Doc", icon: Calendar },
+                  { id: "section-shipper", label: "02 Shipper", icon: User },
+                  { id: "section-consignee", label: "03 Consignee", icon: User },
+                  { id: "section-notify", label: "04 Notify", icon: Bell },
+                  { id: "section-cargo", label: "05 Cargo", icon: Package },
+                  { id: "section-truck", label: "06 Truck", icon: Truck },
+                  { id: "section-routes", label: "07 Routes", icon: MapPin },
+                  { id: "section-container", label: "08 Container", icon: Box },
+                  { id: "section-shipping", label: "09 Shipping", icon: Ship },
+                  { id: "section-freight", label: "10 Freight", icon: Receipt },
+                  { id: "section-afghan", label: "11 Docs", icon: ScrollText },
+                ].map((sec) => {
+                  const IconComponent = sec.icon
+                  return (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById(sec.id)
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }}
+                      className="flex items-center gap-1 rounded-xl border border-slate-200/80 bg-slate-50/90 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 px-2.5 py-1 text-[11px] font-extrabold text-slate-700 whitespace-nowrap transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95"
+                    >
+                      <IconComponent className="h-3 w-3 text-blue-600 shrink-0" />
+                      <span>{sec.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Row 3: Cargo Presets Bar */}
+              <div className="flex items-center gap-1.5 overflow-x-auto border-t border-slate-100 pt-2 no-scrollbar scroll-smooth">
                 <span className="text-[11px] font-black text-slate-700 flex items-center gap-1 shrink-0">
-                  <Sparkles className="h-3 w-3 text-amber-500" />
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                   <span>Cargo Presets:</span>
                 </span>
                 {CARGO_PRESETS.map((preset) => (
@@ -2455,7 +2465,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
                     key={preset.name}
                     type="button"
                     onClick={() => handleApplyCargoPreset(preset)}
-                    className="rounded-lg border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/90 text-purple-900 px-2 py-0.5 text-[10.5px] font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs active:scale-95"
+                    className="rounded-xl border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100 text-purple-900 px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
                     title={`Fill cargo specification with ${preset.name}`}
                   >
                     {preset.name}
