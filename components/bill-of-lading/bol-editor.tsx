@@ -15,7 +15,7 @@ import { BillOfLadingFormData, initialFormData, RouteStop, AFGHANISTAN_DOCUMENT_
 import consigneeSeedData from "@/lib/data/consignees-from-pdf.json"
 import shipperSeedData from "@/lib/data/shippers-from-pdf.json"
 import notifyPartySeedData from "@/lib/data/notify-parties-from-pdf.json"
-import { Printer, Save, FileText, Eye, Plus, Loader2, Calendar, Truck, MapPin, Trash2, ArrowRight, Package, Edit3, ImageIcon, Upload, RotateCcw, ScrollText, Check, Download, Building2, Phone, Mail, Ship, Plane, Train, AlertCircle, User, Bell, Globe, Shield, Leaf, Heart, Scale, Bookmark, IdCard, Car, Landmark, ShieldCheck, Receipt, List, ChevronDown, ChevronUp, Info, CheckCircle2, Circle, Sparkles, Copy, Box } from "lucide-react"
+import { Printer, Save, FileText, Eye, Plus, Loader2, Calendar, Truck, MapPin, Trash2, ArrowRight, Package, Edit3, ImageIcon, Upload, RotateCcw, ScrollText, Check, Download, Building2, Phone, Mail, Ship, Plane, Train, AlertCircle, User, Bell, Globe, Shield, Leaf, Heart, Scale, Bookmark, IdCard, Car, Landmark, ShieldCheck, Receipt, List, ChevronDown, ChevronUp, Info, CheckCircle2, Circle, Sparkles, Copy, Box, ArrowLeftRight, Zap, Calculator, SlidersHorizontal, Layers } from "lucide-react"
 import { formatPersianDate, getDualDates } from "@/lib/utils/persian-date"
 import {
   generateBOLPDFBlob,
@@ -881,6 +881,157 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     setSelectedNotifyPartyId("")
     toast.success("Saved notify party removed", {
       description: notifyParty?.name || "The notify party was removed from saved notify parties.",
+    })
+  }
+
+  const CARGO_PRESETS = [
+    {
+      name: "Dried Figs (انجیر خشک)",
+      description: "AFGHAN DRIED FIGS (ANJEER) - PREMIUM GRADE AAA PACKED IN 10KG CARTONS",
+      packages: "1,200 CTNS",
+      kgsPerCarton: "10.0",
+      grossPerCarton: "10.5",
+      rate: "4.50",
+      cbm: "24.0 CBM",
+    },
+    {
+      name: "Green Raisins (کشمش سبز)",
+      description: "AFGHAN GREEN RAISINS (KISHMISH) - NATURAL SHADE DRIED PACKED IN 10KG CARTONS",
+      packages: "2,000 CTNS",
+      kgsPerCarton: "10.0",
+      grossPerCarton: "10.4",
+      rate: "3.80",
+      cbm: "28.0 CBM",
+    },
+    {
+      name: "Mamra Almonds (بادام مامایی)",
+      description: "AFGHAN MAMRA ALMONDS (GIRDI BADAM) - VACUUM PACKED IN 20KG SACKS / CARTONS",
+      packages: "800 BAGS",
+      kgsPerCarton: "20.0",
+      grossPerCarton: "20.3",
+      rate: "12.00",
+      cbm: "20.0 CBM",
+    },
+    {
+      name: "Pomegranate Juice (آب انار)",
+      description: "100% PURE NATURAL POMEGRANATE JUICE IN 1L TETRAPAKS / 12 BOTTLES PER CARTON",
+      packages: "1,500 CTNS",
+      kgsPerCarton: "12.0",
+      grossPerCarton: "12.8",
+      rate: "2.20",
+      cbm: "22.5 CBM",
+    },
+    {
+      name: "Textiles / Fabrics (پارچه)",
+      description: "SYNTHETIC & COTTON WOVEN FABRIC ROLLS IN HEAVY POLYETHYLENE WRAPPING",
+      packages: "450 ROLLS",
+      kgsPerCarton: "45.0",
+      grossPerCarton: "46.0",
+      rate: "5.50",
+      cbm: "35.0 CBM",
+    },
+    {
+      name: "General Transit Goods (کالای عمومی)",
+      description: "COMMERCIAL GENERAL CARGO AS PER ATTACHED INVOICE & PACKING LIST",
+      packages: "1,000 CTNS",
+      kgsPerCarton: "15.0",
+      grossPerCarton: "15.5",
+      rate: "1.80",
+      cbm: "25.0 CBM",
+    },
+  ]
+
+  const handleSwapShipperConsignee = () => {
+    setFormData((prev) => ({
+      ...prev,
+      shipper_name: prev.consignee_name,
+      shipper_address: prev.consignee_address,
+      shipper_contact: prev.consignee_contact,
+      shipper_email: prev.consignee_email,
+      consignee_name: prev.shipper_name,
+      consignee_address: prev.shipper_address,
+      consignee_contact: prev.shipper_contact,
+      consignee_email: prev.shipper_email,
+    }))
+    toast.success("Swapped Shipper ⇄ Consignee details!")
+  }
+
+  const handleCopyShipperToNotify = () => {
+    setFormData((prev) => ({
+      ...prev,
+      notify_party: prev.shipper_name,
+      notify_party_address: [prev.shipper_address, prev.shipper_contact, prev.shipper_email].filter(Boolean).join(", "),
+    }))
+    toast.success("Copied Shipper to Notify Party!")
+  }
+
+  const handleCopyConsigneeToNotify = () => {
+    setFormData((prev) => ({
+      ...prev,
+      notify_party: prev.consignee_name,
+      notify_party_address: [prev.consignee_address, prev.consignee_contact, prev.consignee_email].filter(Boolean).join(", "),
+    }))
+    toast.success("Copied Consignee to Notify Party!")
+  }
+
+  const handleAutoCalculateWeights = () => {
+    const packageCount = parseNumericValue(formData.number_of_packages || "0")
+    const kgsPerCarton = parseNumericValue(formData.kgs_per_carton || "0")
+    const grossPerCarton = parseNumericValue(formData.gross_weight_per_carton || "0")
+    const ratePerKgs = parseNumericValue(formData.rate_per_kgs || "0")
+
+    let updatedNet = formData.net_weight
+    let updatedGross = formData.gross_weight
+    let updatedGoodsVal = formData.goods_value
+
+    if (packageCount && kgsPerCarton) {
+      updatedNet = `${formatWeightValue(packageCount * kgsPerCarton)} KG`
+    }
+    if (packageCount && grossPerCarton) {
+      updatedGross = `${formatWeightValue(packageCount * grossPerCarton)} KG`
+    }
+    const netVal = parseNumericValue(updatedNet || "0")
+    if (ratePerKgs && netVal) {
+      updatedGoodsVal = formatUsdValue(ratePerKgs * netVal)
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      net_weight: updatedNet,
+      gross_weight: updatedGross,
+      goods_value: updatedGoodsVal,
+    }))
+
+    toast.success("Weights & Goods Value Recalculated!", {
+      description: `Net: ${updatedNet || "N/A"} | Gross: ${updatedGross || "N/A"} | Value: ${updatedGoodsVal || "N/A"}`,
+    })
+  }
+
+  const handleApplyCargoPreset = (preset: (typeof CARGO_PRESETS)[number]) => {
+    const packageCount = parseNumericValue(preset.packages)
+    const kgs = parseNumericValue(preset.kgsPerCarton)
+    const gross = parseNumericValue(preset.grossPerCarton)
+    const rate = parseNumericValue(preset.rate)
+
+    const netCalc = packageCount && kgs ? `${formatWeightValue(packageCount * kgs)} KG` : ""
+    const grossCalc = packageCount && gross ? `${formatWeightValue(packageCount * gross)} KG` : ""
+    const valCalc = rate && packageCount && kgs ? formatUsdValue(rate * packageCount * kgs) : ""
+
+    setFormData((prev) => ({
+      ...prev,
+      cargo_description: preset.description,
+      number_of_packages: preset.packages,
+      kgs_per_carton: preset.kgsPerCarton,
+      gross_weight_per_carton: preset.grossPerCarton,
+      rate_per_kgs: preset.rate,
+      net_weight: netCalc || prev.net_weight,
+      gross_weight: grossCalc || prev.gross_weight,
+      goods_value: valCalc || prev.goods_value,
+      measurement: preset.cbm || prev.measurement,
+    }))
+
+    toast.success(`Applied Preset: ${preset.name}`, {
+      description: "Updated description, packages, weights and rate values.",
     })
   }
 
@@ -2095,8 +2246,115 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
           </TabsList>
 
           <TabsContent value="form" className="edit-form-panel space-y-4">
+            {/* Top Smart Quick-Actions & Navigation Ribbon */}
+            <div className="sticky top-2 z-30 rounded-2xl border border-white/90 bg-white/90 p-3 shadow-lg shadow-blue-500/10 backdrop-blur-2xl transition-all">
+              <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+                {/* Left: Quick Utility Buttons */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAutoCalculateWeights}
+                    className="h-8.5 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 cursor-pointer active:scale-95 transition-all"
+                    title="Auto-calculate Net Weight, Gross Weight & USD Goods Value based on package counts & rates"
+                  >
+                    <Calculator className="h-3.5 w-3.5 mr-1" />
+                    <span>Auto-Calculate Weights</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSwapShipperConsignee}
+                    className="h-8.5 rounded-xl border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-blue-900 font-extrabold text-xs shadow-2xs cursor-pointer active:scale-95 transition-all"
+                    title="Swap Shipper and Consignee details with 1 click"
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5 mr-1 text-blue-700" />
+                    <span>Swap Shipper ⇄ Consignee</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyShipperToNotify}
+                    className="h-8.5 rounded-xl border-amber-200 bg-amber-50/80 hover:bg-amber-100 text-amber-900 font-extrabold text-xs shadow-2xs cursor-pointer active:scale-95 transition-all"
+                    title="Copy Shipper details to Notify Party"
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1 text-amber-700" />
+                    <span>Shipper ➔ Notify</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyConsigneeToNotify}
+                    className="h-8.5 rounded-xl border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 font-extrabold text-xs shadow-2xs cursor-pointer active:scale-95 transition-all"
+                    title="Copy Consignee details to Notify Party"
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1 text-emerald-700" />
+                    <span>Consignee ➔ Notify</span>
+                  </Button>
+                </div>
+
+                {/* Right: Quick Jump Section Navigation */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+                  {[
+                    { id: "section-doc", label: "01 Doc", icon: Calendar },
+                    { id: "section-shipper", label: "02 Shipper", icon: User },
+                    { id: "section-consignee", label: "03 Consignee", icon: User },
+                    { id: "section-notify", label: "04 Notify", icon: Bell },
+                    { id: "section-cargo", label: "05 Cargo", icon: Package },
+                    { id: "section-truck", label: "06 Truck", icon: Truck },
+                    { id: "section-routes", label: "07 Routes", icon: MapPin },
+                    { id: "section-container", label: "08 Container", icon: Box },
+                    { id: "section-shipping", label: "09 Shipping", icon: Ship },
+                    { id: "section-freight", label: "10 Freight", icon: Receipt },
+                    { id: "section-afghan", label: "11 Docs", icon: ScrollText },
+                  ].map((sec) => {
+                    const IconComponent = sec.icon
+                    return (
+                      <button
+                        key={sec.id}
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById(sec.id)
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }}
+                        className="flex items-center gap-1 rounded-lg border border-slate-200/80 bg-slate-50/80 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 px-2 py-1 text-[10.5px] font-extrabold text-slate-700 whitespace-nowrap transition-all cursor-pointer shadow-2xs"
+                      >
+                        <IconComponent className="h-3 w-3 text-blue-600 shrink-0" />
+                        <span>{sec.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Cargo Presets Bar */}
+              <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto border-t border-slate-100/90 pt-2 no-scrollbar">
+                <span className="text-[11px] font-black text-slate-700 flex items-center gap-1 shrink-0">
+                  <Sparkles className="h-3 w-3 text-amber-500" />
+                  <span>Cargo Presets:</span>
+                </span>
+                {CARGO_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => handleApplyCargoPreset(preset)}
+                    className="rounded-lg border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/90 text-purple-900 px-2 py-0.5 text-[10.5px] font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs active:scale-95"
+                    title={`Fill cargo specification with ${preset.name}`}
+                  >
+                    {preset.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* 01 Document Information Card */}
-            <Card className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+            <Card id="section-doc" className="bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
               <CardHeader className="pb-4 border-b border-white/50 bg-white/40">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2.5">

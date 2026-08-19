@@ -958,7 +958,7 @@ function parseBolSeq(bolNum: string): number {
       {/* Main Content View Container */}
       <CardContent className="min-h-[420px] flex-1 overflow-auto bg-slate-50/40 p-3 sm:p-5">
         
-        {/* TOP LATEST BOLS HERO HIGHLIGHT STRIP (BRING UP THE LATEST BOL MADES) */}
+        {/* TOP LATEST BOLS HERO HIGHLIGHT STRIP (BRING UP THE LATEST BOL CREATIONS) */}
         {!isLoading && latestTopBOLs.length > 0 && activeCategory !== "account" && !query && (
           <div className="mb-6 rounded-[28px] border border-amber-300/70 bg-linear-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 p-4.5 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.15)] backdrop-blur-2xl relative overflow-hidden">
             {/* Soft Ambient Light Glow */}
@@ -981,7 +981,7 @@ function parseBolSeq(bolNum: string): number {
               </div>
             </div>
 
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 relative z-10">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 min-[1200px]:grid-cols-6 xl:grid-cols-6 2xl:grid-cols-6 relative z-10">
               {latestTopBOLs.map((doc, idx) => (
                 <div
                   key={`latest-${doc.id}`}
@@ -1219,7 +1219,7 @@ function parseBolSeq(bolNum: string): number {
               <>
                 {/* 1. GRID VIEW MODE - 6 CARDS PER ROW WITH PREMIUM GLASSMORPHISM */}
                 {viewMode === "grid" && (
-                  <div className="grid gap-3.5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 min-[1900px]:grid-cols-6">
+                  <div className="grid gap-2.5 sm:gap-3 lg:gap-3.5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 min-[1200px]:grid-cols-6 xl:grid-cols-6 2xl:grid-cols-6">
                     {filteredDocuments.map((doc, idx) => {
                       const assignedCategory = getAssignedCategory(doc)
                       const hasUploadedPdf = Boolean(doc.pdf_url)
@@ -1228,7 +1228,7 @@ function parseBolSeq(bolNum: string): number {
                       return (
                         <article
                           key={doc.id}
-                          className="group relative flex min-h-[355px] flex-col rounded-[26px] border border-white/90 bg-white/80 p-4 shadow-[0_10px_35px_-8px_rgba(37,99,235,0.08)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/90 hover:bg-white/95 hover:shadow-[0_20px_55px_-10px_rgba(37,99,235,0.2)] overflow-hidden"
+                          className="group relative flex min-h-[345px] flex-col rounded-[22px] sm:rounded-[26px] border border-white/90 bg-white/80 p-3 sm:p-3.5 shadow-[0_10px_35px_-8px_rgba(37,99,235,0.08)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/90 hover:bg-white/95 hover:shadow-[0_20px_55px_-10px_rgba(37,99,235,0.2)] overflow-hidden"
                         >
                           {/* Light Reflection Flare */}
                           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -1238,25 +1238,25 @@ function parseBolSeq(bolNum: string): number {
 
                           <div className="flex items-start justify-between gap-1.5 pt-1 relative z-10">
                             <div className="min-w-0 flex-1">
-                              <div className="inline-flex max-w-full items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0a2540] via-blue-900 to-[#1d4ed8] px-2.5 py-1 text-[11px] font-black font-mono tracking-tight text-white shadow-sm shadow-blue-950/20">
+                              <div className="inline-flex max-w-full items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0a2540] via-blue-900 to-[#1d4ed8] px-2 py-0.5 text-[10.5px] sm:text-[11px] font-black font-mono tracking-tight text-white shadow-sm shadow-blue-950/20">
                                 <FileText className="h-3 w-3 shrink-0 text-blue-200" />
                                 <span className="truncate" title={doc.bol_number}>{doc.bol_number || "BOL"}</span>
                               </div>
-                              <p className="mt-2 text-xs font-black text-slate-950 leading-tight truncate" title={doc.shipper_name}>
+                              <p className="mt-1.5 text-xs font-black text-slate-950 leading-tight truncate" title={doc.shipper_name}>
                                 {doc.shipper_name || "No shipper"}
                               </p>
-                              <div className="mt-1 flex items-center gap-1.5 rounded-xl bg-slate-50/80 backdrop-blur-xs px-2 py-1.5 border border-slate-100/90 text-[11px] font-bold text-slate-700 leading-tight truncate" title={doc.consignee_name}>
+                              <div className="mt-1 flex items-center gap-1.5 rounded-xl bg-slate-50/80 backdrop-blur-xs px-2 py-1 border border-slate-100/90 text-[10.5px] sm:text-[11px] font-bold text-slate-700 leading-tight truncate" title={doc.consignee_name}>
                                 <ArrowRight className="h-3 w-3 text-blue-600 shrink-0" />
                                 <span className="truncate">{doc.consignee_name || "No consignee"}</span>
                               </div>
                             </div>
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               {isLatest && (
-                                <span className="rounded-full px-2 py-0.5 text-[8.5px] font-black bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-xs uppercase tracking-wider">
+                                <span className="rounded-full px-1.5 py-0.5 text-[8px] sm:text-[8.5px] font-black bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-xs uppercase tracking-wider">
                                   LATEST
                                 </span>
                               )}
-                              <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold backdrop-blur-md ${
+                              <span className={`rounded-full px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-extrabold backdrop-blur-md ${
                                 hasUploadedPdf ? "bg-emerald-100/90 text-emerald-800 border border-emerald-300/80 shadow-xs" : "bg-slate-100/80 text-slate-500 border border-slate-200/80"
                               }`}>
                                 {hasUploadedPdf ? "PDF" : "No PDF"}
@@ -1264,9 +1264,9 @@ function parseBolSeq(bolNum: string): number {
                             </div>
                           </div>
 
-                          <div className="mt-3 grid gap-1.5 text-[11px] text-slate-600 relative z-10">
-                            <div className="flex items-center gap-1.5 rounded-xl bg-white/70 backdrop-blur-md px-2.5 py-1.5 border border-slate-200/60 shadow-2xs">
-                              <Calendar className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                          <div className="mt-2.5 grid gap-1.5 text-[10.5px] sm:text-[11px] text-slate-600 relative z-10">
+                            <div className="flex items-center gap-1.5 rounded-xl bg-white/70 backdrop-blur-md px-2 py-1 border border-slate-200/60 shadow-2xs">
+                              <Calendar className="h-3 w-3 text-blue-600 shrink-0" />
                               <span className="font-bold text-slate-800 truncate">
                                 {doc.issue_date
                                   ? new Date(doc.issue_date).toLocaleDateString("en-US", {
@@ -1277,19 +1277,19 @@ function parseBolSeq(bolNum: string): number {
                                   : "No date"}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 rounded-xl bg-white/70 backdrop-blur-md px-2.5 py-1.5 border border-slate-200/60 shadow-2xs">
-                              <Truck className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                            <div className="flex items-center gap-1.5 rounded-xl bg-white/70 backdrop-blur-md px-2 py-1 border border-slate-200/60 shadow-2xs">
+                              <Truck className="h-3 w-3 text-indigo-600 shrink-0" />
                               <span className="truncate font-bold text-slate-800">{doc.truck_number || "No truck #"}</span>
                             </div>
                           </div>
 
-                          <div className="mt-2.5 flex flex-wrap gap-1 relative z-10">
+                          <div className="mt-2 flex flex-wrap gap-1 relative z-10">
                             {(["account", "export", "import"] as const).map((category) => (
                               <button
                                 key={category}
                                 type="button"
                                 onClick={() => assignDocumentCategory(doc, category)}
-                                className={`rounded-lg border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer backdrop-blur-xs ${
+                                className={`rounded-lg border px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer backdrop-blur-xs ${
                                   assignedCategory === category
                                     ? "border-blue-600 bg-blue-600 text-white shadow-2xs"
                                     : "border-slate-200/80 bg-white/70 text-slate-600 hover:border-blue-300 hover:text-blue-700 hover:bg-white"
@@ -1300,14 +1300,14 @@ function parseBolSeq(bolNum: string): number {
                             ))}
                           </div>
 
-                          <div className="mt-auto grid gap-1.5 pt-3 border-t border-slate-100/90 relative z-10">
-                            <div className="grid grid-cols-2 gap-1.5">
+                          <div className="mt-auto grid gap-1.5 pt-2.5 border-t border-slate-100/90 relative z-10">
+                            <div className="grid grid-cols-2 gap-1">
                               <Button
                                 type="button"
                                 onClick={() => editBOL(doc)}
-                                className="h-9 rounded-xl bg-gradient-to-r from-[#0a2540] to-[#1d4ed8] hover:from-[#001428] hover:to-[#1e40af] text-white font-black text-xs shadow-md shadow-blue-900/20 cursor-pointer transition-all active:scale-95 px-2 flex items-center justify-center gap-1"
+                                className="h-8.5 rounded-xl bg-gradient-to-r from-[#0a2540] to-[#1d4ed8] hover:from-[#001428] hover:to-[#1e40af] text-white font-black text-[11px] shadow-md shadow-blue-900/20 cursor-pointer transition-all active:scale-95 px-1.5 flex items-center justify-center gap-1"
                               >
-                                <Pencil className="h-3.5 w-3.5 shrink-0" />
+                                <Pencil className="h-3 w-3 shrink-0" />
                                 <span>Edit BOL</span>
                               </Button>
 
@@ -1315,9 +1315,9 @@ function parseBolSeq(bolNum: string): number {
                                 type="button"
                                 variant="outline"
                                 onClick={() => downloadBOLPDF(doc)}
-                                className="h-9 rounded-xl border border-amber-300/80 bg-amber-100/80 hover:bg-amber-200/90 text-amber-950 font-black text-[11px] cursor-pointer shadow-xs transition-all active:scale-95 px-1.5 flex items-center justify-center gap-1"
+                                className="h-8.5 rounded-xl border border-amber-300/80 bg-amber-100/80 hover:bg-amber-200/90 text-amber-950 font-black text-[10.5px] cursor-pointer shadow-xs transition-all active:scale-95 px-1 flex items-center justify-center gap-1"
                               >
-                                <FileDown className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                                <FileDown className="h-3 w-3 text-amber-700 shrink-0" />
                                 <span>Download</span>
                               </Button>
                             </div>
@@ -1327,10 +1327,10 @@ function parseBolSeq(bolNum: string): number {
                                 type="button"
                                 variant="outline"
                                 onClick={() => viewBOLPreview(doc)}
-                                className="h-8 rounded-xl border border-blue-200/80 bg-blue-50/70 hover:bg-blue-100/80 text-blue-700 font-bold text-[10px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
+                                className="h-7.5 rounded-lg border border-blue-200/80 bg-blue-50/70 hover:bg-blue-100/80 text-blue-700 font-bold text-[9.5px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-0.5"
                                 title="Preview A4 Document"
                               >
-                                <Eye className="h-3 w-3 mr-1 shrink-0 text-blue-600" />
+                                <Eye className="h-2.5 w-2.5 mr-0.5 shrink-0 text-blue-600" />
                                 Preview
                               </Button>
 
@@ -1338,10 +1338,10 @@ function parseBolSeq(bolNum: string): number {
                                 type="button"
                                 variant="outline"
                                 onClick={() => handleDuplicate(doc)}
-                                className="h-8 rounded-xl border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/80 text-purple-700 font-bold text-[10px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
+                                className="h-7.5 rounded-lg border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/80 text-purple-700 font-bold text-[9.5px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-0.5"
                                 title="Clone document with new BOL number"
                               >
-                                <Copy className="h-3 w-3 mr-1 text-purple-600 shrink-0" />
+                                <Copy className="h-2.5 w-2.5 mr-0.5 text-purple-600 shrink-0" />
                                 Duplicate
                               </Button>
 
@@ -1350,17 +1350,17 @@ function parseBolSeq(bolNum: string): number {
                                 variant="outline"
                                 onClick={() => openUploadedPDF(doc)}
                                 disabled={!hasUploadedPdf || openingPdfId === doc.id}
-                                className="h-8 rounded-xl border border-emerald-200/80 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-700 font-bold text-[10px] disabled:border-slate-100 disabled:bg-slate-50/60 disabled:text-slate-300 cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
+                                className="h-7.5 rounded-lg border border-emerald-200/80 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-700 font-bold text-[9.5px] disabled:border-slate-100 disabled:bg-slate-50/60 disabled:text-slate-300 cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-0.5"
                                 title={hasUploadedPdf ? "Open uploaded PDF file" : "No uploaded PDF available"}
                               >
-                                <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
+                                <ExternalLink className="h-2.5 w-2.5 mr-0.5 shrink-0" />
                                 File PDF
                               </Button>
                             </div>
 
                             <div className="grid grid-cols-[1fr_auto] gap-1.5 pt-0.5">
                               <label
-                                className={`inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/80 hover:bg-slate-50 px-2.5 text-[11px] font-bold text-slate-700 transition-all shadow-2xs backdrop-blur-xs ${
+                                className={`inline-flex h-7.5 cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200/80 bg-white/80 hover:bg-slate-50 px-2 text-[10.5px] font-bold text-slate-700 transition-all shadow-2xs backdrop-blur-xs ${
                                   uploadingId === doc.id ? "pointer-events-none opacity-70" : ""
                                 }`}
                               >
@@ -1384,13 +1384,13 @@ function parseBolSeq(bolNum: string): number {
                                 variant="outline"
                                 onClick={(event) => handleDelete(doc.id, event)}
                                 disabled={deletingId === doc.id}
-                                className="h-8 rounded-xl border border-red-200/80 bg-red-50/50 hover:bg-red-100/80 px-2.5 text-red-600 hover:text-red-700 text-xs font-semibold cursor-pointer transition-all backdrop-blur-xs"
+                                className="h-7.5 rounded-xl border border-red-200/80 bg-red-50/50 hover:bg-red-100/80 px-2 text-red-600 hover:text-red-700 text-xs font-semibold cursor-pointer transition-all backdrop-blur-xs"
                                 title="Delete document"
                               >
                                 {deletingId === doc.id ? (
                                   <Loader2 className="h-3 w-3 animate-spin" />
                                 ) : (
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-3 w-3" />
                                 )}
                               </Button>
                             </div>
