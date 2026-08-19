@@ -99,28 +99,28 @@ const darkHeaderStyle = {
 
 const headerGridStyle = {
   display: "grid",
-  gridTemplateColumns: "36mm 1fr 72mm",
+  gridTemplateColumns: "36mm 1fr 58mm",
   alignItems: "center",
-  columnGap: "3mm",
+  columnGap: "3.5mm",
 } satisfies CSSProperties
 
 const logoFrameStyle = {
   alignItems: "center",
   display: "flex",
-  height: "30mm",
+  height: "26mm",
   justifyContent: "center",
-  maxHeight: "30mm",
-  maxWidth: "45mm",
-  minHeight: "30mm",
+  maxHeight: "26mm",
+  maxWidth: "36mm",
+  minHeight: "26mm",
   overflow: "hidden",
-  width: "45mm",
+  width: "36mm",
 } satisfies CSSProperties
 
 const logoImageStyle = {
   display: "block",
   height: "auto",
-  maxHeight: "26mm",
-  maxWidth: "42mm",
+  maxHeight: "24mm",
+  maxWidth: "34mm",
   objectFit: "contain",
   width: "auto",
 } satisfies CSSProperties
@@ -1500,10 +1500,11 @@ export function A4Preview({
           }`}
           style={pdfMode ? { boxShadow: "none" } : undefined}
         >
-          <div className="p-2.5" style={headerGridStyle}>
+          <div className="p-2" style={headerGridStyle}>
+            {/* 1. Left: Logo Frame */}
             <div
-              className={`rounded-xl border p-1 shadow-md shadow-blue-100/60 ${
-                pdfMode ? "border-blue-100 bg-white" : "border-white/80 bg-white/70 backdrop-blur-lg"
+              className={`rounded-xl border p-1 flex items-center justify-center ${
+                pdfMode ? "border-blue-100 bg-white" : "border-blue-100/80 bg-white shadow-xs shadow-blue-100/50"
               }`}
               style={logoFrameStyle}
             >
@@ -1516,43 +1517,52 @@ export function A4Preview({
               />
             </div>
 
-            <div className="bol-company-block min-w-0 px-1 text-center">
-              <h1 className="bol-company-name english-text text-[16.6pt] font-black uppercase tracking-tight text-blue-950">
+            {/* 2. Center: Company Brand Title & Subtitle */}
+            <div className="bol-company-block min-w-0 px-2 text-center flex flex-col items-center justify-center">
+              <h1 className="bol-company-name english-text text-[15pt] font-black uppercase tracking-tight text-blue-950 leading-tight">
                 {companyTitle}
               </h1>
-              <p className="english-text text-[6.8pt] mt-0.5 font-bold text-slate-600">{companyTagline}</p>
-              <p className="persian-text bol-persian-text text-[9.5pt] mt-0.5 font-[vazirmatn] font-black leading-tight text-blue-800" dir="rtl">
+              <p className="english-text text-[7pt] mt-0.5 font-extrabold uppercase tracking-widest text-slate-500">
+                {companyTagline}
+              </p>
+              <p className="persian-text bol-persian-text text-[9.5pt] mt-1 font-[vazirmatn] font-black leading-tight text-blue-800" dir="rtl">
                 {companyPersian}
               </p>
             </div>
 
+            {/* 3. Right: Official Document & BOL Number Card */}
             <div
               data-bol-title-card="true"
-              className={`bol-title-card overflow-hidden rounded-xl border shadow-md shadow-blue-100/70 ${
-                pdfMode ? "border-blue-200 bg-white" : "border-white/80 bg-white/70 backdrop-blur-lg"
+              className={`bol-title-card overflow-hidden rounded-xl border ${
+                pdfMode ? "border-blue-200 bg-white" : "border-blue-200/90 bg-white shadow-md shadow-blue-100/60"
               }`}
             >
-              <div className="bol-title-box px-2 py-1.5 text-center text-white" style={darkHeaderStyle}>
-                <p className="bol-title-en english-text text-[12.2pt] font-black uppercase leading-tight">Bill of Lading</p>
-                <p className="bol-title-fa persian-text bol-persian-text font-[vazirmatn] text-[12.2pt] font-bold leading-tight" dir="rtl">
+              <div className="bol-title-box px-2 py-1 text-center text-white flex flex-col items-center justify-center" style={darkHeaderStyle}>
+                <p className="bol-title-en english-text text-[10.5pt] font-black uppercase tracking-wider leading-tight">
+                  Bill of Lading
+                </p>
+                <p className="bol-title-fa persian-text bol-persian-text font-[vazirmatn] text-[10pt] font-bold leading-tight mt-0.5" dir="rtl">
                   {labels.billOfLadingFa}
                 </p>
               </div>
               <div
                 data-pdf-bol-badge="true"
-                className="bol-number-box flex min-h-[50px] w-full flex-col items-center justify-center gap-1.5 bg-white px-2 py-1.5 border-t border-blue-100"
+                className="bol-number-box w-full bg-white px-2 py-1.5 border-t border-blue-100 flex items-center justify-between gap-1.5"
               >
-                <div className="flex w-full items-center justify-between gap-1.5">
+                <div className="flex-1 text-center min-w-0">
+                  <span className="block text-[5.8pt] font-black uppercase tracking-widest text-slate-400 leading-none mb-0.5">
+                    DOCUMENT NO.
+                  </span>
                   <span
                     data-pdf-bol-number="true"
-                    className="bol-number-text block flex-1 text-center font-mono text-[9pt] sm:text-[10pt] font-black leading-none text-blue-950 tracking-tight break-all"
-                    style={{ color: "#1e3a8a", fontFamily: "Arial, Helvetica, sans-serif" }}
+                    className="bol-number-text block font-mono text-[9.2pt] font-black leading-tight text-blue-950 tracking-tight truncate"
+                    style={{ color: "#1e3a8a" }}
                   >
                     {bolNumber}
                   </span>
-                  <div className="shrink-0 flex items-center justify-center p-1 bg-white border border-slate-200 rounded-md shadow-sm">
-                    <DocumentQRCode value={bolNumber || "SKY-BOL"} size={32} />
-                  </div>
+                </div>
+                <div className="shrink-0 flex items-center justify-center p-0.5 bg-white border border-slate-200 rounded-md shadow-2xs">
+                  <DocumentQRCode value={bolNumber || "SKY-BOL"} size={30} />
                 </div>
               </div>
             </div>
