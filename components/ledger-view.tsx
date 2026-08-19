@@ -1440,7 +1440,9 @@ export function LedgerView() {
                     <div className="text-[10px] uppercase leading-tight text-blue-900">BALANCE USD</div>
                     <div className="text-[8px] font-normal text-blue-600/70 leading-tight" dir="rtl">(USD) بیلانس</div>
                   </th>
-                  <th className="border border-blue-200/60 px-1 py-2 bg-blue-50/40" style={{ width: '50px' }}></th>
+                  <th className="border border-blue-200/60 px-1 py-2 bg-blue-50/40 text-center font-bold align-middle" style={{ width: '50px' }}>
+                    <div className="text-[10px] uppercase leading-tight text-blue-900">ACTIONS</div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
