@@ -778,14 +778,19 @@ function getRouteCountryMeta(location?: string, locationPersian?: string) {
   const normalized = source.toLowerCase()
 
   const countryMatch = codeMatch?.[1]?.toUpperCase() ||
-    (normalized.includes("afghanistan") || normalized.includes("kandahar") || normalized.includes("nimroz") || normalized.includes("milak") || normalized.includes("herat") || normalized.includes("kabul") ? "AF" :
-    normalized.includes("iran") || normalized.includes("bandar abbas") || normalized.includes("dougharoun") || normalized.includes("tehran") || normalized.includes("chabahar") ? "IR" :
-    normalized.includes("india") || normalized.includes("nhava") || normalized.includes("sheva") || normalized.includes("mumbai") || normalized.includes("delhi") ? "IN" :
-    normalized.includes("dubai") || normalized.includes("emirates") || normalized.includes("uae") ? "AE" :
-    normalized.includes("pakistan") || normalized.includes("quetta") || normalized.includes("chaman") || normalized.includes("karachi") ? "PK" :
-    normalized.includes("china") || normalized.includes("beijing") || normalized.includes("shanghai") || normalized.includes("qingdao") || normalized.includes("ningbo") ? "CN" :
-    normalized.includes("turkey") || normalized.includes("mersin") || normalized.includes("istanbul") || normalized.includes("ankara") ? "TR" :
+    (normalized.includes("afghanistan") || normalized.includes("kandahar") || normalized.includes("nimroz") || normalized.includes("milak") || normalized.includes("herat") || normalized.includes("kabul") || normalized.includes("mazar") || normalized.includes("hairatan") || normalized.includes("zaranj") || normalized.includes("islam qala") ? "AF" :
+    normalized.includes("iran") || normalized.includes("bandar abbas") || normalized.includes("dougharoun") || normalized.includes("tehran") || normalized.includes("chabahar") || normalized.includes("milak border") ? "IR" :
+    normalized.includes("india") || normalized.includes("nhava") || normalized.includes("sheva") || normalized.includes("mumbai") || normalized.includes("delhi") || normalized.includes("mundra") ? "IN" :
+    normalized.includes("dubai") || normalized.includes("emirates") || normalized.includes("uae") || normalized.includes("abu dhabi") || normalized.includes("sharjah") || normalized.includes("jebel ali") ? "AE" :
+    normalized.includes("pakistan") || normalized.includes("quetta") || normalized.includes("chaman") || normalized.includes("karachi") || normalized.includes("lahore") ? "PK" :
+    normalized.includes("china") || normalized.includes("beijing") || normalized.includes("shanghai") || normalized.includes("qingdao") || normalized.includes("ningbo") || normalized.includes("guangzhou") || normalized.includes("shenzhen") ? "CN" :
+    normalized.includes("turkey") || normalized.includes("mersin") || normalized.includes("istanbul") || normalized.includes("ankara") || normalized.includes("izmir") ? "TR" :
+    normalized.includes("uzbekistan") || normalized.includes("tashkent") || normalized.includes("termez") ? "UZ" :
+    normalized.includes("turkmenistan") || normalized.includes("ashgabat") ? "TM" :
+    normalized.includes("tajikistan") || normalized.includes("dushanbe") ? "TJ" :
     normalized.includes("russia") || normalized.includes("moscow") || normalized.includes("saint petersburg") ? "RU" :
+    normalized.includes("oman") || normalized.includes("muscat") || normalized.includes("sohar") ? "OM" :
+    normalized.includes("saudi") || normalized.includes("riyadh") || normalized.includes("jeddah") || normalized.includes("dammam") ? "SA" :
     "")
 
   const emojiMap: Record<string, string> = {
@@ -796,7 +801,12 @@ function getRouteCountryMeta(location?: string, locationPersian?: string) {
     PK: "🇵🇰",
     CN: "🇨🇳",
     TR: "🇹🇷",
+    UZ: "🇺🇿",
+    TM: "🇹🇲",
+    TJ: "🇹🇯",
     RU: "🇷🇺",
+    OM: "🇴🇲",
+    SA: "🇸🇦",
     US: "🇺🇸",
     CA: "🇨🇦",
     GB: "🇬🇧",
@@ -810,7 +820,12 @@ function getRouteCountryMeta(location?: string, locationPersian?: string) {
     PK: "Pakistan",
     CN: "China",
     TR: "Turkey",
+    UZ: "Uzbekistan",
+    TM: "Turkmenistan",
+    TJ: "Tajikistan",
     RU: "Russia",
+    OM: "Oman",
+    SA: "Saudi Arabia",
     US: "USA",
     CA: "Canada",
     GB: "UK",
@@ -836,134 +851,105 @@ function formatCityName(location?: string | null): string {
 function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData["routes"]; glass?: boolean }) {
   if (!routes?.length) return null
 
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(routes[0]?.id ?? null)
-
-  const handleRouteSelect = (routeId: string) => {
-    setSelectedRouteId(routeId)
-  }
-
   return (
     <div
       className={`route-timeline-container ${glass ? "glass-card" : ""}`}
       style={{
-        background: "linear-gradient(145deg, #ffffff, #eff6ff)",
+        background: "linear-gradient(145deg, #ffffff 0%, #f8faff 50%, #eff6ff 100%)",
         border: "1px solid #bfdbfe",
-        borderRadius: "16px",
-        padding: "10px 12px",
-        boxShadow: "0 4px 16px rgba(37, 99, 235, 0.05)",
+        borderRadius: "14px",
+        padding: "8px 10px",
+        boxShadow: "0 4px 16px rgba(37, 99, 235, 0.04)",
       }}
       aria-label="Route and transportation path timeline"
     >
-      {/* World Map Background */}
-      <svg
-        viewBox="0 0 1200 400"
-        preserveAspectRatio="none"
-        className="route-timeline-map"
-        aria-hidden="true"
-      >
-        <defs>
-          <filter id="map-shadow">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.15" />
-            </feComponentTransfer>
-          </filter>
-        </defs>
-        {/* Simplified world map shapes */}
-        <g fill="#93c5fd" opacity="0.3" filter="url(#map-shadow)">
-          <path d="M 400 100 Q 420 80 440 100 Q 450 140 440 180 Q 420 200 400 180 Q 390 140 400 100 Z" />
-          <path d="M 100 80 Q 80 120 100 160 Q 120 180 140 160 Q 130 120 100 80 Z" />
-          <path d="M 600 60 Q 750 50 850 80 Q 850 140 750 160 Q 650 150 600 120 Z" />
-          <path d="M 380 40 Q 420 30 460 50 Q 450 80 400 90 Q 370 70 380 40 Z" />
-        </g>
-      </svg>
-
-      {/* Connection Line */}
-      <div
-        className="route-timeline-connector"
-        style={{
-          background: "linear-gradient(90deg, transparent 0%, rgba(37,99,235,0.3) 18%, rgba(37,99,235,0.7) 50%, rgba(37,99,235,0.3) 82%, transparent 100%)",
-          height: "2px"
-        }}
-        aria-hidden="true"
-      />
-
       {/* Route Cards Container */}
-      <div className="route-timeline-cards flex items-center justify-between gap-1" role="list">
+      <div className="route-timeline-cards flex items-stretch justify-between gap-1.5" role="list">
         {routes.map((route, index) => {
           const mode = route.transportMode || "truck"
           const fallback = routeFallbackLabels(route.location)
           const persianLabel = cleanText(route.locationPersian) || fallback.persian
           const pashtoLabel = fallback.pashto || persianLabel
           const showPashtoLabel = hasValue(pashtoLabel) && cleanText(pashtoLabel) !== cleanText(persianLabel)
-          const isSelected = selectedRouteId === route.id
           const countryMeta = getRouteCountryMeta(route.location, route.locationPersian)
           const isLastRoute = index === routes.length - 1
           const isOrigin = index === 0
           const computedStopLabel = isOrigin ? "ORIGIN" : isLastRoute ? "DESTINATION" : `STOP ${index}`
 
+          const modeTheme = {
+            truck: { icon: "🚚", label: "TRUCK", persian: "جاده‌ای", bg: "bg-emerald-50 text-emerald-900 border-emerald-200" },
+            vessel: { icon: "🚢", label: "VESSEL", persian: "دریایی", bg: "bg-blue-50 text-blue-900 border-blue-200" },
+            train: { icon: "🚆", label: "TRAIN", persian: "ریلی", bg: "bg-amber-50 text-amber-900 border-amber-200" },
+            airplane: { icon: "✈️", label: "AIR", persian: "هوایی", bg: "bg-sky-50 text-sky-900 border-sky-200" },
+          }[mode] || { icon: "🚚", label: "TRUCK", persian: "جاده‌ای", bg: "bg-blue-50 text-blue-900 border-blue-200" }
+
           return (
             <div key={route.id || `${route.location}-${index}`} className="route-timeline-item flex items-center flex-1 min-w-0" role="listitem">
               <div
-                className={`route-timeline-card transition-all duration-200 w-full text-center relative overflow-hidden ${
+                className={`route-timeline-card transition-all duration-200 w-full text-center relative overflow-hidden flex flex-col justify-between ${
                   isOrigin
-                    ? "border-2 border-emerald-500/90 bg-linear-to-b from-emerald-50/40 via-white to-emerald-50/10 shadow-xs shadow-emerald-100"
+                    ? "border-1.5 border-emerald-500/90 bg-linear-to-b from-emerald-50/50 via-white to-emerald-50/20 shadow-xs shadow-emerald-100/50"
                     : isLastRoute
-                    ? "border-2 border-indigo-500/90 bg-linear-to-b from-indigo-50/40 via-white to-indigo-50/10 shadow-xs shadow-indigo-100"
-                    : "border border-blue-300/80 bg-linear-to-b from-slate-50/40 via-white to-blue-50/20 shadow-2xs shadow-blue-100"
-                } ${isSelected ? "ring-2 ring-blue-500 scale-[1.02]" : ""}`}
-                onClick={() => handleRouteSelect(route.id)}
+                    ? "border-1.5 border-indigo-500/90 bg-linear-to-b from-indigo-50/50 via-white to-indigo-50/20 shadow-xs shadow-indigo-100/50"
+                    : "border-1.5 border-blue-300/90 bg-linear-to-b from-blue-50/40 via-white to-blue-50/15 shadow-xs shadow-blue-100/50"
+                }`}
                 style={{
                   borderRadius: "10px",
-                  padding: "4px 3px 5px",
+                  padding: "5px 4px 6px",
+                  minHeight: "88px",
                 }}
               >
                 {/* Top Accent Strip */}
                 <div className={`h-1 w-full absolute top-0 left-0 right-0 ${
-                  isOrigin ? 'bg-linear-to-r from-emerald-500 to-teal-500' : isLastRoute ? 'bg-linear-to-r from-indigo-500 to-blue-600' : 'bg-linear-to-r from-blue-400 to-sky-500'
+                  isOrigin ? 'bg-linear-to-r from-emerald-500 to-teal-500' : isLastRoute ? 'bg-linear-to-r from-indigo-600 to-purple-600' : 'bg-linear-to-r from-blue-500 to-cyan-500'
                 }`} />
 
-                {/* Header Row: Stop Badge & Country Flag */}
-                <div className="flex items-center justify-center gap-1 mt-0.5 mb-0.5 flex-nowrap overflow-hidden">
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-[6pt] font-black tracking-tight uppercase border shadow-2xs whitespace-nowrap shrink-0 ${
-                    isOrigin
-                      ? "bg-emerald-600 text-white border-emerald-700"
-                      : isLastRoute
-                      ? "bg-indigo-600 text-white border-indigo-700"
-                      : "bg-blue-600 text-white border-blue-700"
-                  }`}>
-                    {computedStopLabel}
-                  </span>
-                  {countryMeta.label && (
-                    <span className="inline-flex items-center gap-0.5 text-[5.6pt] font-extrabold text-slate-800 uppercase tracking-tight bg-slate-100 px-1 py-0.2 rounded-full border border-slate-200 whitespace-nowrap overflow-hidden text-ellipsis max-w-[85px] shrink-0">
-                      <span className="text-[7pt] leading-none shrink-0">{countryMeta.emoji}</span>
-                      <span className="truncate">{countryMeta.label}</span>
+                {/* Header 2-Tone Capsule Badge: Never Overflows! */}
+                <div className="flex items-center justify-center mt-1 mb-1 px-0.5">
+                  <div className="inline-flex items-center rounded-full border shadow-2xs overflow-hidden max-w-full text-[6pt] font-black tracking-tight uppercase">
+                    {/* Stop Type */}
+                    <span className={`px-1.5 py-0.5 text-white shrink-0 ${
+                      isOrigin
+                        ? "bg-emerald-600 border-emerald-700"
+                        : isLastRoute
+                        ? "bg-indigo-600 border-indigo-700"
+                        : "bg-blue-600 border-blue-700"
+                    }`}>
+                      {computedStopLabel}
                     </span>
-                  )}
+                    {/* Country Code & Flag */}
+                    {countryMeta.code && (
+                      <span className="px-1.5 py-0.5 bg-slate-100/90 text-slate-800 flex items-center gap-0.5 border-l border-slate-200 truncate font-extrabold text-[5.8pt]">
+                        <span className="text-[6.5pt] leading-none shrink-0">{countryMeta.emoji}</span>
+                        <span className="truncate">{countryMeta.label || countryMeta.code}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* City Name English & Persian */}
-                <div className="space-y-0 text-center px-0.5">
-                  <div className="text-[8.2pt] font-black text-slate-950 leading-tight truncate">
+                <div className="space-y-0.5 text-center px-1 my-auto">
+                  <div className="text-[8.5pt] font-black text-slate-950 leading-tight truncate tracking-tight">
                     {formatCityName(route.location)}
                   </div>
                   {hasValue(persianLabel) && (
-                    <div className="text-[6.8pt] font-bold text-blue-900 font-[vazirmatn] leading-tight truncate" dir="rtl">
+                    <div className="text-[7pt] font-extrabold text-blue-900 font-[vazirmatn] leading-tight truncate" dir="rtl">
                       {persianLabel}
                     </div>
                   )}
                   {showPashtoLabel && (
-                    <div className="text-[6.5pt] font-semibold text-slate-600 font-[vazirmatn] leading-tight truncate" dir="rtl">
+                    <div className="text-[6.2pt] font-semibold text-slate-500 font-[vazirmatn] leading-tight truncate" dir="rtl">
                       {pashtoLabel}
                     </div>
                   )}
                 </div>
 
                 {/* Bottom Row: Mode Pill */}
-                <div className="mt-0.5">
-                  <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.2 rounded-full text-[5.8pt] font-black uppercase tracking-wide bg-blue-100/90 text-blue-900 border border-blue-300 shadow-2xs whitespace-nowrap">
-                    <TransportIcon mode={mode} size={9} />
-                    <span>{routeModeLabel(mode)}</span>
+                <div className="mt-1">
+                  <span className={`inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full text-[5.8pt] font-black uppercase tracking-wide border shadow-2xs whitespace-nowrap ${modeTheme.bg}`}>
+                    <span className="text-[7pt] leading-none">{modeTheme.icon}</span>
+                    <span>{modeTheme.label}</span>
+                    <span className="font-[vazirmatn] text-[5.5pt] opacity-80">({modeTheme.persian})</span>
                   </span>
                 </div>
 
@@ -971,23 +957,23 @@ function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData
                 {(route.plateNumber || route.chassisNumber || route.trailerMan || route.customsSealRequired) && (
                   <div className="mt-1 pt-1 border-t border-slate-200/80 space-y-0.5 text-left w-full">
                     {route.plateNumber && (
-                      <div className="inline-flex items-center gap-1 bg-blue-100/90 text-blue-950 font-mono font-black text-[7pt] px-1 py-0.2 rounded border border-blue-200">
+                      <div className="inline-flex items-center gap-1 bg-blue-100/90 text-blue-950 font-mono font-black text-[6.5pt] px-1 py-0.2 rounded border border-blue-200">
                         <span>پلیټ:</span>
                         <span>{route.plateNumber}</span>
                       </div>
                     )}
                     {route.chassisNumber && (
-                      <div className="text-[7pt] font-extrabold text-slate-800">
+                      <div className="text-[6.5pt] font-extrabold text-slate-800">
                         <span className="text-slate-500">شاسی:</span> {route.chassisNumber}
                       </div>
                     )}
                     {route.trailerMan && (
-                      <div className="text-[7pt] font-extrabold text-slate-800" dir="rtl font-[vazirmatn]">
+                      <div className="text-[6.5pt] font-extrabold text-slate-800" dir="rtl font-[vazirmatn]">
                         <span className="text-slate-500">ټیلر مان:</span> {route.trailerMan}
                       </div>
                     )}
                     {route.customsSealRequired && (
-                      <div className="mt-0.5 bg-amber-100 text-amber-950 font-black text-[7pt] px-1 py-0.2 rounded border border-amber-300 flex items-center gap-1" dir="rtl font-[vazirmatn]">
+                      <div className="mt-0.5 bg-amber-100 text-amber-950 font-black text-[6.5pt] px-1 py-0.2 rounded border border-amber-300 flex items-center gap-1" dir="rtl font-[vazirmatn]">
                         <span>📍 ګمرک سیل</span>
                         {route.customsSealNote ? <span className="font-semibold text-amber-800">({route.customsSealNote})</span> : null}
                       </div>
@@ -999,7 +985,7 @@ function RouteTimeline({ routes, glass = false }: { routes: BillOfLadingFormData
               {/* Connecting Arrow Circle */}
               {!isLastRoute && (
                 <div
-                  className="route-timeline-arrow mx-1 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-white border border-blue-300 shadow-xs text-blue-600"
+                  className="route-timeline-arrow mx-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-white border border-blue-300 shadow-xs text-blue-600"
                   aria-hidden="true"
                 >
                   <ArrowRight className="w-3 h-3 text-blue-600" />
