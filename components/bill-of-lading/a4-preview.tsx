@@ -1212,16 +1212,28 @@ function ShipmentOverview({
   )
 }
 
-function formatMultiCargoValue(val?: string | null): ReactNode {
+function formatMultiCargoValue(val?: string | null, customClass = "text-[9.5pt]"): ReactNode {
   const text = cleanText(val)
   if (!text) return "—"
 
-  const parts = text.split(/\s*[-/|]\s*/).filter(Boolean)
+  // Split on newlines, pipes, or " / " (slash with surrounding space or between distinct amounts)
+  // Do NOT split on hyphens '-' like "16-KGS", "17.30 - KGS", "667 - 16 KGS"
+  let parts: string[] = []
+  if (text.includes("\n")) {
+    parts = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
+  } else if (text.includes("|")) {
+    parts = text.split("|").map((s) => s.trim()).filter(Boolean)
+  } else if (/\s+\/\s+/.test(text)) {
+    parts = text.split(/\s+\/\s+/).map((s) => s.trim()).filter(Boolean)
+  } else if (/\s*;\s*/.test(text) && text.includes(";")) {
+    parts = text.split(";").map((s) => s.trim()).filter(Boolean)
+  }
+
   if (parts.length > 1) {
     return (
       <div className="flex flex-col space-y-0.5 w-full">
         {parts.map((p, idx) => (
-          <span key={idx} className="block leading-tight break-words">
+          <span key={idx} className={`block leading-tight font-mono font-black ${customClass} break-words`}>
             {p.trim()}
           </span>
         ))}
@@ -1229,7 +1241,7 @@ function formatMultiCargoValue(val?: string | null): ReactNode {
     )
   }
 
-  return <span className="break-words">{text}</span>
+  return <span className={`font-mono font-black ${customClass} break-words leading-tight`}>{text}</span>
 }
 
 function CargoOverview({
@@ -1262,19 +1274,19 @@ function CargoOverview({
       {(hasContainer || hasSeal || hasMeasurement) && (
         <div className="flex flex-wrap items-center gap-1.5 px-0.5">
           {hasContainer && (
-            <div className="inline-flex items-center gap-1 bg-blue-50/90 text-blue-950 font-mono font-bold text-[7pt] px-2 py-0.5 rounded-md border border-blue-200 shadow-2xs">
+            <div className="inline-flex items-center gap-1 bg-blue-50/90 text-blue-950 font-mono font-black text-[7.8pt] px-2 py-0.5 rounded-md border border-blue-200 shadow-2xs">
               <span className="text-blue-700 font-black">CONT:</span>
               <span>{formData.container_numbers}</span>
             </div>
           )}
           {hasSeal && (
-            <div className="inline-flex items-center gap-1 bg-amber-50/90 text-amber-950 font-mono font-bold text-[7pt] px-2 py-0.5 rounded-md border border-amber-200 shadow-2xs">
+            <div className="inline-flex items-center gap-1 bg-amber-50/90 text-amber-950 font-mono font-black text-[7.8pt] px-2 py-0.5 rounded-md border border-amber-200 shadow-2xs">
               <span className="text-amber-700 font-black">SEAL:</span>
               <span>{formData.seal_numbers}</span>
             </div>
           )}
           {hasMeasurement && (
-            <div className="inline-flex items-center gap-1 bg-slate-50 text-slate-800 font-mono font-bold text-[7pt] px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
+            <div className="inline-flex items-center gap-1 bg-slate-50 text-slate-800 font-mono font-black text-[7.8pt] px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
               <span className="text-slate-600 font-black">MEASUREMENT:</span>
               <span>{formData.measurement}</span>
             </div>
@@ -1287,125 +1299,125 @@ function CargoOverview({
         <div className="grid grid-cols-4 gap-1.5">
           {/* 1. NO. OF PACKAGES */}
           <div
-            className={`rounded-lg border px-2 py-1.5 text-center flex flex-col justify-between ${
-              pdfMode ? "border-blue-100 bg-white" : "border-blue-100/90 bg-white/95 shadow-xs shadow-blue-100/50"
+            className={`rounded-xl border px-2.5 py-2 text-center flex flex-col justify-between ${
+              pdfMode ? "border-blue-200 bg-white" : "border-blue-200/90 bg-white/95 shadow-xs shadow-blue-100/50"
             }`}
           >
-            <div>
-              <div className="text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight">
+            <div className="border-b border-blue-100/80 pb-1 mb-1">
+              <div className="text-[7.8pt] font-black uppercase tracking-wider text-blue-800 leading-tight">
                 NO. OF PACKAGES
               </div>
-              <div className="persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
+              <div className="persian-text bol-persian-text font-[vazirmatn] text-[7.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
                 {labels.packagesFa || "تعداد بسته"}
               </div>
             </div>
-            <div className="mt-1 font-mono font-black text-slate-950 text-[8pt] leading-tight break-words flex flex-col items-center justify-center">
-              {formatMultiCargoValue(formData.number_of_packages)}
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[38px] py-1">
+              {formatMultiCargoValue(formData.number_of_packages, "text-[10pt] text-slate-950")}
             </div>
           </div>
 
           {/* 2. WEIGHT PER CARTON */}
           <div
-            className={`rounded-lg border px-2 py-1.5 text-center flex flex-col justify-between ${
-              pdfMode ? "border-blue-100 bg-white" : "border-blue-100/90 bg-white/95 shadow-xs shadow-blue-100/50"
+            className={`rounded-xl border px-2.5 py-2 text-center flex flex-col justify-between ${
+              pdfMode ? "border-blue-200 bg-white" : "border-blue-200/90 bg-white/95 shadow-xs shadow-blue-100/50"
             }`}
           >
-            <div>
-              <div className="text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight">
+            <div className="border-b border-blue-100/80 pb-1 mb-1">
+              <div className="text-[7.8pt] font-black uppercase tracking-wider text-blue-800 leading-tight">
                 WT / CARTON
               </div>
-              <div className="persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
+              <div className="persian-text bol-persian-text font-[vazirmatn] text-[7.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
                 وزن خالص و ناخالص فی کارتن
               </div>
             </div>
-            <div className="mt-1 space-y-1 text-[7pt] font-extrabold leading-tight text-left">
+            <div className="flex-1 flex flex-col justify-center space-y-1 text-left py-0.5">
               {hasNetCtn && (
-                <div className="flex flex-col gap-0 text-blue-900">
-                  <span className="text-[5.8pt] font-black text-slate-500 uppercase">NET / CTN:</span>
-                  <div className="font-mono font-bold text-[7.2pt] text-blue-950 break-words">
-                    {formatMultiCargoValue(formData.kgs_per_carton)}
+                <div className="flex flex-col gap-0 text-blue-950">
+                  <span className="text-[6.8pt] font-black text-blue-700 uppercase tracking-wide">NET / CTN:</span>
+                  <div className="break-words">
+                    {formatMultiCargoValue(formData.kgs_per_carton, "text-[9.2pt] text-blue-950")}
                   </div>
                 </div>
               )}
               {hasGrossCtn && (
-                <div className="flex flex-col gap-0 text-slate-900 border-t border-slate-100 pt-0.5">
-                  <span className="text-[5.8pt] font-black text-slate-500 uppercase">GROSS / CTN:</span>
-                  <div className="font-mono font-bold text-[7.2pt] text-slate-900 break-words">
-                    {formatMultiCargoValue(formData.gross_weight_per_carton)}
+                <div className="flex flex-col gap-0 text-slate-900 border-t border-slate-100 pt-1">
+                  <span className="text-[6.8pt] font-black text-slate-600 uppercase tracking-wide">GROSS / CTN:</span>
+                  <div className="break-words">
+                    {formatMultiCargoValue(formData.gross_weight_per_carton, "text-[9.2pt] text-slate-900")}
                   </div>
                 </div>
               )}
-              {!hasNetCtn && !hasGrossCtn && <div className="text-slate-400 text-center">—</div>}
+              {!hasNetCtn && !hasGrossCtn && <div className="text-slate-400 text-center font-bold">—</div>}
             </div>
           </div>
 
           {/* 3. TOTAL WEIGHTS */}
           <div
-            className={`rounded-lg border px-2 py-1.5 text-center flex flex-col justify-between ${
-              pdfMode ? "border-blue-100 bg-white" : "border-blue-100/90 bg-white/95 shadow-xs shadow-blue-100/50"
+            className={`rounded-xl border px-2.5 py-2 text-center flex flex-col justify-between ${
+              pdfMode ? "border-blue-200 bg-white" : "border-blue-200/90 bg-white/95 shadow-xs shadow-blue-100/50"
             }`}
           >
-            <div>
-              <div className="text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight">
+            <div className="border-b border-blue-100/80 pb-1 mb-1">
+              <div className="text-[7.8pt] font-black uppercase tracking-wider text-blue-800 leading-tight">
                 TOTAL WEIGHTS
               </div>
-              <div className="persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
+              <div className="persian-text bol-persian-text font-[vazirmatn] text-[7.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
                 وزن کل خالص و ناخالص
               </div>
             </div>
-            <div className="mt-1 space-y-1 text-[7pt] font-extrabold leading-tight text-left">
+            <div className="flex-1 flex flex-col justify-center space-y-1 text-left py-0.5">
               {hasNetWeight && (
                 <div className="flex flex-col gap-0 text-blue-950">
-                  <span className="text-[5.8pt] font-black text-blue-700 uppercase">NET WT:</span>
-                  <div className="font-mono font-black text-[7.2pt] text-blue-950 break-words">
-                    {formatMultiCargoValue(formData.net_weight)}
+                  <span className="text-[6.8pt] font-black text-blue-700 uppercase tracking-wide">NET WT:</span>
+                  <div className="break-words">
+                    {formatMultiCargoValue(formData.net_weight, "text-[9.2pt] text-blue-950")}
                   </div>
                 </div>
               )}
               {hasGrossWeight && (
-                <div className="flex flex-col gap-0 text-slate-900 border-t border-slate-100 pt-0.5">
-                  <span className="text-[5.8pt] font-black text-slate-500 uppercase">GROSS WT:</span>
-                  <div className="font-mono font-black text-[7.2pt] text-slate-900 break-words">
-                    {formatMultiCargoValue(formData.gross_weight)}
+                <div className="flex flex-col gap-0 text-slate-900 border-t border-slate-100 pt-1">
+                  <span className="text-[6.8pt] font-black text-slate-600 uppercase tracking-wide">GROSS WT:</span>
+                  <div className="break-words">
+                    {formatMultiCargoValue(formData.gross_weight, "text-[9.2pt] text-slate-900")}
                   </div>
                 </div>
               )}
-              {!hasNetWeight && !hasGrossWeight && <div className="text-slate-400 text-center">—</div>}
+              {!hasNetWeight && !hasGrossWeight && <div className="text-slate-400 text-center font-bold">—</div>}
             </div>
           </div>
 
           {/* 4. RATE & GOODS VALUE */}
           <div
-            className={`rounded-lg border px-2 py-1.5 text-center flex flex-col justify-between ${
-              pdfMode ? "border-blue-100 bg-white" : "border-blue-100/90 bg-white/95 shadow-xs shadow-blue-100/50"
+            className={`rounded-xl border px-2.5 py-2 text-center flex flex-col justify-between ${
+              pdfMode ? "border-blue-200 bg-white" : "border-blue-200/90 bg-white/95 shadow-xs shadow-blue-100/50"
             }`}
           >
-            <div>
-              <div className="text-[6.5pt] font-black uppercase tracking-wider text-blue-700 leading-tight">
+            <div className="border-b border-blue-100/80 pb-1 mb-1">
+              <div className="text-[7.8pt] font-black uppercase tracking-wider text-blue-800 leading-tight">
                 RATE &amp; GOODS VALUE
               </div>
-              <div className="persian-text bol-persian-text font-[vazirmatn] text-[6.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
+              <div className="persian-text bol-persian-text font-[vazirmatn] text-[7.2pt] font-bold text-blue-600 leading-tight mt-0.5" dir="rtl">
                 نرخ و ارزش کالا
               </div>
             </div>
-            <div className="mt-1 space-y-1 text-[7pt] font-extrabold leading-tight text-left">
+            <div className="flex-1 flex flex-col justify-center space-y-1 text-left py-0.5">
               {hasRate && (
-                <div className="flex flex-col gap-0 text-slate-700">
-                  <span className="text-[5.8pt] font-black text-slate-500 uppercase">RATE / KG:</span>
-                  <div className="font-mono font-bold text-[7.2pt] text-slate-800 break-words">
-                    {formatMultiCargoValue(formData.rate_per_kgs)}
+                <div className="flex flex-col gap-0 text-slate-800">
+                  <span className="text-[6.8pt] font-black text-slate-600 uppercase tracking-wide">RATE / KG:</span>
+                  <div className="break-words">
+                    {formatMultiCargoValue(formData.rate_per_kgs, "text-[9.2pt] text-slate-900")}
                   </div>
                 </div>
               )}
               {hasGoodsValue && (
-                <div className="flex flex-col gap-0 text-emerald-950 border-t border-slate-100 pt-0.5">
-                  <span className="text-[5.8pt] font-black text-emerald-700 uppercase">GOODS VALUE:</span>
-                  <div className="font-mono font-black text-[7.2pt] text-emerald-900 break-words">
-                    {formatMultiCargoValue(formData.goods_value)}
+                <div className="flex flex-col gap-0 text-emerald-950 border-t border-slate-100 pt-1">
+                  <span className="text-[6.8pt] font-black text-emerald-700 uppercase tracking-wide">GOODS VALUE:</span>
+                  <div className="break-words">
+                    {formatMultiCargoValue(formData.goods_value, "text-[9.2pt] text-emerald-900")}
                   </div>
                 </div>
               )}
-              {!hasRate && !hasGoodsValue && <div className="text-slate-400 text-center">—</div>}
+              {!hasRate && !hasGoodsValue && <div className="text-slate-400 text-center font-bold">—</div>}
             </div>
           </div>
         </div>

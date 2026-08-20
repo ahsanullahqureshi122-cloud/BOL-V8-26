@@ -5444,10 +5444,10 @@
     gap: 0.6mm !important;
   }
 
-  [data-print-section="cargo"] .grid-cols-5 {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    grid-auto-rows: minmax(9mm, auto) !important;
-    gap: 0.6mm !important;
+  [data-print-section="cargo"] .grid-cols-5,
+  [data-print-section="cargo"] .grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.8mm !important;
   }
 
   [data-print-root="true"] .rounded-lg,
@@ -5513,7 +5513,7 @@
     [data-print-section="cargo"]
     [class*="text-\\[9pt\\]"] {
     font-size: 10.6pt !important;
-    line-height: 2.12 !important;
+    line-height: 1.25 !important;
   }
 
   [data-print-root="true"] .route-block,
