@@ -35,6 +35,7 @@ import {
   DollarSign,
   MapPin,
   User,
+  Receipt,
 } from "lucide-react"
 import { generateBOLPDFBlob, savePDFToDevice } from "@/lib/utils/pdf-upload"
 
@@ -66,6 +67,10 @@ interface SavedDocument {
   gross_weight?: string
   goods_description?: string
   description_of_goods?: string
+  cargo_description?: string
+  invoice_no?: string
+  invoice_number?: string
+  remarks?: string
   port_of_loading?: string
   port_of_discharge?: string
   place_of_delivery?: string
@@ -107,6 +112,19 @@ const categoryButtons: { key: DocumentCategoryKey; label: string }[] = [
   { key: "export", label: "📤 Export" },
   { key: "import", label: "📥 Import" },
 ]
+
+function extractInvoiceNo(doc: SavedDocument): string {
+  if (doc.invoice_no && doc.invoice_no.trim()) return doc.invoice_no.trim()
+  if (doc.invoice_number && doc.invoice_number.trim()) return doc.invoice_number.trim()
+  const texts = [
+    doc.cargo_description,
+    doc.goods_description,
+    doc.description_of_goods,
+    doc.remarks,
+  ].filter(Boolean).join(" ")
+  const match = texts.match(/(?:invoice|inv|fakt[ou]r|فاکتور)\s*(?:no|number|#)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9/_-]*)/i)
+  return match?.[1]?.trim() || ""
+}
 
 export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "sidebar" }: SavedDocumentsProps) {
   const [documents, setDocuments] = useState<SavedDocument[]>([])
@@ -1260,7 +1278,7 @@ function parseBolSeq(bolNum: string): number {
                 </div>
               </div>
             ) : (
-              <>
+              <div className="space-y-4">
                 {/* 1. GRID VIEW MODE - BALANCED RESPONSIVE GRID WITH PREMIUM CARDS */}
                 {viewMode === "grid" && (
                   <div className="grid gap-3 sm:gap-3.5 lg:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6">
@@ -1268,11 +1286,12 @@ function parseBolSeq(bolNum: string): number {
                       const assignedCategory = getAssignedCategory(doc)
                       const hasUploadedPdf = Boolean(doc.pdf_url)
                       const isLatest = idx < 2 && sortBy === "latest"
+                      const invoiceNo = extractInvoiceNo(doc)
 
                       return (
                         <article
                           key={doc.id}
-                          className="group relative flex min-h-[350px] flex-col rounded-[22px] sm:rounded-[26px] border border-white/90 bg-white/85 p-3.5 shadow-[0_10px_35px_-8px_rgba(37,99,235,0.08)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/90 hover:bg-white hover:shadow-[0_20px_55px_-10px_rgba(37,99,235,0.18)] overflow-hidden"
+                          className="group relative flex min-h-[360px] flex-col rounded-[22px] sm:rounded-[26px] border border-white/90 bg-white/85 p-3.5 shadow-[0_10px_35px_-8px_rgba(37,99,235,0.08)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/90 hover:bg-white hover:shadow-[0_20px_55px_-10px_rgba(37,99,235,0.18)] overflow-hidden"
                         >
                           {/* Light Reflection Flare */}
                           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -1281,12 +1300,20 @@ function parseBolSeq(bolNum: string): number {
                           <div className={`absolute top-0 left-0 right-0 h-1.5 ${isLatest ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 shadow-sm shadow-amber-500/50" : "bg-gradient-to-r from-[#0a2540] via-blue-600 to-indigo-500"}`} />
 
                           {/* Top Header Row */}
-                          <div className="flex items-center justify-between gap-1.5 pt-1 relative z-10">
-                            <div className="inline-flex max-w-[70%] items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0a2540] via-blue-900 to-[#1d4ed8] px-2.5 py-1 text-[11px] font-black font-mono tracking-tight text-white shadow-sm shadow-blue-950/20 truncate">
-                              <FileText className="h-3.5 w-3.5 shrink-0 text-blue-200" />
-                              <span className="truncate" title={doc.bol_number}>{doc.bol_number || "BOL"}</span>
+                          <div className="flex items-center justify-between gap-1.5 pt-1 relative z-10 flex-wrap">
+                            <div className="flex items-center gap-1.5 min-w-0 max-w-[72%] flex-wrap">
+                              <div className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0a2540] via-blue-900 to-[#1d4ed8] px-2.5 py-1 text-[11px] font-black font-mono tracking-tight text-white shadow-sm shadow-blue-950/20 truncate">
+                                <FileText className="h-3.5 w-3.5 shrink-0 text-blue-200" />
+                                <span className="truncate" title={doc.bol_number}>{doc.bol_number || "BOL"}</span>
+                              </div>
+                              {invoiceNo && (
+                                <div className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 text-[9.5px] font-black font-mono text-emerald-900 shadow-2xs shrink-0" title={`Invoice No: ${invoiceNo}`}>
+                                  <Receipt className="h-3 w-3 text-emerald-700 shrink-0" />
+                                  <span className="truncate">INV: {invoiceNo}</span>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-1 shrink-0 ml-auto">
                               {isLatest && (
                                 <span className="rounded-full px-2 py-0.5 text-[8.5px] font-black bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-xs uppercase tracking-wider">
                                   LATEST
@@ -1321,35 +1348,38 @@ function parseBolSeq(bolNum: string): number {
                             </div>
                           )}
 
-                          {/* Cargo & Weight Details Box (NEW) */}
+                          {/* Cargo & Weight Details Box */}
                           {(doc.number_of_packages || doc.net_weight || doc.gross_weight || doc.goods_value || doc.rate_per_kgs) && (
-                            <div className="mt-2 rounded-xl bg-blue-50/70 border border-blue-200/70 p-2 text-[10.5px] space-y-1 relative z-10">
-                              <div className="flex items-center justify-between gap-1 text-slate-800 font-extrabold">
+                            <div className="mt-2 rounded-xl bg-gradient-to-br from-blue-50/90 to-indigo-50/70 border border-blue-200/80 p-2.5 text-[10.5px] space-y-1.5 relative z-10 shadow-2xs">
+                              {/* Row 1: Packages & Weights */}
+                              <div className="flex items-start justify-between gap-1.5 text-slate-800 font-extrabold flex-wrap">
                                 {doc.number_of_packages && (
-                                  <span className="flex items-center gap-1 font-mono text-blue-950 font-black truncate">
-                                    <Boxes className="h-3 w-3 text-blue-600 shrink-0" />
-                                    <span className="truncate">{doc.number_of_packages}</span>
-                                  </span>
+                                  <div className="flex items-center gap-1 font-mono text-blue-950 font-black text-[10.5px]">
+                                    <Boxes className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                                    <span className="break-words">{doc.number_of_packages}</span>
+                                  </div>
                                 )}
                                 {(doc.net_weight || doc.gross_weight) && (
-                                  <span className="flex items-center gap-1 font-mono text-slate-900 font-extrabold truncate text-[10px]">
+                                  <div className="flex items-center gap-1 font-mono text-slate-900 font-extrabold text-[10px] bg-white/90 border border-blue-100/90 px-1.5 py-0.5 rounded-md shrink-0 shadow-2xs ml-auto">
                                     <Scale className="h-3 w-3 text-indigo-600 shrink-0" />
-                                    <span className="truncate">{doc.net_weight ? `Net: ${doc.net_weight}` : `Gross: ${doc.gross_weight}`}</span>
-                                  </span>
+                                    <span>{doc.net_weight ? `Net: ${doc.net_weight}` : `Gross: ${doc.gross_weight}`}</span>
+                                  </div>
                                 )}
                               </div>
+
+                              {/* Row 2: Goods Value & Rate */}
                               {(doc.goods_value || doc.rate_per_kgs) && (
-                                <div className="flex items-center justify-between gap-1 text-[10px] text-emerald-950 border-t border-blue-200/50 pt-0.5 font-bold">
+                                <div className="flex items-center justify-between gap-1 text-[10px] text-emerald-950 border-t border-blue-200/60 pt-1.5 font-bold flex-wrap">
                                   {doc.goods_value && (
-                                    <span className="flex items-center gap-0.5 font-mono font-black text-emerald-900 truncate">
+                                    <div className="flex items-center gap-0.5 font-mono font-black text-emerald-900">
                                       <DollarSign className="h-3 w-3 text-emerald-600 shrink-0" />
-                                      <span className="truncate">{doc.goods_value}</span>
-                                    </span>
+                                      <span className="break-words">{doc.goods_value}</span>
+                                    </div>
                                   )}
                                   {doc.rate_per_kgs && (
-                                    <span className="font-mono text-slate-600 truncate text-[9.5px]">
-                                      Rate: {doc.rate_per_kgs}
-                                    </span>
+                                    <div className="font-mono text-slate-600 text-[9.5px] bg-white/80 border border-slate-200/70 px-1.5 py-0.5 rounded shrink-0 ml-auto">
+                                      Rate: <span className="font-bold text-slate-900">{doc.rate_per_kgs}</span>
+                                    </div>
                                   )}
                                 </div>
                               )}
@@ -1378,17 +1408,17 @@ function parseBolSeq(bolNum: string): number {
 
                           {/* Driver & Rent (if present) */}
                           {(doc.driver_name || doc.driver_rent) && (
-                            <div className="mt-1.5 flex items-center justify-between gap-1 text-[10px] text-slate-800 font-bold bg-amber-50/70 border border-amber-200/60 rounded-lg px-2 py-1 relative z-10">
+                            <div className="mt-1.5 flex items-center justify-between gap-1 text-[10px] text-slate-800 font-bold bg-amber-50/85 border border-amber-200/80 rounded-xl px-2.5 py-1.5 relative z-10 shadow-2xs flex-wrap">
                               {doc.driver_name && (
-                                <span className="flex items-center gap-1 text-slate-950 font-extrabold truncate">
-                                  <User className="h-3 w-3 text-amber-700 shrink-0" />
+                                <div className="flex items-center gap-1 text-slate-950 font-extrabold min-w-0" dir="auto">
+                                  <User className="h-3.5 w-3.5 text-amber-700 shrink-0" />
                                   <span className="truncate">{doc.driver_name}</span>
-                                </span>
+                                </div>
                               )}
                               {doc.driver_rent && (
-                                <span className="font-mono text-amber-950 font-black shrink-0">
+                                <div className="font-mono text-amber-950 font-black text-[10px] bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded-lg shrink-0 ml-auto">
                                   {doc.driver_rent}
-                                </span>
+                                </div>
                               )}
                             </div>
                           )}
@@ -1411,272 +1441,300 @@ function parseBolSeq(bolNum: string): number {
                             ))}
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="mt-auto grid gap-1.5 pt-3 border-t border-slate-100 relative z-10">
-                            {/* Primary Actions Row */}
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <Button
-                                type="button"
-                                onClick={() => editBOL(doc)}
-                                className="h-9 rounded-xl bg-gradient-to-r from-[#0a2540] to-[#1d4ed8] hover:from-[#001428] hover:to-[#1e40af] text-white font-black text-[11.5px] shadow-sm shadow-blue-900/20 cursor-pointer transition-all active:scale-95 px-2 flex items-center justify-center gap-1.5"
-                              >
-                                <Pencil className="h-3.5 w-3.5 shrink-0" />
-                                <span>Edit BOL</span>
-                              </Button>
+                      {/* Action Buttons */}
+                      <div className="mt-auto grid gap-1.5 pt-3 border-t border-slate-100 relative z-10">
+                        {/* Primary Actions Row */}
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <Button
+                            type="button"
+                            onClick={() => editBOL(doc)}
+                            className="h-9 rounded-xl bg-gradient-to-r from-[#0a2540] to-[#1d4ed8] hover:from-[#001428] hover:to-[#1e40af] text-white font-black text-[11.5px] shadow-sm shadow-blue-900/20 cursor-pointer transition-all active:scale-95 px-2 flex items-center justify-center gap-1.5"
+                          >
+                            <Pencil className="h-3.5 w-3.5 shrink-0" />
+                            <span>Edit BOL</span>
+                          </Button>
 
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => downloadBOLPDF(doc)}
-                                className="h-9 rounded-xl border border-amber-300/80 bg-amber-100/90 hover:bg-amber-200 text-amber-950 font-black text-[11px] cursor-pointer shadow-2xs transition-all active:scale-95 px-2 flex items-center justify-center gap-1.5"
-                              >
-                                <FileDown className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                                <span>Download</span>
-                              </Button>
-                            </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => downloadBOLPDF(doc)}
+                            className="h-9 rounded-xl border border-amber-300/80 bg-amber-100/90 hover:bg-amber-200 text-amber-950 font-black text-[11px] cursor-pointer shadow-2xs transition-all active:scale-95 px-2 flex items-center justify-center gap-1.5"
+                          >
+                            <FileDown className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                            <span>Download</span>
+                          </Button>
+                        </div>
 
-                            {/* Secondary Quick Actions Row */}
-                            <div className="grid grid-cols-3 gap-1">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => viewBOLPreview(doc)}
-                                className="h-7.5 rounded-lg border border-blue-200/80 bg-blue-50/70 hover:bg-blue-100/80 text-blue-700 font-bold text-[10px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
-                                title="Preview A4 Document"
-                              >
-                                <Eye className="h-3 w-3 mr-1 shrink-0 text-blue-600" />
-                                <span>Preview</span>
-                              </Button>
+                        {/* Secondary Quick Actions Row */}
+                        <div className="grid grid-cols-3 gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => viewBOLPreview(doc)}
+                            className="h-7.5 rounded-lg border border-blue-200/80 bg-blue-50/70 hover:bg-blue-100/80 text-blue-700 font-bold text-[10px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
+                            title="Preview A4 Document"
+                          >
+                            <Eye className="h-3 w-3 mr-1 shrink-0 text-blue-600" />
+                            <span>Preview</span>
+                          </Button>
 
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => handleDuplicate(doc)}
-                                className="h-7.5 rounded-lg border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/80 text-purple-700 font-bold text-[10px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
-                                title="Clone document with new BOL number"
-                              >
-                                <Copy className="h-3 w-3 mr-1 text-purple-600 shrink-0" />
-                                <span>Duplicate</span>
-                              </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleDuplicate(doc)}
+                            className="h-7.5 rounded-lg border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/80 text-purple-700 font-bold text-[10px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
+                            title="Clone document with new BOL number"
+                          >
+                            <Copy className="h-3 w-3 mr-1 text-purple-600 shrink-0" />
+                            <span>Duplicate</span>
+                          </Button>
 
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => openUploadedPDF(doc)}
-                                disabled={!hasUploadedPdf || openingPdfId === doc.id}
-                                className="h-7.5 rounded-lg border border-emerald-200/80 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-700 font-bold text-[10px] disabled:border-slate-100 disabled:bg-slate-50/60 disabled:text-slate-300 cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
-                                title={hasUploadedPdf ? "Open uploaded PDF file" : "No uploaded PDF available"}
-                              >
-                                <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
-                                <span>File PDF</span>
-                              </Button>
-                            </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => openUploadedPDF(doc)}
+                            disabled={!hasUploadedPdf || openingPdfId === doc.id}
+                            className="h-7.5 rounded-lg border border-emerald-200/80 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-700 font-bold text-[10px] disabled:border-slate-100 disabled:bg-slate-50/60 disabled:text-slate-300 cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
+                            title={hasUploadedPdf ? "Open uploaded PDF file" : "No uploaded PDF available"}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
+                            <span>File PDF</span>
+                          </Button>
+                        </div>
 
-                            {/* Attach PDF & Delete Row */}
-                            <div className="grid grid-cols-[1fr_auto] gap-1.5 pt-0.5">
-                              <label
-                                className={`inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 px-2.5 text-[11px] font-bold text-slate-700 transition-all shadow-2xs backdrop-blur-xs ${
-                                  uploadingId === doc.id ? "pointer-events-none opacity-70" : ""
-                                }`}
-                              >
-                                {uploadingId === doc.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Upload className="h-3.5 w-3.5 text-blue-600" />
-                                )}
-                                <span>{hasUploadedPdf ? "Replace PDF" : "Attach PDF"}</span>
-                                <input
-                                  type="file"
-                                  accept="application/pdf,.pdf"
-                                  className="hidden"
-                                  disabled={uploadingId === doc.id}
-                                  onChange={handleFileInput(doc)}
-                                />
-                              </label>
+                        {/* Attach PDF & Delete Row */}
+                        <div className="grid grid-cols-[1fr_auto] gap-1.5 pt-0.5">
+                          <label
+                            className={`inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 px-2.5 text-[11px] font-bold text-slate-700 transition-all shadow-2xs backdrop-blur-xs ${
+                              uploadingId === doc.id ? "pointer-events-none opacity-70" : ""
+                            }`}
+                          >
+                            {uploadingId === doc.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Upload className="h-3.5 w-3.5 text-blue-600" />
+                            )}
+                            <span>{hasUploadedPdf ? "Replace PDF" : "Attach PDF"}</span>
+                            <input
+                              type="file"
+                              accept="application/pdf,.pdf"
+                              className="hidden"
+                              disabled={uploadingId === doc.id}
+                              onChange={handleFileInput(doc)}
+                            />
+                          </label>
 
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={(event) => handleDelete(doc.id, event)}
-                                disabled={deletingId === doc.id}
-                                className="h-8 w-8 rounded-xl border border-red-200/80 bg-red-50/50 hover:bg-red-100/80 p-0 text-red-600 hover:text-red-700 cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center"
-                                title="Delete document"
-                              >
-                                {deletingId === doc.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
-                            </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={(event) => handleDelete(doc.id, event)}
+                            disabled={deletingId === doc.id}
+                            className="h-8 w-8 rounded-xl border border-red-200/80 bg-red-50/50 hover:bg-red-100/80 p-0 text-red-600 hover:text-red-700 cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center"
+                            title="Delete document"
+                          >
+                            {deletingId === doc.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* 2. COMPACT LIST VIEW MODE */}
+            {viewMode === "list" && (
+              <div className="space-y-3">
+                {filteredDocuments.map((doc, idx) => {
+                  const hasUploadedPdf = Boolean(doc.pdf_url)
+                  const isLatest = idx < 2 && sortBy === "latest"
+                  const invoiceNo = extractInvoiceNo(doc)
+
+                  return (
+                    <div
+                      key={`list-${doc.id}`}
+                      className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-black text-xs shrink-0">
+                          <FileText className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-black text-slate-900 text-sm">{doc.bol_number || "BOL"}</span>
+                            {invoiceNo && (
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-black font-mono">
+                                INV: {invoiceNo}
+                              </span>
+                            )}
+                            {isLatest && (
+                              <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[9px] font-black">
+                                LATEST
+                              </span>
+                            )}
+                            <span className="text-xs font-bold text-slate-500">
+                              • {doc.issue_date ? new Date(doc.issue_date).toLocaleDateString() : "No date"}
+                            </span>
                           </div>
-                        </article>
-                      )
-                    })}
-                  </div>
-                )}
+                          <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
+                            <span className="font-extrabold text-slate-900">{doc.shipper_name}</span> ➔ {doc.consignee_name}
+                          </p>
+                          {(doc.number_of_packages || doc.net_weight || doc.goods_value) && (
+                            <p className="text-[11px] font-bold text-blue-900 mt-1 flex items-center gap-2 flex-wrap">
+                              {doc.number_of_packages && <span>📦 {doc.number_of_packages}</span>}
+                              {doc.net_weight && <span>⚖️ {doc.net_weight}</span>}
+                              {doc.goods_value && <span>💰 {doc.goods_value}</span>}
+                              {doc.truck_number && <span>🚚 {doc.truck_number}</span>}
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
-                {/* 2. COMPACT LIST VIEW MODE */}
-                {viewMode === "list" && (
-                  <div className="space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => editBOL(doc)}
+                          className="h-9 px-3 rounded-xl bg-blue-600 text-white font-extrabold text-xs cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                        </Button>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => downloadBOLPDF(doc)}
+                          className="h-9 px-3 rounded-xl border-amber-300 bg-amber-50 text-amber-900 font-black text-xs cursor-pointer hover:bg-amber-100"
+                        >
+                          <FileDown className="w-3.5 h-3.5 mr-1 text-amber-600" /> Download PDF
+                        </Button>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => viewBOLPreview(doc)}
+                          className="h-9 px-3 rounded-xl border-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1" /> Preview
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* 3. DETAILED TABLE VIEW MODE */}
+            {viewMode === "table" && (
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-100/80 text-slate-900 uppercase font-black tracking-wider text-[11px] border-b border-slate-200">
+                    <tr>
+                      <th className="p-3.5">BOL & Invoice #</th>
+                      <th className="p-3.5">Issue Date</th>
+                      <th className="p-3.5">Shipper</th>
+                      <th className="p-3.5">Consignee</th>
+                      <th className="p-3.5">Cargo / Weight</th>
+                      <th className="p-3.5">Truck #</th>
+                      <th className="p-3.5">PDF Status</th>
+                      <th className="p-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-semibold">
                     {filteredDocuments.map((doc, idx) => {
                       const hasUploadedPdf = Boolean(doc.pdf_url)
                       const isLatest = idx < 2 && sortBy === "latest"
+                      const invoiceNo = extractInvoiceNo(doc)
 
                       return (
-                        <div
-                          key={`list-${doc.id}`}
-                          className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-black text-xs shrink-0">
-                              <FileText className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-black text-slate-900 text-sm">{doc.bol_number || "BOL"}</span>
-                                {isLatest && (
-                                  <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[9px] font-black">
-                                    LATEST
-                                  </span>
-                                )}
-                                <span className="text-xs font-bold text-slate-500">
-                                  • {doc.issue_date ? new Date(doc.issue_date).toLocaleDateString() : "No date"}
+                        <tr key={`table-${doc.id}`} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-3.5 font-black text-blue-900">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{doc.bol_number || "N/A"}</span>
+                              {invoiceNo && (
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 text-[9.5px] font-mono font-bold">
+                                  {invoiceNo}
                                 </span>
-                              </div>
-                              <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
-                                <span className="font-extrabold text-slate-900">{doc.shipper_name}</span> ➔ {doc.consignee_name}
-                              </p>
+                              )}
+                              {isLatest && (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[9px] font-black">
+                                  LATEST
+                                </span>
+                              )}
                             </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 flex-wrap shrink-0">
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => editBOL(doc)}
-                              className="h-9 px-3 rounded-xl bg-blue-600 text-white font-extrabold text-xs cursor-pointer"
-                            >
-                              <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
-                            </Button>
-
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => downloadBOLPDF(doc)}
-                              className="h-9 px-3 rounded-xl border-amber-300 bg-amber-50 text-amber-900 font-black text-xs cursor-pointer hover:bg-amber-100"
-                            >
-                              <FileDown className="w-3.5 h-3.5 mr-1 text-amber-600" /> Download PDF
-                            </Button>
-
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => viewBOLPreview(doc)}
-                              className="h-9 px-3 rounded-xl border-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5 mr-1" /> Preview
-                            </Button>
-                          </div>
-                        </div>
+                          </td>
+                          <td className="p-3.5">
+                            {doc.issue_date ? new Date(doc.issue_date).toLocaleDateString() : "N/A"}
+                          </td>
+                          <td className="p-3.5 font-bold text-slate-900 max-w-[160px] truncate">
+                            {doc.shipper_name || "N/A"}
+                          </td>
+                          <td className="p-3.5 font-bold text-slate-800 max-w-[160px] truncate">
+                            {doc.consignee_name || "N/A"}
+                          </td>
+                          <td className="p-3.5 font-medium text-slate-700 max-w-[180px] truncate">
+                            {doc.number_of_packages || doc.net_weight ? (
+                              <span>{doc.number_of_packages} {doc.net_weight ? `(${doc.net_weight})` : ""}</span>
+                            ) : "—"}
+                          </td>
+                          <td className="p-3.5">{doc.truck_number || "N/A"}</td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                              hasUploadedPdf ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"
+                            }`}>
+                              {hasUploadedPdf ? "PDF Ready" : "No PDF"}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => editBOL(doc)}
+                                className="h-8 px-2.5 rounded-lg bg-blue-600 text-white font-extrabold text-[11px] cursor-pointer"
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => downloadBOLPDF(doc)}
+                                className="h-8 px-2.5 rounded-lg border-amber-300 bg-amber-50 text-amber-900 font-extrabold text-[11px] cursor-pointer hover:bg-amber-100"
+                              >
+                                PDF
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => viewBOLPreview(doc)}
+                                className="h-8 px-2.5 rounded-lg border-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
+                              >
+                                View
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
                       )
                     })}
-                  </div>
-                )}
-
-                {/* 3. DETAILED TABLE VIEW MODE */}
-                {viewMode === "table" && (
-                  <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <table className="w-full text-left text-xs text-slate-700">
-                      <thead className="bg-slate-100/80 text-slate-900 uppercase font-black tracking-wider text-[11px] border-b border-slate-200">
-                        <tr>
-                          <th className="p-3.5">BOL Number</th>
-                          <th className="p-3.5">Issue Date</th>
-                          <th className="p-3.5">Shipper</th>
-                          <th className="p-3.5">Consignee</th>
-                          <th className="p-3.5">Truck #</th>
-                          <th className="p-3.5">PDF Status</th>
-                          <th className="p-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 font-semibold">
-                        {filteredDocuments.map((doc, idx) => {
-                          const hasUploadedPdf = Boolean(doc.pdf_url)
-                          const isLatest = idx < 2 && sortBy === "latest"
-
-                          return (
-                            <tr key={`table-${doc.id}`} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="p-3.5 font-black text-blue-900">
-                                <div className="flex items-center gap-1.5">
-                                  <span>{doc.bol_number || "N/A"}</span>
-                                  {isLatest && (
-                                    <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[9px] font-black">
-                                      LATEST
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="p-3.5">
-                                {doc.issue_date ? new Date(doc.issue_date).toLocaleDateString() : "N/A"}
-                              </td>
-                              <td className="p-3.5 font-bold text-slate-900 max-w-[160px] truncate">
-                                {doc.shipper_name || "N/A"}
-                              </td>
-                              <td className="p-3.5 font-bold text-slate-800 max-w-[160px] truncate">
-                                {doc.consignee_name || "N/A"}
-                              </td>
-                              <td className="p-3.5">{doc.truck_number || "N/A"}</td>
-                              <td className="p-3.5">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                  hasUploadedPdf ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"
-                                }`}>
-                                  {hasUploadedPdf ? "PDF Ready" : "No PDF"}
-                                </span>
-                              </td>
-                              <td className="p-3.5 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => editBOL(doc)}
-                                    className="h-8 px-2.5 rounded-lg bg-blue-600 text-white font-extrabold text-[11px] cursor-pointer"
-                                  >
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => downloadBOLPDF(doc)}
-                                    className="h-8 px-2.5 rounded-lg border-amber-300 bg-amber-50 text-amber-900 font-extrabold text-[11px] cursor-pointer hover:bg-amber-100"
-                                  >
-                                    PDF
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => viewBOLPreview(doc)}
-                                    className="h-8 px-2.5 rounded-lg border-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
-                                  >
-                                    View
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
+                  </tbody>
+                </table>
+              </div>
             )}
+          </div>
+        )}
           </>
         )}
       </CardContent>
     </Card>
   )
 }
+
+
