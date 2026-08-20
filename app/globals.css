@@ -5271,7 +5271,7 @@
 
   [data-bol-header="true"] > div {
     display: grid !important;
-    grid-template-columns: 37mm minmax(0, 1fr) 34mm !important;
+    grid-template-columns: 36mm minmax(0, 1fr) 58mm !important;
     column-gap: 3.5mm !important;
     align-items: center !important;
   }
@@ -5349,7 +5349,7 @@
     background: #ffffff !important;
     border-top: 0.25mm solid #bfdbfe !important;
     display: flex !important;
-    justify-content: center !important;
+    justify-content: space-between !important;
     min-height: 8.4mm !important;
     padding: 1.5mm 2mm !important;
   }

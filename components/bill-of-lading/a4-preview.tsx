@@ -235,35 +235,30 @@ function DocumentQRCode({ value, size = 52 }: { value: string; size?: number }) 
   }
 
   const cellSize = size / grid
+  let path = ""
+  for (let r = 0; r < grid; r++) {
+    for (let c = 0; c < grid; c++) {
+      if (modules[r][c]) {
+        path += `M${(c * cellSize).toFixed(2)},${(r * cellSize).toFixed(2)}h${cellSize.toFixed(2)}v${cellSize.toFixed(2)}h-${cellSize.toFixed(2)}z `
+      }
+    }
+  }
 
   return (
     <svg
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      className="shrink-0"
+      className="shrink-0 block"
       style={{
         shapeRendering: "crispEdges",
         WebkitPrintColorAdjust: "exact",
         printColorAdjust: "exact",
+        backgroundColor: "#ffffff",
       }}
     >
-      <rect width={size} height={size} fill="#ffffff" style={{ fill: "#ffffff !important" }} />
-      {modules.map((row, r) =>
-        row.map((cell, c) =>
-          cell ? (
-            <rect
-              key={`${r}-${c}`}
-              x={c * cellSize}
-              y={r * cellSize}
-              width={cellSize}
-              height={cellSize}
-              fill="#000000"
-              style={{ fill: "#000000 !important" }}
-            />
-          ) : null
-        )
-      )}
+      <rect width={size} height={size} fill="#ffffff" />
+      <path d={path} fill="#000000" />
     </svg>
   )
 }
