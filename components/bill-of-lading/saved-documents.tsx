@@ -30,6 +30,11 @@ import {
   Zap,
   ArrowUpDown,
   RotateCcw,
+  Boxes,
+  Scale,
+  DollarSign,
+  MapPin,
+  User,
 } from "lucide-react"
 import { generateBOLPDFBlob, savePDFToDevice } from "@/lib/utils/pdf-upload"
 
@@ -48,6 +53,27 @@ interface SavedDocument {
   shipper_name: string
   consignee_name: string
   truck_number?: string
+  driver_name?: string
+  driver_father_name?: string
+  driver_contact?: string
+  driver_rent?: string
+  number_of_packages?: string
+  kgs_per_carton?: string
+  gross_weight_per_carton?: string
+  rate_per_kgs?: string
+  goods_value?: string
+  net_weight?: string
+  gross_weight?: string
+  goods_description?: string
+  description_of_goods?: string
+  port_of_loading?: string
+  port_of_discharge?: string
+  place_of_delivery?: string
+  origin_country?: string
+  destination_country?: string
+  container_numbers?: string
+  seal_numbers?: string
+  measurement?: string
   created_at: string
   pdf_url?: string | null
   pdf_uploaded_at?: string | null
@@ -999,13 +1025,31 @@ function parseBolSeq(bolNum: string): number {
                       </span>
                     </div>
 
-                    <p className="mt-2.5 text-xs font-black text-slate-950 truncate" title={doc.shipper_name}>
+                    <p className="mt-2 text-xs font-black text-slate-950 truncate" title={doc.shipper_name}>
                       {doc.shipper_name || "No Shipper"}
                     </p>
                     <p className="text-[11px] text-slate-600 font-bold truncate flex items-center gap-1 mt-0.5">
                       <ArrowRight className="w-3 h-3 text-amber-600 shrink-0" />
                       <span className="truncate">{doc.consignee_name || "No Consignee"}</span>
                     </p>
+
+                    {/* Quick Cargo & Logistics Details */}
+                    {(doc.number_of_packages || doc.net_weight || doc.truck_number || doc.goods_value) && (
+                      <div className="mt-2 flex items-center justify-between gap-1 text-[10px] bg-amber-50/90 border border-amber-200/80 rounded-lg px-2 py-1 text-amber-950 font-bold">
+                        {(doc.number_of_packages || doc.net_weight) && (
+                          <span className="truncate flex items-center gap-1">
+                            <Boxes className="w-3 h-3 text-amber-700 shrink-0" />
+                            <span>{doc.number_of_packages || doc.net_weight}</span>
+                          </span>
+                        )}
+                        {doc.truck_number && (
+                          <span className="truncate flex items-center gap-1 font-mono text-[9.5px]">
+                            <Truck className="w-3 h-3 text-amber-700 shrink-0" />
+                            <span>{doc.truck_number}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-3 pt-2.5 border-t border-amber-100/80 flex items-center gap-1.5">
@@ -1267,8 +1311,53 @@ function parseBolSeq(bolNum: string): number {
                             </div>
                           </div>
 
+                          {/* Route / Ports (if present) */}
+                          {(doc.port_of_loading || doc.port_of_discharge || doc.origin_country || doc.destination_country) && (
+                            <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100/80 border border-slate-200/70 rounded-lg px-2 py-0.5 relative z-10 truncate">
+                              <MapPin className="h-3 w-3 text-blue-600 shrink-0" />
+                              <span className="truncate">
+                                {doc.port_of_loading || doc.origin_country || "Origin"} ➔ {doc.port_of_discharge || doc.destination_country || "Destination"}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Cargo & Weight Details Box (NEW) */}
+                          {(doc.number_of_packages || doc.net_weight || doc.gross_weight || doc.goods_value || doc.rate_per_kgs) && (
+                            <div className="mt-2 rounded-xl bg-blue-50/70 border border-blue-200/70 p-2 text-[10.5px] space-y-1 relative z-10">
+                              <div className="flex items-center justify-between gap-1 text-slate-800 font-extrabold">
+                                {doc.number_of_packages && (
+                                  <span className="flex items-center gap-1 font-mono text-blue-950 font-black truncate">
+                                    <Boxes className="h-3 w-3 text-blue-600 shrink-0" />
+                                    <span className="truncate">{doc.number_of_packages}</span>
+                                  </span>
+                                )}
+                                {(doc.net_weight || doc.gross_weight) && (
+                                  <span className="flex items-center gap-1 font-mono text-slate-900 font-extrabold truncate text-[10px]">
+                                    <Scale className="h-3 w-3 text-indigo-600 shrink-0" />
+                                    <span className="truncate">{doc.net_weight ? `Net: ${doc.net_weight}` : `Gross: ${doc.gross_weight}`}</span>
+                                  </span>
+                                )}
+                              </div>
+                              {(doc.goods_value || doc.rate_per_kgs) && (
+                                <div className="flex items-center justify-between gap-1 text-[10px] text-emerald-950 border-t border-blue-200/50 pt-0.5 font-bold">
+                                  {doc.goods_value && (
+                                    <span className="flex items-center gap-0.5 font-mono font-black text-emerald-900 truncate">
+                                      <DollarSign className="h-3 w-3 text-emerald-600 shrink-0" />
+                                      <span className="truncate">{doc.goods_value}</span>
+                                    </span>
+                                  )}
+                                  {doc.rate_per_kgs && (
+                                    <span className="font-mono text-slate-600 truncate text-[9.5px]">
+                                      Rate: {doc.rate_per_kgs}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {/* Date & Truck */}
-                          <div className="mt-2.5 grid grid-cols-2 gap-1.5 text-[11px] text-slate-600 relative z-10">
+                          <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] text-slate-600 relative z-10">
                             <div className="flex items-center gap-1.5 rounded-xl bg-white/80 backdrop-blur-md px-2 py-1 border border-slate-200/60 shadow-2xs">
                               <Calendar className="h-3 w-3 text-blue-600 shrink-0" />
                               <span className="font-bold text-slate-800 truncate">
@@ -1287,8 +1376,25 @@ function parseBolSeq(bolNum: string): number {
                             </div>
                           </div>
 
+                          {/* Driver & Rent (if present) */}
+                          {(doc.driver_name || doc.driver_rent) && (
+                            <div className="mt-1.5 flex items-center justify-between gap-1 text-[10px] text-slate-800 font-bold bg-amber-50/70 border border-amber-200/60 rounded-lg px-2 py-1 relative z-10">
+                              {doc.driver_name && (
+                                <span className="flex items-center gap-1 text-slate-950 font-extrabold truncate">
+                                  <User className="h-3 w-3 text-amber-700 shrink-0" />
+                                  <span className="truncate">{doc.driver_name}</span>
+                                </span>
+                              )}
+                              {doc.driver_rent && (
+                                <span className="font-mono text-amber-950 font-black shrink-0">
+                                  {doc.driver_rent}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
                           {/* Category Tag Buttons */}
-                          <div className="mt-2.5 flex flex-wrap gap-1 relative z-10">
+                          <div className="mt-2 flex flex-wrap gap-1 relative z-10">
                             {(["account", "export", "import"] as const).map((category) => (
                               <button
                                 key={category}
