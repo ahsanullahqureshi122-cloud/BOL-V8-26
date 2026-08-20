@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type ChangeEvent, type MouseEvent } from "react"
+import { useEffect, useMemo, useState, useCallback, startTransition, memo, type ChangeEvent, type MouseEvent } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -125,6 +125,296 @@ function extractInvoiceNo(doc: SavedDocument): string {
   const match = texts.match(/(?:invoice|inv|fakt[ou]r|فاکتور)\s*(?:no|number|#)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9/_-]*)/i)
   return match?.[1]?.trim() || ""
 }
+
+interface DocumentGridCardProps {
+  doc: SavedDocument
+  isLatest: boolean
+  hasUploadedPdf: boolean
+  invoiceNo: string
+  assignedCategory?: string
+  uploadingId: string | null
+  deletingId: string | null
+  openingPdfId: string | null
+  onEdit: (doc: SavedDocument) => void
+  onDownload: (doc: SavedDocument) => void
+  onPreview: (doc: SavedDocument) => void
+  onDuplicate: (doc: SavedDocument) => void
+  onOpenPdf: (doc: SavedDocument) => void
+  onDelete: (id: string, e: MouseEvent) => void
+  onCategoryAssign: (doc: SavedDocument, cat: Exclude<DocumentCategoryKey, "all" | "latest" | "with-pdf">) => void
+  onFileInput: (doc: SavedDocument) => (e: ChangeEvent<HTMLInputElement>) => void
+}
+
+const DocumentGridCard = memo(function DocumentGridCard({
+  doc,
+  isLatest,
+  hasUploadedPdf,
+  invoiceNo,
+  assignedCategory,
+  uploadingId,
+  deletingId,
+  openingPdfId,
+  onEdit,
+  onDownload,
+  onPreview,
+  onDuplicate,
+  onOpenPdf,
+  onDelete,
+  onCategoryAssign,
+  onFileInput,
+}: DocumentGridCardProps) {
+  return (
+    <article
+      style={{ contentVisibility: "auto", containIntrinsicSize: "380px" }}
+      className="group relative flex min-h-[360px] flex-col rounded-[22px] sm:rounded-[26px] border border-slate-200/90 bg-white/95 p-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:bg-white hover:shadow-md overflow-hidden"
+    >
+      {/* Top Accent Gradient Line */}
+      <div className={`absolute top-0 left-0 right-0 h-1.5 ${isLatest ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 shadow-sm shadow-amber-500/50" : "bg-gradient-to-r from-[#0a2540] via-blue-600 to-indigo-500"}`} />
+
+      {/* Top Header Row */}
+      <div className="flex items-center justify-between gap-1.5 pt-1 relative z-10 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0 max-w-[72%] flex-wrap">
+          <div className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0a2540] via-blue-900 to-[#1d4ed8] px-2.5 py-1 text-[11px] font-black font-mono tracking-tight text-white shadow-sm shadow-blue-950/20 truncate">
+            <FileText className="h-3.5 w-3.5 shrink-0 text-blue-200" />
+            <span className="truncate" title={doc.bol_number}>{doc.bol_number || "BOL"}</span>
+          </div>
+          {invoiceNo && (
+            <div className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 text-[9.5px] font-black font-mono text-emerald-900 shadow-2xs shrink-0" title={`Invoice No: ${invoiceNo}`}>
+              <Receipt className="h-3 w-3 text-emerald-700 shrink-0" />
+              <span className="truncate">INV: {invoiceNo}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0 ml-auto">
+          {isLatest && (
+            <span className="rounded-full px-2 py-0.5 text-[8.5px] font-black bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-xs uppercase tracking-wider">
+              LATEST
+            </span>
+          )}
+          <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${
+            hasUploadedPdf ? "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs" : "bg-slate-100 text-slate-500 border border-slate-200"
+          }`}>
+            {hasUploadedPdf ? "PDF" : "No PDF"}
+          </span>
+        </div>
+      </div>
+
+      {/* Shipper & Consignee */}
+      <div className="mt-2.5 space-y-1 relative z-10">
+        <p className="text-xs font-black text-slate-950 leading-snug break-words line-clamp-1" title={doc.shipper_name}>
+          {doc.shipper_name || "No shipper"}
+        </p>
+        <div className="flex items-center gap-1.5 rounded-xl bg-slate-50 px-2.5 py-1 border border-slate-200/80 text-[11px] font-bold text-slate-700 leading-tight" title={doc.consignee_name}>
+          <ArrowRight className="h-3 w-3 text-blue-600 shrink-0" />
+          <span className="truncate">{doc.consignee_name || "No consignee"}</span>
+        </div>
+      </div>
+
+      {/* Route / Ports (if present) */}
+      {(doc.port_of_loading || doc.port_of_discharge || doc.origin_country || doc.destination_country) && (
+        <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100/80 border border-slate-200/70 rounded-lg px-2 py-0.5 relative z-10 truncate">
+          <MapPin className="h-3 w-3 text-blue-600 shrink-0" />
+          <span className="truncate">
+            {doc.port_of_loading || doc.origin_country || "Origin"} ➔ {doc.port_of_discharge || doc.destination_country || "Destination"}
+          </span>
+        </div>
+      )}
+
+      {/* Cargo & Weight Details Box */}
+      {(doc.number_of_packages || doc.net_weight || doc.gross_weight || doc.goods_value || doc.rate_per_kgs) && (
+        <div className="mt-2 rounded-xl bg-gradient-to-br from-blue-50/90 to-indigo-50/70 border border-blue-200/80 p-2.5 text-[10.5px] space-y-1.5 relative z-10 shadow-2xs">
+          {/* Row 1: Packages & Weights */}
+          <div className="flex items-start justify-between gap-1.5 text-slate-800 font-extrabold flex-wrap">
+            {doc.number_of_packages && (
+              <div className="flex items-center gap-1 font-mono text-blue-950 font-black text-[10.5px]">
+                <Boxes className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                <span className="break-words">{doc.number_of_packages}</span>
+              </div>
+            )}
+            {(doc.net_weight || doc.gross_weight) && (
+              <div className="flex items-center gap-1 font-mono text-slate-900 font-extrabold text-[10px] bg-white/90 border border-blue-100/90 px-1.5 py-0.5 rounded-md shrink-0 shadow-2xs ml-auto">
+                <Scale className="h-3 w-3 text-indigo-600 shrink-0" />
+                <span>{doc.net_weight ? `Net: ${doc.net_weight}` : `Gross: ${doc.gross_weight}`}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Row 2: Goods Value & Rate */}
+          {(doc.goods_value || doc.rate_per_kgs) && (
+            <div className="flex items-center justify-between gap-1 text-[10px] text-emerald-950 border-t border-blue-200/60 pt-1.5 font-bold flex-wrap">
+              {doc.goods_value && (
+                <div className="flex items-center gap-0.5 font-mono font-black text-emerald-900">
+                  <DollarSign className="h-3 w-3 text-emerald-600 shrink-0" />
+                  <span className="break-words">{doc.goods_value}</span>
+                </div>
+              )}
+              {doc.rate_per_kgs && (
+                <div className="font-mono text-slate-600 text-[9.5px] bg-white/80 border border-slate-200/70 px-1.5 py-0.5 rounded shrink-0 ml-auto">
+                  Rate: <span className="font-bold text-slate-900">{doc.rate_per_kgs}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Date & Truck */}
+      <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] text-slate-600 relative z-10">
+        <div className="flex items-center gap-1.5 rounded-xl bg-white/90 px-2 py-1 border border-slate-200/60 shadow-2xs">
+          <Calendar className="h-3 w-3 text-blue-600 shrink-0" />
+          <span className="font-bold text-slate-800 truncate">
+            {doc.issue_date
+              ? new Date(doc.issue_date).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "No date"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 rounded-xl bg-white/90 px-2 py-1 border border-slate-200/60 shadow-2xs">
+          <Truck className="h-3 w-3 text-indigo-600 shrink-0" />
+          <span className="truncate font-bold text-slate-800">{doc.truck_number || "No truck #"}</span>
+        </div>
+      </div>
+
+      {/* Driver & Rent (if present) */}
+      {(doc.driver_name || doc.driver_rent) && (
+        <div className="mt-1.5 flex items-center justify-between gap-1 text-[10px] text-slate-800 font-bold bg-amber-50/85 border border-amber-200/80 rounded-xl px-2.5 py-1.5 relative z-10 shadow-2xs flex-wrap">
+          {doc.driver_name && (
+            <div className="flex items-center gap-1 text-slate-950 font-extrabold min-w-0" dir="auto">
+              <User className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+              <span className="truncate">{doc.driver_name}</span>
+            </div>
+          )}
+          {doc.driver_rent && (
+            <div className="font-mono text-amber-950 font-black text-[10px] bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded-lg shrink-0 ml-auto">
+              {doc.driver_rent}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Category Tag Buttons */}
+      <div className="mt-2 flex flex-wrap gap-1 relative z-10">
+        {(["account", "export", "import"] as const).map((category) => (
+          <button
+            key={category}
+            type="button"
+            onClick={() => onCategoryAssign(doc, category)}
+            className={`rounded-lg border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+              assignedCategory === category
+                ? "border-blue-600 bg-blue-600 text-white shadow-2xs"
+                : "border-slate-200/80 bg-white/70 text-slate-600 hover:border-blue-300 hover:text-blue-700 hover:bg-white"
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="mt-auto grid gap-1.5 pt-3 border-t border-slate-100 relative z-10">
+        {/* Primary Actions Row */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button
+            type="button"
+            onClick={() => onEdit(doc)}
+            className="h-9 rounded-xl bg-gradient-to-r from-[#0a2540] to-[#1d4ed8] hover:from-[#001428] hover:to-[#1e40af] text-white font-black text-[11.5px] shadow-sm shadow-blue-900/20 cursor-pointer transition-all active:scale-95 px-2 flex items-center justify-center gap-1.5"
+          >
+            <Pencil className="h-3.5 w-3.5 shrink-0" />
+            <span>Edit BOL</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onDownload(doc)}
+            className="h-9 rounded-xl border border-amber-300/80 bg-amber-100/90 hover:bg-amber-200 text-amber-950 font-black text-[11px] cursor-pointer shadow-2xs transition-all active:scale-95 px-2 flex items-center justify-center gap-1.5"
+          >
+            <FileDown className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+            <span>Download</span>
+          </Button>
+        </div>
+
+        {/* Secondary Quick Actions Row */}
+        <div className="grid grid-cols-3 gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onPreview(doc)}
+            className="h-7.5 rounded-lg border border-blue-200/80 bg-blue-50/70 hover:bg-blue-100/80 text-blue-700 font-bold text-[10px] cursor-pointer transition-all flex items-center justify-center px-1"
+            title="Preview A4 Document"
+          >
+            <Eye className="h-3 w-3 mr-1 shrink-0 text-blue-600" />
+            <span>Preview</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onDuplicate(doc)}
+            className="h-7.5 rounded-lg border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/80 text-purple-700 font-bold text-[10px] cursor-pointer transition-all flex items-center justify-center px-1"
+            title="Clone document with new BOL number"
+          >
+            <Copy className="h-3 w-3 mr-1 text-purple-600 shrink-0" />
+            <span>Duplicate</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenPdf(doc)}
+            disabled={!hasUploadedPdf || openingPdfId === doc.id}
+            className="h-7.5 rounded-lg border border-emerald-200/80 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-700 font-bold text-[10px] disabled:border-slate-100 disabled:bg-slate-50/60 disabled:text-slate-300 cursor-pointer transition-all flex items-center justify-center px-1"
+            title={hasUploadedPdf ? "Open uploaded PDF file" : "No uploaded PDF available"}
+          >
+            <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
+            <span>File PDF</span>
+          </Button>
+        </div>
+
+        {/* Attach PDF & Delete Row */}
+        <div className="grid grid-cols-[1fr_auto] gap-1.5 pt-0.5">
+          <label
+            className={`inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 px-2.5 text-[11px] font-bold text-slate-700 transition-all shadow-2xs ${
+              uploadingId === doc.id ? "pointer-events-none opacity-70" : ""
+            }`}
+          >
+            {uploadingId === doc.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Upload className="h-3.5 w-3.5 text-blue-600" />
+            )}
+            <span>{hasUploadedPdf ? "Replace PDF" : "Attach PDF"}</span>
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              disabled={uploadingId === doc.id}
+              onChange={onFileInput(doc)}
+            />
+          </label>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(event) => onDelete(doc.id, event)}
+            disabled={deletingId === doc.id}
+            className="h-8 w-8 rounded-xl border border-red-200/80 bg-red-50/50 hover:bg-red-100/80 p-0 text-red-600 hover:text-red-700 cursor-pointer transition-all flex items-center justify-center"
+            title="Delete document"
+          >
+            {deletingId === doc.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+      </div>
+    </article>
+  )
+})
 
 export function SavedDocuments({ onLoadDocument, refreshTrigger, variant = "sidebar" }: SavedDocumentsProps) {
   const [documents, setDocuments] = useState<SavedDocument[]>([])
@@ -486,21 +776,25 @@ function parseBolSeq(bolNum: string): number {
     })
   }
 
-  const assignDocumentCategory = (doc: SavedDocument, category: Exclude<DocumentCategoryKey, "all" | "latest" | "with-pdf">) => {
+  const assignDocumentCategory = useCallback((doc: SavedDocument, category: Exclude<DocumentCategoryKey, "all" | "latest" | "with-pdf">) => {
     const documentId = doc.id || doc.bol_number
 
-    setDocumentCategories((prev) => {
-      const next = {
-        ...prev,
-        [documentId]: category,
-      }
+    startTransition(() => {
+      setDocumentCategories((prev) => {
+        const next = {
+          ...prev,
+          [documentId]: category,
+        }
 
-      window.localStorage.setItem(DOCUMENT_CATEGORY_STORAGE_KEY, JSON.stringify(next))
-      return next
+        try {
+          window.localStorage.setItem(DOCUMENT_CATEGORY_STORAGE_KEY, JSON.stringify(next))
+        } catch (e) {}
+        return next
+      })
     })
 
     toast.success(`Moved to ${category}`)
-  }
+  }, [])
 
   const persistAccountCompanyPdfs = (records: Record<string, AccountCompanyRecord>) => {
     setAccountCompanyPdfs(records)
@@ -619,7 +913,7 @@ function parseBolSeq(bolNum: string): number {
     event.target.value = ""
   }
 
-  const handleDelete = async (id: string, event: MouseEvent) => {
+  const handleDelete = useCallback(async (id: string, event: MouseEvent) => {
     event.stopPropagation()
     if (!confirm("Delete this saved document?")) return
 
@@ -629,7 +923,9 @@ function parseBolSeq(bolNum: string): number {
         method: "DELETE",
       })
       if (response.ok) {
-        setDocuments((prev) => prev.filter((doc) => doc.id !== id))
+        startTransition(() => {
+          setDocuments((prev) => prev.filter((doc) => doc.id !== id))
+        })
         toast.success("Document deleted")
       } else {
         toast.error("Could not delete document")
@@ -640,9 +936,9 @@ function parseBolSeq(bolNum: string): number {
     } finally {
       setDeletingId(null)
     }
-  }
+  }, [])
 
-  const handlePDFUpload = async (doc: SavedDocument, file?: File | null) => {
+  const handlePDFUpload = useCallback(async (doc: SavedDocument, file?: File | null) => {
     if (!file) return
 
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
@@ -669,16 +965,18 @@ function parseBolSeq(bolNum: string): number {
 
       toast.success(doc.pdf_url ? "PDF replaced" : "PDF uploaded")
       await fetchDocuments()
-      setActiveCategory("with-pdf")
+      startTransition(() => {
+        setActiveCategory("with-pdf")
+      })
     } catch (error) {
       console.error("PDF upload error:", error)
       toast.error(error instanceof Error ? error.message : "Unable to upload PDF")
     } finally {
       setUploadingId(null)
     }
-  }
+  }, [fetchDocuments])
 
-  const handleDuplicate = async (doc: SavedDocument) => {
+  const handleDuplicate = useCallback(async (doc: SavedDocument) => {
     const toastId = toast.loading("Duplicating BOL...", {
       description: "Fetching next auto BOL number...",
     })
@@ -696,7 +994,9 @@ function parseBolSeq(bolNum: string): number {
         updated_at: new Date().toISOString(),
       }
 
-      onLoadDocument(clonedDoc.id, "form")
+      startTransition(() => {
+        onLoadDocument(clonedDoc.id, "form")
+      })
       toast.success(`Cloned as ${newBolNumber}!`, {
         id: toastId,
         description: "Document pre-filled with party and route info. Review and click Save.",
@@ -704,9 +1004,9 @@ function parseBolSeq(bolNum: string): number {
     } catch (e) {
       toast.error("Failed to duplicate document", { id: toastId })
     }
-  }
+  }, [onLoadDocument])
 
-  const openUploadedPDF = async (doc: SavedDocument) => {
+  const openUploadedPDF = useCallback(async (doc: SavedDocument) => {
     if (!doc.pdf_url) {
       toast.error("No uploaded PDF for this BOL")
       return
@@ -729,13 +1029,15 @@ function parseBolSeq(bolNum: string): number {
     } finally {
       setOpeningPdfId(null)
     }
-  }
+  }, [])
 
   // Direct Download of BOL PDF File
-  const downloadBOLPDF = async (doc: SavedDocument) => {
+  const downloadBOLPDF = useCallback(async (doc: SavedDocument) => {
     setDownloadingPdfId(doc.id)
-    onLoadDocument(doc.id, "preview")
-    window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "preview", tab: "preview" } }))
+    startTransition(() => {
+      onLoadDocument(doc.id, "preview")
+      window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "preview", tab: "preview" } }))
+    })
     
     toast.loading("Generating BOL PDF file...", { id: "doc-pdf-download" })
 
@@ -775,22 +1077,26 @@ function parseBolSeq(bolNum: string): number {
         setDownloadingPdfId(null)
       }
     }, 350)
-  }
+  }, [onLoadDocument])
 
-  const viewBOLPreview = (doc: SavedDocument) => {
-    onLoadDocument(doc.id, "preview")
-    window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "preview", tab: "preview" } }))
+  const viewBOLPreview = useCallback((doc: SavedDocument) => {
+    startTransition(() => {
+      onLoadDocument(doc.id, "preview")
+      window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "preview", tab: "preview" } }))
+    })
     toast.success("BOL preview opened", {
       description: `${doc.bol_number || "Document"} loaded in A4 Preview.`,
     })
-  }
+  }, [onLoadDocument])
 
-  const editBOL = (doc: SavedDocument) => {
-    onLoadDocument(doc.id, "form")
-    window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "form", tab: "form" } }))
-  }
+  const editBOL = useCallback((doc: SavedDocument) => {
+    startTransition(() => {
+      onLoadDocument(doc.id, "form")
+      window.dispatchEvent(new CustomEvent("skybol:editor-action", { detail: { action: "form", tab: "form" } }))
+    })
+  }, [onLoadDocument])
 
-  const downloadDocumentJSON = async (doc: SavedDocument) => {
+  const downloadDocumentJSON = useCallback(async (doc: SavedDocument) => {
     try {
       const res = await fetch(`/api/bol/${doc.id}`)
       if (!res.ok) throw new Error("Failed to fetch document")
@@ -808,14 +1114,14 @@ function parseBolSeq(bolNum: string): number {
       console.error("Download error:", error)
       toast.error("Unable to download document data")
     }
-  }
+  }, [])
 
-  const handleFileInput = (doc: SavedDocument) => (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileInput = useCallback((doc: SavedDocument) => (event: ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation()
     const file = event.target.files?.[0]
     void handlePDFUpload(doc, file)
     event.target.value = ""
-  }
+  }, [handlePDFUpload])
 
   return (
     <Card className={`flex h-full flex-col overflow-hidden rounded-[32px] border border-white/80 bg-white/70 shadow-[0_20px_60px_-15px_rgba(37,99,235,0.1)] backdrop-blur-2xl text-slate-900 ${variant === "sidebar" ? "w-full" : "md:w-96"}`}>
@@ -1282,267 +1588,27 @@ function parseBolSeq(bolNum: string): number {
                 {/* 1. GRID VIEW MODE - BALANCED RESPONSIVE GRID WITH PREMIUM CARDS */}
                 {viewMode === "grid" && (
                   <div className="grid gap-3 sm:gap-3.5 lg:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6">
-                    {filteredDocuments.map((doc, idx) => {
-                      const assignedCategory = getAssignedCategory(doc)
-                      const hasUploadedPdf = Boolean(doc.pdf_url)
-                      const isLatest = idx < 2 && sortBy === "latest"
-                      const invoiceNo = extractInvoiceNo(doc)
-
-                      return (
-                        <article
-                          key={doc.id}
-                          className="group relative flex min-h-[360px] flex-col rounded-[22px] sm:rounded-[26px] border border-white/90 bg-white/85 p-3.5 shadow-[0_10px_35px_-8px_rgba(37,99,235,0.08)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/90 hover:bg-white hover:shadow-[0_20px_55px_-10px_rgba(37,99,235,0.18)] overflow-hidden"
-                        >
-                          {/* Light Reflection Flare */}
-                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                          {/* Top Accent Gradient Line */}
-                          <div className={`absolute top-0 left-0 right-0 h-1.5 ${isLatest ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 shadow-sm shadow-amber-500/50" : "bg-gradient-to-r from-[#0a2540] via-blue-600 to-indigo-500"}`} />
-
-                          {/* Top Header Row */}
-                          <div className="flex items-center justify-between gap-1.5 pt-1 relative z-10 flex-wrap">
-                            <div className="flex items-center gap-1.5 min-w-0 max-w-[72%] flex-wrap">
-                              <div className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0a2540] via-blue-900 to-[#1d4ed8] px-2.5 py-1 text-[11px] font-black font-mono tracking-tight text-white shadow-sm shadow-blue-950/20 truncate">
-                                <FileText className="h-3.5 w-3.5 shrink-0 text-blue-200" />
-                                <span className="truncate" title={doc.bol_number}>{doc.bol_number || "BOL"}</span>
-                              </div>
-                              {invoiceNo && (
-                                <div className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 text-[9.5px] font-black font-mono text-emerald-900 shadow-2xs shrink-0" title={`Invoice No: ${invoiceNo}`}>
-                                  <Receipt className="h-3 w-3 text-emerald-700 shrink-0" />
-                                  <span className="truncate">INV: {invoiceNo}</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0 ml-auto">
-                              {isLatest && (
-                                <span className="rounded-full px-2 py-0.5 text-[8.5px] font-black bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-xs uppercase tracking-wider">
-                                  LATEST
-                                </span>
-                              )}
-                              <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold backdrop-blur-md ${
-                                hasUploadedPdf ? "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs" : "bg-slate-100 text-slate-500 border border-slate-200"
-                              }`}>
-                                {hasUploadedPdf ? "PDF" : "No PDF"}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Shipper & Consignee */}
-                          <div className="mt-2.5 space-y-1 relative z-10">
-                            <p className="text-xs font-black text-slate-950 leading-snug break-words line-clamp-1" title={doc.shipper_name}>
-                              {doc.shipper_name || "No shipper"}
-                            </p>
-                            <div className="flex items-center gap-1.5 rounded-xl bg-slate-50/90 backdrop-blur-xs px-2.5 py-1 border border-slate-200/80 text-[11px] font-bold text-slate-700 leading-tight" title={doc.consignee_name}>
-                              <ArrowRight className="h-3 w-3 text-blue-600 shrink-0" />
-                              <span className="truncate">{doc.consignee_name || "No consignee"}</span>
-                            </div>
-                          </div>
-
-                          {/* Route / Ports (if present) */}
-                          {(doc.port_of_loading || doc.port_of_discharge || doc.origin_country || doc.destination_country) && (
-                            <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100/80 border border-slate-200/70 rounded-lg px-2 py-0.5 relative z-10 truncate">
-                              <MapPin className="h-3 w-3 text-blue-600 shrink-0" />
-                              <span className="truncate">
-                                {doc.port_of_loading || doc.origin_country || "Origin"} ➔ {doc.port_of_discharge || doc.destination_country || "Destination"}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Cargo & Weight Details Box */}
-                          {(doc.number_of_packages || doc.net_weight || doc.gross_weight || doc.goods_value || doc.rate_per_kgs) && (
-                            <div className="mt-2 rounded-xl bg-gradient-to-br from-blue-50/90 to-indigo-50/70 border border-blue-200/80 p-2.5 text-[10.5px] space-y-1.5 relative z-10 shadow-2xs">
-                              {/* Row 1: Packages & Weights */}
-                              <div className="flex items-start justify-between gap-1.5 text-slate-800 font-extrabold flex-wrap">
-                                {doc.number_of_packages && (
-                                  <div className="flex items-center gap-1 font-mono text-blue-950 font-black text-[10.5px]">
-                                    <Boxes className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                                    <span className="break-words">{doc.number_of_packages}</span>
-                                  </div>
-                                )}
-                                {(doc.net_weight || doc.gross_weight) && (
-                                  <div className="flex items-center gap-1 font-mono text-slate-900 font-extrabold text-[10px] bg-white/90 border border-blue-100/90 px-1.5 py-0.5 rounded-md shrink-0 shadow-2xs ml-auto">
-                                    <Scale className="h-3 w-3 text-indigo-600 shrink-0" />
-                                    <span>{doc.net_weight ? `Net: ${doc.net_weight}` : `Gross: ${doc.gross_weight}`}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Row 2: Goods Value & Rate */}
-                              {(doc.goods_value || doc.rate_per_kgs) && (
-                                <div className="flex items-center justify-between gap-1 text-[10px] text-emerald-950 border-t border-blue-200/60 pt-1.5 font-bold flex-wrap">
-                                  {doc.goods_value && (
-                                    <div className="flex items-center gap-0.5 font-mono font-black text-emerald-900">
-                                      <DollarSign className="h-3 w-3 text-emerald-600 shrink-0" />
-                                      <span className="break-words">{doc.goods_value}</span>
-                                    </div>
-                                  )}
-                                  {doc.rate_per_kgs && (
-                                    <div className="font-mono text-slate-600 text-[9.5px] bg-white/80 border border-slate-200/70 px-1.5 py-0.5 rounded shrink-0 ml-auto">
-                                      Rate: <span className="font-bold text-slate-900">{doc.rate_per_kgs}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Date & Truck */}
-                          <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] text-slate-600 relative z-10">
-                            <div className="flex items-center gap-1.5 rounded-xl bg-white/80 backdrop-blur-md px-2 py-1 border border-slate-200/60 shadow-2xs">
-                              <Calendar className="h-3 w-3 text-blue-600 shrink-0" />
-                              <span className="font-bold text-slate-800 truncate">
-                                {doc.issue_date
-                                  ? new Date(doc.issue_date).toLocaleDateString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                    })
-                                  : "No date"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 rounded-xl bg-white/80 backdrop-blur-md px-2 py-1 border border-slate-200/60 shadow-2xs">
-                              <Truck className="h-3 w-3 text-indigo-600 shrink-0" />
-                              <span className="truncate font-bold text-slate-800">{doc.truck_number || "No truck #"}</span>
-                            </div>
-                          </div>
-
-                          {/* Driver & Rent (if present) */}
-                          {(doc.driver_name || doc.driver_rent) && (
-                            <div className="mt-1.5 flex items-center justify-between gap-1 text-[10px] text-slate-800 font-bold bg-amber-50/85 border border-amber-200/80 rounded-xl px-2.5 py-1.5 relative z-10 shadow-2xs flex-wrap">
-                              {doc.driver_name && (
-                                <div className="flex items-center gap-1 text-slate-950 font-extrabold min-w-0" dir="auto">
-                                  <User className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                                  <span className="truncate">{doc.driver_name}</span>
-                                </div>
-                              )}
-                              {doc.driver_rent && (
-                                <div className="font-mono text-amber-950 font-black text-[10px] bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded-lg shrink-0 ml-auto">
-                                  {doc.driver_rent}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Category Tag Buttons */}
-                          <div className="mt-2 flex flex-wrap gap-1 relative z-10">
-                            {(["account", "export", "import"] as const).map((category) => (
-                              <button
-                                key={category}
-                                type="button"
-                                onClick={() => assignDocumentCategory(doc, category)}
-                                className={`rounded-lg border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer backdrop-blur-xs ${
-                                  assignedCategory === category
-                                    ? "border-blue-600 bg-blue-600 text-white shadow-2xs"
-                                    : "border-slate-200/80 bg-white/70 text-slate-600 hover:border-blue-300 hover:text-blue-700 hover:bg-white"
-                                }`}
-                              >
-                                {category}
-                              </button>
-                            ))}
-                          </div>
-
-                      {/* Action Buttons */}
-                      <div className="mt-auto grid gap-1.5 pt-3 border-t border-slate-100 relative z-10">
-                        {/* Primary Actions Row */}
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <Button
-                            type="button"
-                            onClick={() => editBOL(doc)}
-                            className="h-9 rounded-xl bg-gradient-to-r from-[#0a2540] to-[#1d4ed8] hover:from-[#001428] hover:to-[#1e40af] text-white font-black text-[11.5px] shadow-sm shadow-blue-900/20 cursor-pointer transition-all active:scale-95 px-2 flex items-center justify-center gap-1.5"
-                          >
-                            <Pencil className="h-3.5 w-3.5 shrink-0" />
-                            <span>Edit BOL</span>
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => downloadBOLPDF(doc)}
-                            className="h-9 rounded-xl border border-amber-300/80 bg-amber-100/90 hover:bg-amber-200 text-amber-950 font-black text-[11px] cursor-pointer shadow-2xs transition-all active:scale-95 px-2 flex items-center justify-center gap-1.5"
-                          >
-                            <FileDown className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                            <span>Download</span>
-                          </Button>
-                        </div>
-
-                        {/* Secondary Quick Actions Row */}
-                        <div className="grid grid-cols-3 gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => viewBOLPreview(doc)}
-                            className="h-7.5 rounded-lg border border-blue-200/80 bg-blue-50/70 hover:bg-blue-100/80 text-blue-700 font-bold text-[10px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
-                            title="Preview A4 Document"
-                          >
-                            <Eye className="h-3 w-3 mr-1 shrink-0 text-blue-600" />
-                            <span>Preview</span>
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleDuplicate(doc)}
-                            className="h-7.5 rounded-lg border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/80 text-purple-700 font-bold text-[10px] cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
-                            title="Clone document with new BOL number"
-                          >
-                            <Copy className="h-3 w-3 mr-1 text-purple-600 shrink-0" />
-                            <span>Duplicate</span>
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => openUploadedPDF(doc)}
-                            disabled={!hasUploadedPdf || openingPdfId === doc.id}
-                            className="h-7.5 rounded-lg border border-emerald-200/80 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-700 font-bold text-[10px] disabled:border-slate-100 disabled:bg-slate-50/60 disabled:text-slate-300 cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center px-1"
-                            title={hasUploadedPdf ? "Open uploaded PDF file" : "No uploaded PDF available"}
-                          >
-                            <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
-                            <span>File PDF</span>
-                          </Button>
-                        </div>
-
-                        {/* Attach PDF & Delete Row */}
-                        <div className="grid grid-cols-[1fr_auto] gap-1.5 pt-0.5">
-                          <label
-                            className={`inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 px-2.5 text-[11px] font-bold text-slate-700 transition-all shadow-2xs backdrop-blur-xs ${
-                              uploadingId === doc.id ? "pointer-events-none opacity-70" : ""
-                            }`}
-                          >
-                            {uploadingId === doc.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Upload className="h-3.5 w-3.5 text-blue-600" />
-                            )}
-                            <span>{hasUploadedPdf ? "Replace PDF" : "Attach PDF"}</span>
-                            <input
-                              type="file"
-                              accept="application/pdf,.pdf"
-                              className="hidden"
-                              disabled={uploadingId === doc.id}
-                              onChange={handleFileInput(doc)}
-                            />
-                          </label>
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={(event) => handleDelete(doc.id, event)}
-                            disabled={deletingId === doc.id}
-                            className="h-8 w-8 rounded-xl border border-red-200/80 bg-red-50/50 hover:bg-red-100/80 p-0 text-red-600 hover:text-red-700 cursor-pointer transition-all backdrop-blur-xs flex items-center justify-center"
-                            title="Delete document"
-                          >
-                            {deletingId === doc.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
+                    {filteredDocuments.map((doc, idx) => (
+                      <DocumentGridCard
+                        key={doc.id}
+                        doc={doc}
+                        isLatest={idx < 2 && sortBy === "latest"}
+                        hasUploadedPdf={Boolean(doc.pdf_url)}
+                        invoiceNo={extractInvoiceNo(doc)}
+                        assignedCategory={getAssignedCategory(doc)}
+                        uploadingId={uploadingId}
+                        deletingId={deletingId}
+                        openingPdfId={openingPdfId}
+                        onEdit={editBOL}
+                        onDownload={downloadBOLPDF}
+                        onPreview={viewBOLPreview}
+                        onDuplicate={handleDuplicate}
+                        onOpenPdf={openUploadedPDF}
+                        onDelete={handleDelete}
+                        onCategoryAssign={assignDocumentCategory}
+                        onFileInput={handleFileInput}
+                      />
+                    ))}
               </div>
             )}
 

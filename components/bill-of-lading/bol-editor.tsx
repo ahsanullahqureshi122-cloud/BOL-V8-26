@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, type ReactNode } from "react"
+import { useState, useEffect, useRef, startTransition, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -2391,40 +2391,42 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     const handleShellAction = (event: Event) => {
       const detail = (event as CustomEvent<{ action?: string; tab?: string }>).detail
 
-      if (detail?.tab) {
-        setActiveTab(detail.tab)
-      }
+      startTransition(() => {
+        if (detail?.tab) {
+          setActiveTab(detail.tab)
+        }
 
-      switch (detail?.action) {
-        case "form":
-          setActiveTab("form")
-          break
-        case "new":
-          handleNewDocument()
-          setActiveTab("form")
-          break
-        case "print":
-          setIsPrintDialogOpen(true)
-          break
-        case "download":
-          void handleDownloadPDF()
-          break
-        case "save-pdf":
-          void handleExportPDF()
-          break
-        case "preview":
-          setActiveTab("preview")
-          break
-        case "saved-documents":
-          setActiveTab("saved-documents")
-          break
-        case "account":
-          setActiveTab("account")
-          break
-        case "pdf-settings":
-          setActiveTab("pdf-settings")
-          break
-      }
+        switch (detail?.action) {
+          case "form":
+            setActiveTab("form")
+            break
+          case "new":
+            handleNewDocument()
+            setActiveTab("form")
+            break
+          case "print":
+            setIsPrintDialogOpen(true)
+            break
+          case "download":
+            void handleDownloadPDF()
+            break
+          case "save-pdf":
+            void handleExportPDF()
+            break
+          case "preview":
+            setActiveTab("preview")
+            break
+          case "saved-documents":
+            setActiveTab("saved-documents")
+            break
+          case "account":
+            setActiveTab("account")
+            break
+          case "pdf-settings":
+            setActiveTab("pdf-settings")
+            break
+        }
+      })
     }
 
     window.addEventListener("skybol:editor-action", handleShellAction)
@@ -2432,7 +2434,7 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
     return () => {
       window.removeEventListener("skybol:editor-action", handleShellAction)
     }
-  })
+  }, [handleNewDocument, handleDownloadPDF, handleExportPDF])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -5788,8 +5790,10 @@ export function BOLEditor({ onSave, onRefreshDocuments, loadDocumentId, onDocume
               {savedDocumentsPanel || (
                 <SavedDocuments
                   onLoadDocument={(id, targetTab) => {
-                    loadDocument(id)
-                    setActiveTab(targetTab || "form")
+                    startTransition(() => {
+                      void loadDocument(id)
+                      setActiveTab(targetTab || "form")
+                    })
                   }}
                 />
               )}
